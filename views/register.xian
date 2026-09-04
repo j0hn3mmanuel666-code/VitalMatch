@@ -1,0 +1,305 @@
+{{> head }}
+
+<style>
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+
+    50% {
+      transform: translateY(-15px) rotate(2deg);
+    }
+  }
+
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 30px rgba(220, 38, 38, 0.6);
+    }
+
+    50% {
+      box-shadow: 0 0 50px rgba(220, 38, 38, 0.9);
+    }
+  }
+
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-50px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2.5s ease-in-out infinite;
+  }
+
+  .animate-slide-in {
+    animation: slide-in-left 1s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 1.5s ease-out;
+  }
+
+  .abstract-wave {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(135deg, #7c0a02 0%, #991b1b 20%, #dc2626 40%, #ef4444 60%, #f87171 80%, #fca5a5 100%);
+    clip-path: polygon(30% 0%, 100% 0%, 100% 100%, 0% 100%, 20% 50%);
+  }
+
+  .abstract-overlay {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 60%;
+    height: 100%;
+    background: radial-gradient(circle at 70% 30%, rgba(127, 29, 29, 0.4) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(185, 28, 28, 0.3) 0%, transparent 50%);
+    clip-path: polygon(30% 0%, 100% 0%, 100% 100%, 0% 100%, 20% 50%);
+  }
+</style>
+
+<!-- Register Section with Abstract Wave Design -->
+<section class="relative min-h-screen flex items-center bg-white overflow-hidden py-12">
+
+  <!-- Abstract Red Wave Background -->
+  <div class="abstract-wave animate-fade-in"></div>
+  <div class="abstract-overlay"></div>
+
+  <div class="container mx-auto px-8 py-12 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+      <!-- Left Content - Register Form -->
+      <div class="animate-slide-in max-w-xl mx-auto w-full">
+        <h1 class="text-5xl md:text-6xl font-bold text-red-600 mb-2 leading-none tracking-tight">
+          Join Us
+        </h1>
+        <h2 class="text-2xl md:text-3xl font-light text-red-600 mb-8 uppercase tracking-widest">
+          Create Your Account
+        </h2>
+
+        <form class="bg-white p-8 rounded-xl shadow-2xl max-h-[600px] overflow-y-auto" method="POST" action="/register">
+
+          {{#if error}}
+          <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow-sm animate-fade-in"
+            role="alert">
+            <div class="flex items-center">
+              <svg class="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p class="font-medium">{{error}}</p>
+            </div>
+          </div>
+          {{/if}}
+
+          <!-- Personal Information -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Personal Information</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-gray-700 text-sm font-semibold mb-2" for="firstName">
+                  First Name *
+                </label>
+                <input type="text" name="firstName" id="firstName" placeholder="Enter first name"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                  required />
+              </div>
+
+              <div>
+                <label class="block text-gray-700 text-sm font-semibold mb-2" for="lastName">
+                  Last Name *
+                </label>
+                <input type="text" name="lastName" id="lastName" placeholder="Enter last name"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                  required />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-gray-700 text-sm font-semibold mb-2" for="dateOfBirth">
+                  Date of Birth *
+                </label>
+                <input type="date" name="dateOfBirth" id="dateOfBirth"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                  required />
+              </div>
+
+              <div>
+                <label class="block text-gray-700 text-sm font-semibold mb-2" for="gender">
+                  Gender *
+                </label>
+                <select name="gender" id="gender"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                  required>
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Information -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Contact Information</h3>
+
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-semibold mb-2" for="email">
+                Email Address *
+              </label>
+              <input type="email" name="email" id="email" placeholder="Enter your email"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                required />
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-semibold mb-2" for="phone">
+                Phone Number *
+              </label>
+              <input type="tel" name="phone" id="phone" placeholder="09XX XXX XXXX" pattern="[0-9]{11}"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                required />
+              <p class="text-xs text-gray-500 mt-1">Format: 11 digits (e.g., 09171234567)</p>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-semibold mb-2" for="address">
+                Complete Address *
+              </label>
+              <textarea name="address" id="address" rows="2"
+                placeholder="Street, Barangay, Municipality, Oriental Mindoro"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                required></textarea>
+            </div>
+          </div>
+
+          <!-- Account Type -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Account Type</h3>
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-semibold mb-2" for="role">
+                Register as *
+              </label>
+              <select name="role" id="role"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                required>
+                <option value="donor">Individual / Blood Donor</option>
+                <option value="hospital">Hospital / Clinic Representative</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Hospitals/Clinics can post and track requests; Donors can manage profiles, see eligibility, and also request.</p>
+            </div>
+          </div>
+
+          <!-- Account Security -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Account Security</h3>
+
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-semibold mb-2" for="password">
+                Password *
+              </label>
+              <input type="password" name="password" id="password" placeholder="Create a strong password" minlength="8"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                required />
+              <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-gray-700 text-sm font-semibold mb-2" for="confirmPassword">
+                Confirm Password *
+              </label>
+              <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Re-enter your password"
+                minlength="8"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                required />
+            </div>
+          </div>
+
+          <button type="submit"
+            class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-red-700 transition shadow-lg hover:shadow-xl">
+            Create Account
+          </button>
+
+          <div class="mt-6 text-center">
+            <p class="text-gray-600">
+              Already have an account?
+              <a href="/login" class="text-red-600 font-semibold hover:text-red-700 transition">
+                Login
+              </a>
+            </p>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right Side - Logo Floating Over Abstract Design -->
+      <div class="relative h-[600px] flex items-center justify-center">
+        <!-- Floating Philippine Red Cross Logo -->
+        <div class="relative z-20 animate-float">
+          <div class="w-72 h-72 animate-pulse-glow">
+            <!-- Philippine Red Cross Logo SVG -->
+            <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+              <!-- Outer Circle (Blue) -->
+              <circle cx="100" cy="100" r="95" fill="#1e3a8a" stroke="#1e40af" stroke-width="3" />
+
+              <!-- Inner White Circle -->
+              <circle cx="100" cy="100" r="72" fill="white" />
+
+              <!-- Red Cross -->
+              <rect x="84" y="48" width="32" height="104" fill="#dc2626" rx="2" />
+              <rect x="48" y="84" width="104" height="32" fill="#dc2626" rx="2" />
+
+              <!-- Text: PHILIPPINE (Top Arc) -->
+              <path id="topArc" d="M 28,100 A 72,72 0 0,1 172,100" fill="none" />
+              <text font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="white" letter-spacing="3">
+                <textPath href="#topArc" startOffset="50%" text-anchor="middle">
+                  PHILIPPINE
+                </textPath>
+              </text>
+
+              <!-- Text: RED CROSS (Bottom Arc) -->
+              <path id="bottomArc" d="M 172,100 A 72,72 0 0,1 28,100" fill="none" />
+              <text font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="white" letter-spacing="3">
+                <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">
+                  RED CROSS
+                </textPath>
+              </text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{{> footer }}

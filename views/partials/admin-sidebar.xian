@@ -1,0 +1,414 @@
+<style>
+  /* Apply dynamic padding to the body so main content doesn't overlap */
+  @media (min-width: 768px) {
+    body {
+      padding-left: 16rem !important;
+      /* Default to w-64 */
+      transition: padding-left 0.3s ease;
+    }
+
+    body.sidebar-collapsed {
+      padding-left: 0 !important;
+      /* Fully hidden */
+    }
+
+    body.sidebar-collapsed .shadcn-sidebar {
+      transform: translateX(-100%);
+    }
+
+    body.sidebar-collapsed .desktop-floating-toggle {
+      display: flex !important;
+    }
+  }
+
+  /* Hide texts when collapsed (kept for safety, though entire sidebar translates out) */
+  body.sidebar-collapsed .sidebar-text {
+    opacity: 0;
+    pointer-events: none;
+    display: none;
+  }
+
+  /* Center icons when collapsed */
+  body.sidebar-collapsed .shadcn-sidebar a,
+  body.sidebar-collapsed .sidebar-header-container {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body.sidebar-collapsed .shadcn-sidebar .sidebar-icon-container {
+    margin-right: 0 !important;
+  }
+
+  /* Hide the logo container in collapsed mode so the toggle button stays visible */
+  body.sidebar-collapsed .sidebar-logo-container {
+    display: none;
+  }
+
+  /* Ensure toggle button stays in center */
+  body.sidebar-collapsed .sidebar-toggle-btn {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Mobile behavior */
+  @media (max-width: 768px) {
+    body {
+      padding-left: 0 !important;
+    }
+
+    .shadcn-sidebar {
+      transform: translateX(-100%);
+      width: 16rem !important;
+      /* Full width offcanvas on mobile */
+      transition: transform 0.3s ease;
+    }
+
+    body.mobile-sidebar-open .shadcn-sidebar {
+      transform: translateX(0);
+    }
+
+    body.mobile-sidebar-open .mobile-overlay {
+      display: block;
+      opacity: 1;
+    }
+  }
+</style>
+
+<!-- Mobile Overlay -->
+<div id="mobileOverlay" class="mobile-overlay fixed inset-0 bg-black/50 z-40 hidden transition-opacity duration-300"
+  onclick="document.body.classList.remove('mobile-sidebar-open')"></div>
+
+<!-- Desktop Floating Toggle (Visible only when sidebar is collapsed) -->
+<button onclick="toggleSidebarState()" 
+  class="desktop-floating-toggle fixed top-4 left-4 z-40 hidden items-center justify-center w-10 h-10 rounded-md bg-white dark:bg-[#09090b] shadow-md border border-gray-200 dark:border-gray-800 text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-gray-800 transition-colors"
+  title="Show Sidebar">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+  </svg>
+</button>
+
+<!-- Mobile Header (Visible only on small screens) -->
+<header
+  class="h-14 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur flex items-center px-4 sticky top-0 z-30 md:hidden">
+  <button onclick="document.body.classList.add('mobile-sidebar-open')"
+    class="p-2 -ml-2 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </button>
+  <div class="ml-4 font-semibold text-gray-900 dark:text-gray-100">VitalMatch Admin</div>
+</header>
+
+<!-- Shadcn-like Sidebar -->
+<aside
+  class="shadcn-sidebar w-64 fixed top-0 left-0 h-full bg-white dark:bg-[#09090b] border-r border-gray-200 dark:border-gray-800 z-50 flex flex-col justify-between shadow-sm overflow-hidden transition-all duration-300">
+
+  <!-- Sidebar Header (Workspace / Logo) -->
+  <div
+    class="sidebar-header-container h-14 flex items-center justify-between px-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+    <div class="sidebar-logo-container flex items-center overflow-hidden flex-1">
+      <div
+        class="sidebar-icon-container flex-shrink-0 w-8 h-8 bg-black dark:bg-white rounded-md flex items-center justify-center text-white dark:text-black shadow-sm mr-3 transition-all duration-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+      </div>
+      <div class="sidebar-text flex flex-col min-w-0 transition-opacity duration-200">
+        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">VitalMatch</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 truncate text-left">Enterprise</span>
+      </div>
+    </div>
+    <!-- Toggle Button inside Sidebar (Desktop) -->
+    <button onclick="toggleSidebarState()"
+      class="sidebar-toggle-btn hidden md:flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-gray-800 transition-colors"
+      title="Toggle Sidebar">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+    <!-- Close Button for Mobile -->
+    <button onclick="document.body.classList.remove('mobile-sidebar-open')"
+      class="md:hidden flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:text-gray-100 dark:hover:bg-gray-800 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Sidebar Content (Scrollable) -->
+  <div class="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
+
+    <div class="sidebar-text px-2 mb-2">
+      <span class="text-xs font-medium text-gray-500 dark:text-gray-400 tracking-wider">Platform</span>
+    </div>
+
+    <nav class="space-y-1">
+      <!-- Dashboard -->
+      <a href="/admin/dashboard"
+        class="flex items-center px-2 py-2 rounded-md {{#if isDashboard}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Dashboard">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Dashboard</span>
+      </a>
+
+      <!-- Requests -->
+      <a href="/admin/requests"
+        class="flex items-center px-2 py-2 rounded-md {{#if isRequests}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Requests">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Requests</span>
+        <svg class="sidebar-text w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none"
+          stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </a>
+
+      <!-- Appointments -->
+      <a href="/admin/appointments"
+        class="flex items-center px-2 py-2 rounded-md {{#if isAppointments}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Appointments">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Appointments</span>
+      </a>
+
+      <!-- Donors -->
+      <a href="/admin/donors"
+        class="flex items-center px-2 py-2 rounded-md {{#if isDonors}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Donors">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Donors</span>
+        <svg class="sidebar-text w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none"
+          stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </a>
+
+      <!-- Donation Calls -->
+      <a href="/admin/calls"
+        class="flex items-center px-2 py-2 rounded-md {{#if isCalls}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Donation Calls">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Donation Calls</span>
+      </a>
+
+      <!-- Hospitals -->
+      <a href="/admin/hospitals"
+        class="flex items-center px-2 py-2 rounded-md {{#if isHospitals}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Hospitals">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Hospitals</span>
+      </a>
+
+      <!-- Reports -->
+      <a href="/admin/reports"
+        class="flex items-center px-2 py-2 rounded-md {{#if isReports}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Reports">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Reports</span>
+      </a>
+
+      <!-- Public CMS (Admin) -->
+      <a href="/admin/cms"
+        class="flex items-center px-2 py-2 rounded-md {{#if isCMS}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Public CMS">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Public CMS</span>
+      </a>
+
+      <!-- Blockchain (Hidden temporarily)
+      <a href="/admin/blockchain" class="flex items-center px-2 py-2 rounded-md {{#if isBlockchain}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group" title="Blockchain">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Blockchain</span>
+      </a>
+      -->
+
+      <div class="pt-4 pb-2">
+        <div class="h-px bg-gray-200 dark:bg-gray-800"></div>
+      </div>
+
+      <!-- Messages -->
+      <a href="/messages"
+        class="flex items-center px-2 py-2 rounded-md {{#if isMessages}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Messages">
+        <div
+          class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200 relative">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Messages</span>
+        <span
+          class="sidebar-text inline-flex items-center justify-center px-2 py-0.5 ml-3 text-xs font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md">5</span>
+      </a>
+
+      <!-- Users -->
+      <a href="/admin/users"
+        class="flex items-center px-2 py-2 rounded-md {{#if isUsers}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Users">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Users</span>
+      </a>
+
+      <!-- Settings -->
+      <a href="/admin/settings"
+        class="flex items-center px-2 py-2 rounded-md {{#if isSettings}}bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium{{else}}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100{{/if}} transition-colors group"
+        title="Settings">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1">Settings</span>
+        <svg class="sidebar-text w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" fill="none"
+          stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </a>
+
+      <!-- Theme Toggle -->
+      <button type="button" id="theme-toggle"
+        class="w-full flex items-center px-2 py-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors group"
+        title="Toggle Theme">
+        <div class="sidebar-icon-container flex items-center justify-center w-5 h-5 mr-3 transition-all duration-200">
+          <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+          <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+            </path>
+          </svg>
+        </div>
+        <span class="sidebar-text text-sm flex-1 text-left">Toggle Theme</span>
+      </button>
+
+    </nav>
+  </div>
+
+  <!-- Sidebar Footer (User Profile) -->
+  <div class="p-3 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
+    <a href="/logout"
+      class="flex items-center px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors group"
+      title="Logout">
+      <div
+        class="sidebar-icon-container flex-shrink-0 w-8 h-8 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm mr-3 transition-all duration-200">
+        A
+      </div>
+      <div class="sidebar-text flex flex-col min-w-0 flex-1 transition-opacity duration-200">
+        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">Admin</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 truncate">admin@vitalmatch.com</span>
+      </div>
+      <svg class="sidebar-text w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors" fill="none"
+        stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+      </svg>
+    </a>
+  </div>
+</aside>
+
+<script>
+  // Sidebar State Management
+  function toggleSidebarState() {
+    const isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('sidebar-collapsed', isCollapsed);
+  }
+
+  // Restore Sidebar State on load
+  document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      document.body.classList.add('sidebar-collapsed');
+    } else {
+      document.body.classList.remove('sidebar-collapsed');
+    }
+  });
+
+  // Theme Toggle Logic
+  var themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+  var themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+  var themeToggleBtn = document.getElementById('theme-toggle');
+
+  if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    themeToggleLightIcon.classList.remove('hidden');
+    document.documentElement.classList.add('dark');
+  } else {
+    themeToggleDarkIcon.classList.remove('hidden');
+    document.documentElement.classList.remove('dark');
+  }
+
+  themeToggleBtn.addEventListener('click', function () {
+    themeToggleDarkIcon.classList.toggle('hidden');
+    themeToggleLightIcon.classList.toggle('hidden');
+
+    if (localStorage.getItem('theme')) {
+      if (localStorage.getItem('theme') === 'light') {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    } else {
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+  });
+</script>

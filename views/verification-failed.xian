@@ -1,0 +1,124 @@
+{{> head-public}}
+
+<div
+  class="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div class="text-center">
+      <!-- Error Icon -->
+      <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-6">
+        <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </div>
+
+      <h2 class="text-3xl font-bold text-gray-900 mb-2">Verification Failed</h2>
+      <p class="text-gray-600 mb-6">We couldn't verify your email address</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-8">
+      <div class="text-center mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">{{message}}</h3>
+        <p class="text-gray-600 mb-6">
+          This could happen if the verification link has expired or has already been used.
+        </p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+          <div class="flex">
+            <svg class="h-5 w-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"></path>
+            </svg>
+            <div>
+              <h4 class="text-sm font-medium text-yellow-800">What to do next:</h4>
+              <ul class="text-sm text-yellow-700 mt-2 space-y-1">
+                <li>• Check if you have another verification email in your inbox</li>
+                <li>• Request a new verification email below</li>
+                <li>• Contact support if the problem persists</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center">
+          <p class="text-sm text-gray-600 mb-4">Need a new verification email?</p>
+          <form id="resendForm" class="space-y-4">
+            <div>
+              <input type="email" id="email" name="email" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                placeholder="Enter your email address">
+            </div>
+            <button type="submit" id="resendBtn"
+              class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+              <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                </path>
+              </svg>
+              Send New Verification Email
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center space-y-4">
+      <a href="/login"
+        class="inline-flex items-center px-6 py-3 border border-red-300 text-base font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+        Back to Login
+      </a>
+
+      <p class="text-sm text-gray-500">
+        Already verified? <a href="/login" class="text-red-600 hover:text-red-500">Try logging in</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('resendForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('resendBtn');
+    const email = document.getElementById('email').value;
+    const originalText = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Sending...';
+
+    try {
+      const response = await fetch('/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        btn.innerHTML = '<svg class="h-4 w-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>Email Sent!';
+        btn.className = btn.className.replace('bg-red-600 hover:bg-red-700', 'bg-green-600 hover:bg-green-700');
+
+        // Show success message
+        const successDiv = document.createElement('div');
+        successDiv.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-md';
+        successDiv.innerHTML = '<p class="text-sm text-green-700">Verification email sent! Check your inbox.</p>';
+        document.getElementById('resendForm').appendChild(successDiv);
+      } else {
+        btn.innerHTML = originalText;
+        alert('Failed to resend email: ' + data.message);
+      }
+    } catch (error) {
+      btn.innerHTML = originalText;
+      alert('Failed to resend email. Please try again.');
+    }
+
+    btn.disabled = false;
+  });
+</script>
+
+{{> footer}}

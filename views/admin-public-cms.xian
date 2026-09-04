@@ -1,0 +1,571 @@
+<!-- Admin Public CMS Content -->
+<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="container mx-auto px-4">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Public CMS Management</h1>
+      <p class="text-gray-600 dark:text-gray-400">Manage public-facing content sections for your landing page</p>
+    </div>
+
+    <!-- Success/Error Messages -->
+    {{#if success}}
+    <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
+      {{success}}
+    </div>
+    {{/if}}
+
+    {{#if error}}
+    <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
+      {{error}}
+    </div>
+    {{/if}}
+
+    <!-- Centered Popup Card -->
+    <div id="systemPopup" class="fixed inset-0 hidden z-50 items-center justify-center bg-black/40 px-4 py-6">
+      <div class="w-full max-w-xl rounded-3xl border border-red-200 bg-white p-6 shadow-2xl ring-1 ring-black/10">
+        <div class="flex items-center gap-4 mb-4">
+          <div id="systemPopupIcon" class="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-600 text-white text-xl">✓</div>
+          <div>
+            <h3 id="systemPopupTitle" class="text-xl font-semibold text-gray-900">System Notification</h3>
+            <p id="systemPopupSubtitle" class="text-sm text-gray-500">Your update was successful.</p>
+          </div>
+        </div>
+        <p id="systemPopupMessage" class="text-gray-700 leading-relaxed mb-6"></p>
+        <div class="flex flex-wrap gap-3 justify-end">
+          <button id="systemPopupCancel" type="button" class="hidden rounded-full border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">Cancel</button>
+          <button id="systemPopupConfirm" type="button" class="rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 transition">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs/Sections -->
+    <div class="bg-white rounded-lg shadow">
+      <!-- Tab Navigation -->
+      <div class="border-b border-gray-200">
+        <div class="flex overflow-x-auto">
+          {{#each content}}
+          <button 
+            class="tab-button px-6 py-4 font-medium text-gray-700 border-b-2 border-transparent hover:border-blue-500 transition"
+            data-section="{{section}}"
+            style="{{#equals @index 0}}border-bottom-color: #3B82F6;{{/equals}}">
+            {{section}}
+          </button>
+          {{/each}}
+        </div>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="p-8">
+        {{#each content}}
+        <div class="tab-content hidden" data-section="{{section}}" style="{{#equals @index 0}}display: block;{{/equals}}">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">{{section}} Section</h2>
+            <p class="text-gray-600">Last updated: {{formatDate updatedAt}}</p>
+          </div>
+
+          <form class="edit-content-form" data-section="{{section}}">
+            <!-- Title -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+              <input 
+                type="text" 
+                name="title" 
+                value="{{title}}" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Section title">
+            </div>
+
+            <!-- Subtitle -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Subtitle</label>
+              <input 
+                type="text" 
+                name="subtitle" 
+                value="{{subtitle}}" 
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Section subtitle">
+            </div>
+
+            <!-- Description -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea 
+                name="description" 
+                rows="5"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Section description">{{description}}</textarea>
+            </div>
+
+            <!-- Image Upload -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Upload Image from device</label>
+              <div class="flex gap-2 items-center mb-2">
+                <input type="file" accept="image/*" class="upload-image-input block w-80 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700" />
+                <button type="button" class="upload-image-btn px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Upload</button>
+              </div>
+              <div class="text-xs text-gray-500 mb-4">Upload an image and save the section. No image URL is required.</div>
+              <input type="hidden" name="imageUrl" class="upload-image-url-hidden" value="{{imageUrl}}" />
+              <div class="edit-upload-status text-sm text-green-600 mb-2"></div>
+              <div class="edit-upload-preview mt-2 max-w-xs"></div>
+              {{#if imageUrl}}
+              <div class="mt-2 max-w-xs">
+                <img src="{{imageUrl}}" alt="{{section}}" class="rounded-lg max-h-48 object-cover">
+              </div>
+              {{/if}}
+            </div>
+
+            <!-- Layout -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Layout</label>
+              <select name="layout" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="">Default (image left)</option>
+                <option value="image-left" {{#equals metadata.layout "image-left"}}selected{{/equals}}>Image left</option>
+                <option value="image-right" {{#equals metadata.layout "image-right"}}selected{{/equals}}>Image right</option>
+                <option value="no-image" {{#equals metadata.layout "no-image"}}selected{{/equals}}>No image</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-2">Controls whether the section shows an image on the left or right (or no image).</p>
+            </div>
+
+            <!-- Primary Button -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Primary Button Text</label>
+                <input 
+                  type="text" 
+                  name="primaryButtonText" 
+                  value="{{primaryButtonText}}" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Request Blood">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Primary Button Link</label>
+                <input 
+                  type="text" 
+                  name="primaryButtonLink" 
+                  value="{{primaryButtonLink}}" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="/request-blood">
+              </div>
+            </div>
+
+            <!-- Secondary Button -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Secondary Button Text</label>
+                <input 
+                  type="text" 
+                  name="secondaryButtonText" 
+                  value="{{secondaryButtonText}}" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Become a Donor">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Secondary Button Link</label>
+                <input 
+                  type="text" 
+                  name="secondaryButtonLink" 
+                  value="{{secondaryButtonLink}}" 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="/register">
+              </div>
+            </div>
+
+            <!-- Active Status -->
+            <div class="mb-6">
+              <label class="flex items-center">
+                <input 
+                  type="checkbox" 
+                  name="isActive" 
+                  {{#if isActive}}checked{{/if}}
+                  class="rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500">
+                <span class="ml-2 text-sm text-gray-700">Active (Show on public page)</span>
+              </label>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex gap-4">
+              <button 
+                type="submit" 
+                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                Save Changes
+              </button>
+              <button 
+                type="button" 
+                data-section="{{section}}"
+                class="delete-section-btn px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
+                Delete Section
+              </button>
+            </div>
+          </form>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+
+    <!-- Add New Section -->
+    <div class="mt-8 bg-white rounded-lg shadow p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Add New Content Section</h2>
+      <form id="add-content-form" class="grid grid-cols-1 gap-6">
+        <!-- Section Name -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Section Name (e.g., testimonials, services)</label>
+          <input 
+            type="text" 
+            name="section" 
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="section-name">
+        </div>
+
+        <!-- Title -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+          <input 
+            type="text" 
+            name="title" 
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Section title">
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <textarea 
+            name="description" 
+            rows="4"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Section description"></textarea>
+        </div>
+
+        <!-- Upload Image from device (Add form) -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Upload Image from device</label>
+          <div class="flex gap-2 items-center mb-2">
+            <input id="add-upload-input" type="file" accept="image/*" class="block w-80 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700" />
+            <button type="button" id="add-upload-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Upload</button>
+          </div>
+          <div class="text-xs text-gray-500 mb-4">Upload an image from your device. No URL entry is required.</div>
+          <input id="add-image-url" type="hidden" name="imageUrl" />
+          <div id="add-upload-status" class="text-sm text-green-600 mb-2"></div>
+          <div id="add-upload-preview" class="mt-2 max-w-xs"></div>
+        </div>
+
+        <!-- Layout -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Layout</label>
+          <select name="layout" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">Default (image left)</option>
+            <option value="image-left">Image left</option>
+            <option value="image-right">Image right</option>
+            <option value="no-image">No image</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-2">Choose how the image and text are arranged for this section.</p>
+        </div>
+
+        <button 
+          type="submit" 
+          class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
+          Create Section
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-button').forEach(button => {
+  button.addEventListener('click', function() {
+    const section = this.dataset.section;
+    
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-button').forEach(el => el.style.borderBottomColor = 'transparent');
+    
+    // Show selected tab
+    document.querySelector(`[data-section="${section}"].tab-content`).style.display = 'block';
+    this.style.borderBottomColor = '#3B82F6';
+  });
+});
+
+const popup = document.getElementById('systemPopup');
+const popupIcon = document.getElementById('systemPopupIcon');
+const popupTitle = document.getElementById('systemPopupTitle');
+const popupSubtitle = document.getElementById('systemPopupSubtitle');
+const popupMessage = document.getElementById('systemPopupMessage');
+const popupConfirm = document.getElementById('systemPopupConfirm');
+const popupCancel = document.getElementById('systemPopupCancel');
+let popupConfirmCallback = null;
+
+function showSystemPopup(title, subtitle, message, options = {}) {
+  if (!popup) return;
+
+  popupTitle.textContent = title;
+  popupSubtitle.textContent = subtitle;
+  popupMessage.innerHTML = message;
+
+  const type = options.type || 'info';
+  if (type === 'success') {
+    popupIcon.textContent = '✓';
+    popupIcon.className = 'flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white text-xl';
+  } else if (type === 'error') {
+    popupIcon.textContent = '⚠️';
+    popupIcon.className = 'flex h-12 w-12 items-center justify-center rounded-2xl bg-red-600 text-white text-xl';
+  } else {
+    popupIcon.textContent = 'ℹ️';
+    popupIcon.className = 'flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white text-xl';
+  }
+
+  if (options.confirm) {
+    popupConfirm.textContent = options.confirmText || 'Confirm';
+    popupCancel.textContent = options.cancelText || 'Cancel';
+    popupCancel.classList.remove('hidden');
+    popupConfirm.classList.remove('bg-red-600', 'hover:bg-red-700');
+    popupConfirm.classList.add('bg-red-600', 'hover:bg-red-700');
+    popupConfirmCallback = options.onConfirm || null;
+  } else {
+    popupCancel.classList.add('hidden');
+    popupConfirm.textContent = options.confirmText || 'OK';
+    popupConfirmCallback = options.onConfirm || null;
+  }
+
+  popup.classList.remove('hidden');
+}
+
+function hideSystemPopup() {
+  if (!popup) return;
+  popup.classList.add('hidden');
+  popupConfirmCallback = null;
+}
+
+popupConfirm?.addEventListener('click', () => {
+  if (popupConfirmCallback) {
+    popupConfirmCallback();
+  }
+  hideSystemPopup();
+});
+
+popupCancel?.addEventListener('click', hideSystemPopup);
+
+// Edit content form submission
+document.querySelectorAll('.edit-content-form').forEach(form => {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const section = form.dataset.section;
+    const formData = new FormData(form);
+    
+    const data = {
+      title: formData.get('title') || '',
+      subtitle: formData.get('subtitle') || '',
+      description: formData.get('description') || '',
+      primaryButtonText: formData.get('primaryButtonText') || '',
+      primaryButtonLink: formData.get('primaryButtonLink') || '',
+      secondaryButtonText: formData.get('secondaryButtonText') || '',
+      secondaryButtonLink: formData.get('secondaryButtonLink') || '',
+      imageUrl: formData.get('imageUrl') || null,
+      isActive: formData.get('isActive') === 'on',
+      metadata: {
+        layout: formData.get('layout') || null
+      }
+    };
+
+    try {
+      const response = await fetch(`/api/admin/public-content/${section}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        showSystemPopup('Content Updated', 'Public CMS update complete', 'The changes were saved and will display on the public site once the page refreshes.');
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        showSystemPopup('Update Failed', 'Unable to save changes', result.message || 'Please check the values and try again.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showSystemPopup('Update Failed', 'Unable to save changes', 'An unexpected error occurred while saving the content.');
+    }
+  });
+});
+
+// Delete section
+document.querySelectorAll('.delete-section-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const section = this.dataset.section;
+
+    showSystemPopup(
+      'Confirm Delete',
+      'Remove this CMS section',
+      `Are you sure you want to delete the section <strong>${section}</strong>? This will deactivate it from the public landing page.`,
+      {
+        type: 'error',
+        confirm: true,
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        onConfirm: async () => {
+          try {
+            const response = await fetch(`/api/admin/public-content/${section}`, {
+              method: 'DELETE'
+            });
+
+            const result = await response.json();
+            if (result.success) {
+              showSystemPopup('Section Deleted', 'Public CMS section removed', 'The section has been deactivated and will no longer appear on the public site.', { type: 'success' });
+              setTimeout(() => location.reload(), 1200);
+            } else {
+              showSystemPopup('Delete Failed', 'Unable to delete section', result.message || 'Please try again later.', { type: 'error' });
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            showSystemPopup('Delete Failed', 'Unable to delete section', 'An unexpected error occurred while deleting the section.', { type: 'error' });
+          }
+        }
+      }
+    );
+  });
+});
+
+// Add new section form
+document.getElementById('add-content-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  
+  const data = {
+    section: formData.get('section').toLowerCase().replace(/\s+/g, '-'),
+    title: formData.get('title'),
+    description: formData.get('description')
+  };
+  // include layout metadata when creating
+  const layout = formData.get('layout');
+  if (layout) data.metadata = { layout };
+
+  // include imageUrl if any (from hidden input filled after upload)
+  const addImageUrlEl = document.getElementById('add-image-url');
+  if (addImageUrlEl && addImageUrlEl.value) {
+    data.imageUrl = addImageUrlEl.value;
+  }
+
+  try {
+    const response = await fetch('/api/admin/public-content', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      showSystemPopup('Section Created', 'New public section added', 'The section has been created and is available for public publishing.');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      showSystemPopup('Creation Failed', 'Unable to create section', result.message || 'Please try again and verify all required fields.');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showSystemPopup('Creation Failed', 'Unable to create section', 'An unexpected error occurred while creating the section.');
+  }
+});
+
+// Upload image from device
+document.querySelectorAll('.tab-content').forEach(tab => {
+  const uploadBtn = tab.querySelector('.upload-image-btn');
+  const fileInput = tab.querySelector('.upload-image-input');
+  const imageUrlInput = tab.querySelector('input[name="imageUrl"]');
+  const preview = tab.querySelector('img');
+
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) { showSystemPopup('Upload Required', 'No file selected', 'Please choose an image file to upload.'); return; }
+
+      const fd = new FormData();
+      fd.append('image', file);
+
+      try {
+        const res = await fetch('/api/admin/upload-image', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: fd
+        });
+        const result = await res.json();
+        if (result.success && result.url) {
+          // populate imageUrl input and show preview
+          if (imageUrlInput) imageUrlInput.value = result.url;
+          if (preview) {
+            preview.src = result.url;
+          } else {
+            const previewContainer = tab.querySelector('.edit-upload-preview');
+            if (previewContainer) {
+              previewContainer.innerHTML = `<img src="${result.url}" alt="Uploaded image" class="rounded-lg max-h-48 object-cover" />`;
+            }
+          }
+          const status = tab.querySelector('.edit-upload-status');
+          if (status) status.textContent = `Uploaded: ${result.url}`;
+          showSystemPopup('Upload Complete', 'Image uploaded successfully', 'Your image will be attached when you save the section.');
+        } else {
+          const errorMessage = result.message || result.error || result.details || 'Unknown error';
+          showSystemPopup('Upload Failed', 'Unable to upload image', errorMessage);
+        }
+      } catch (err) {
+        console.error('Upload error', err);
+        showSystemPopup('Upload Failed', 'Unable to upload image', 'An unexpected error occurred during the upload.');
+      }
+    });
+  }
+});
+
+// Upload handler for Add New Section form
+const addUploadBtn = document.getElementById('add-upload-btn');
+const addFileInput = document.getElementById('add-upload-input');
+const addImageUrlInput = document.getElementById('add-image-url');
+
+if (addUploadBtn && addFileInput) {
+  addUploadBtn.addEventListener('click', async () => {
+    const file = addFileInput.files[0];
+if (!file) { showSystemPopup('Upload Required', 'No file selected', 'Please choose an image file to upload.'); return; }
+
+      const fd = new FormData();
+      fd.append('image', file);
+
+      try {
+        const res = await fetch('/api/admin/upload-image', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: fd
+        });
+        const result = await res.json();
+        if (result.success && result.url) {
+          if (addImageUrlInput) addImageUrlInput.value = result.url;
+          const status = document.getElementById('add-upload-status');
+          const preview = document.getElementById('add-upload-preview');
+          if (status) status.textContent = `Uploaded: ${result.url}`;
+          if (preview) preview.innerHTML = `<img src="${result.url}" alt="Uploaded image" class="rounded-lg max-h-48 object-cover" />`;
+          showSystemPopup('Upload Complete', 'Image uploaded successfully', 'Your image will be attached when you create the section.');
+        } else {
+          const errorMessage = result.message || result.error || result.details || 'Unknown error';
+          showSystemPopup('Upload Failed', 'Unable to upload image', errorMessage);
+        }
+      } catch (err) {
+        console.error('Upload error', err);
+        showSystemPopup('Upload Failed', 'Unable to upload image', 'An unexpected error occurred during the upload.');
+    }
+  });
+}
+
+// Helper function to format dates
+function formatDate(dateString) {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+</script>

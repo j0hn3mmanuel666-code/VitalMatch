@@ -1,0 +1,97 @@
+<!-- Admin Donors Content -->
+<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="container mx-auto px-4">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Manage Donors</h1>
+      <p class="text-gray-600 dark:text-gray-400">View and manage all registered blood donors</p>
+    </div>
+    
+    <!-- Filter Tabs & Blood Type Dropdown -->
+    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none mb-6 flex flex-col sm:flex-row justify-between items-center px-4 sm:px-0">
+      <div class="flex border-b sm:border-none w-full sm:w-auto overflow-x-auto">
+        <a href="/admin/donors?filter={{#if bloodType}}&bloodType={{bloodType}}{{/if}}" class="px-4 sm:px-6 py-4 font-semibold whitespace-nowrap {{#unless filter}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/unless}}">
+          All Donors
+        </a>
+        <a href="/admin/donors?filter=available{{#if bloodType}}&bloodType={{bloodType}}{{/if}}" class="px-4 sm:px-6 py-4 font-semibold whitespace-nowrap {{#if (eq filter 'available')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
+          Available
+        </a>
+        <a href="/admin/donors?filter=unavailable{{#if bloodType}}&bloodType={{bloodType}}{{/if}}" class="px-4 sm:px-6 py-4 font-semibold whitespace-nowrap {{#if (eq filter 'unavailable')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
+          Unavailable
+        </a>
+      </div>
+      
+      <!-- Blood Type Filter -->
+      <div class="flex items-center space-x-2 py-3 sm:py-0 sm:pr-6">
+        <label for="bloodTypeFilter" class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Blood Type:</label>
+        <select id="bloodTypeFilter" onchange="window.location.href='/admin/donors?filter={{#if filter}}{{filter}}{{/if}}&bloodType=' + this.value" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 dark:bg-[#27272a] dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 outline-none">
+          <option value="">All Types</option>
+          <option value="A+" {{#if (eq bloodType 'A+')}}selected{{/if}}>A+</option>
+          <option value="A-" {{#if (eq bloodType 'A-')}}selected{{/if}}>A-</option>
+          <option value="B+" {{#if (eq bloodType 'B+')}}selected{{/if}}>B+</option>
+          <option value="B-" {{#if (eq bloodType 'B-')}}selected{{/if}}>B-</option>
+          <option value="O+" {{#if (eq bloodType 'O+')}}selected{{/if}}>O+</option>
+          <option value="O-" {{#if (eq bloodType 'O-')}}selected{{/if}}>O-</option>
+          <option value="AB+" {{#if (eq bloodType 'AB+')}}selected{{/if}}>AB+</option>
+          <option value="AB-" {{#if (eq bloodType 'AB-')}}selected{{/if}}>AB-</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- Donors Table -->
+    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
+      {{#if donors.length}}
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+          <thead class="bg-gray-50 dark:bg-[#27272a]">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blood Type</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gender</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Age</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Registered</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-200 dark:divide-gray-800">
+            {{#each donors}}
+              <tr class="hover:bg-gray-50 dark:bg-[#27272a]">
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">#{{id}}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{fullName}}</td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <span class="text-lg font-bold text-red-600">{{bloodType}}</span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{gender}}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{age}}</td>
+                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{{city}}, {{province}}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{{mobileNumber}}</td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  {{#if isAvailable}}
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">Available</span>
+                  {{else}}
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-[#09090b] text-gray-700 dark:text-gray-300">Unavailable</span>
+                  {{/if}}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{createdAt}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+        <div class="text-center py-12">
+          <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">No donors found</p>
+          <p class="text-gray-400">Registered donors will appear here</p>
+        </div>
+      {{/if}}
+    </div>
+    
+  </div>
+</div>

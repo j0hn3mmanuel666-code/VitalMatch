@@ -1,0 +1,685 @@
+<!-- Admin Requests Content -->
+<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="container mx-auto px-4">
+
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Manage Blood Requests</h1>
+        <p class="text-gray-600 dark:text-gray-400">View and manage all blood requests in the system</p>
+      </div>
+      <a href="/admin/new-blood-request"
+        class="inline-flex items-center space-x-2 bg-red-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-700 transition-all duration-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>New Request</span>
+      </a>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none mb-6">
+      <div class="flex border-b">
+        <a href="/admin/requests" class="px-6 py-4 font-semibold {{#unless filter}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/unless}}">
+          All Requests
+        </a>
+        <a href="/admin/requests?filter=active" class="px-6 py-4 font-semibold {{#if (eq filter 'active')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
+          Active
+        </a>
+        <a href="/admin/requests?filter=fulfilled" class="px-6 py-4 font-semibold {{#if (eq filter 'fulfilled')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
+          Fulfilled
+        </a>
+        <a href="/admin/requests?filter=cancelled" class="px-6 py-4 font-semibold {{#if (eq filter 'cancelled')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
+          Cancelled
+        </a>
+      </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div id="bulkActions" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <span class="text-blue-800 font-semibold">Bulk Actions</span>
+        <div class="space-x-2">
+          <button onclick="bulkFulfill()"
+            class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition">
+            Mark as Fulfilled
+          </button>
+          <button onclick="bulkDelete()"
+            class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">
+            Delete Selected
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Requests Table -->
+    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
+      {{#if requests.length}}
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+          <thead class="bg-gray-50 dark:bg-[#27272a]/80 backdrop-blur">
+            <tr>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest w-12">
+                <input type="checkbox" id="selectAll" onchange="selectAllRequests()"
+                  class="rounded border-gray-300 text-red-600 focus:ring-red-500 shadow-sm dark:shadow-none transition">
+              </th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                ID</th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                Patient</th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">
+                Blood Type</th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">
+                Units</th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                Hospital</th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                Location</th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                Urgency</th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                Status</th>
+              <th
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">
+                Matches</th>
+              <th
+                class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest pr-6">
+                Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-100 dark:divide-gray-800">
+            {{#each requests}}
+            <tr class="hover:bg-blue-50/30 transition-colors duration-200 group">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" name="selectedRequests" value="{{id}}" onchange="updateBulkActionsVisibility()"
+                  class="rounded border-gray-300 text-red-600 focus:ring-red-500 shadow-sm dark:shadow-none transition">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-600 dark:text-gray-400">#{{id}}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                {{patientName}}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex justify-center">
+                  <div
+                    class="flex items-center justify-center w-10 h-10 rounded-full bg-red-50/80 text-red-600 font-extrabold text-sm shadow-sm dark:shadow-none border border-red-100">
+                    {{bloodType}}
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-400 text-center">
+                {{unitsRequired}}</td>
+              <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-medium">{{hospitalName}}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{city}}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                {{#if (eq urgency 'critical')}}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 border border-red-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse"></span>Critical</span>
+                {{else if (eq urgency 'urgent')}}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-orange-500 mr-1.5"></span>Urgent</span>
+                {{else if (eq urgency 'high')}}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>High</span>
+                {{else}}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Moderate</span>
+                {{/if}}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                {{#if (eq status 'active')}}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>Active</span>
+                {{else if (eq status 'fulfilled')}}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:shadow-none"><svg
+                    class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>Fulfilled</span>
+                {{else if (eq status 'cancelled')}}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-gray-50 dark:bg-[#27272a] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">Cancelled</span>
+                {{else}}
+                <span
+                  class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200 shadow-sm dark:shadow-none">Pending</span>
+                {{/if}}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-center">
+                {{#if matchingDonorsCount}}
+                <button type="button" data-request-id="{{id}}"
+                  class="show-donor-btn inline-flex items-center justify-center px-3 py-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-xs font-semibold hover:from-blue-600 hover:to-blue-700 transition shadow-sm dark:shadow-none hover:shadow-md dark:shadow-none transform hover:-translate-y-0.5">
+                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  {{matchingDonorsCount}} Donors
+                </button>
+                {{else}}
+                <span
+                  class="text-xs text-gray-400 font-medium px-2 py-1 bg-gray-50 dark:bg-[#27272a] rounded-md border border-gray-100 dark:border-gray-800">No
+                  matches</span>
+                {{/if}}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-right pr-6">
+                <div class="flex items-center justify-end space-x-2">
+                  <a href="/view-blood-request/{{id}}"
+                    class="p-1.5 text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 hover:text-blue-800 transition tooltip-trigger"
+                    title="View details">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </a>
+                  {{#unless (eq status 'fulfilled')}}
+                  {{#unless (eq status 'cancelled')}}
+                  <button type="button"
+                    class="fulfill-btn p-1.5 text-green-600 bg-green-50 rounded-md hover:bg-green-100 hover:text-green-800 transition tooltip-trigger"
+                    data-request-id="{{id}}" title="Mark fulfilled">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                  {{/unless}}
+                  {{/unless}}
+                  <button type="button" onclick="deleteRequest('{{id}}')"
+                    class="p-1.5 text-red-600 bg-red-50 rounded-md hover:bg-red-100 hover:text-red-800 transition delete-btn tooltip-trigger"
+                    data-request-id="{{id}}" title="Delete">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+      <div class="text-center py-12">
+        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">No blood requests found</p>
+        <p class="text-gray-400">Blood requests will appear here as they are submitted</p>
+      </div>
+      {{/if}}
+    </div>
+  </div>
+</div>
+
+<!-- Donor Modals -->
+{{#each requests}}
+{{#if matchingDonorsCount}}
+<div id="donor-modal-{{id}}" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6"
+  style="z-index: 9999;">
+  <!-- Backdrop -->
+  <div class="close-donor-modal-backdrop absolute inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity"
+    data-request-id="{{id}}"></div>
+  <!-- Modal Panel -->
+  <div
+    class="relative bg-white dark:bg-[#18181b] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden transform transition-all">
+    <div
+      class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-[#27272a]/80">
+      <div>
+        <h3 class="text-xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">Matching Donors</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">For Request #{{id}} • <span
+            class="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">{{bloodType}}</span></p>
+      </div>
+      <button type="button" data-request-id="{{id}}"
+        class="close-donor-modal-btn text-gray-400 hover:text-gray-600 dark:text-gray-400 hover:bg-gray-200 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 bg-gray-50 dark:bg-[#27272a]/50">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {{#each matchingDonors}}
+        <div
+          class="border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:shadow-md dark:shadow-none hover:border-blue-300 transition bg-white dark:bg-[#18181b] relative overflow-hidden group">
+          <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-400 to-blue-600"></div>
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <h4 class="font-bold text-gray-900 dark:text-gray-100 text-lg">{{fullName}}</h4>
+              <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-0.5">{{city}},
+                {{province}}</p>
+            </div>
+            <div class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded text-sm font-bold border border-blue-100">
+              {{../bloodType}}</div>
+          </div>
+          <div class="space-y-2 mb-5">
+            <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center font-medium"><span
+                class="w-5 text-center mr-2 opacity-70">📱</span> {{mobileNumber}}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 flex items-center truncate font-medium"
+              title="{{email}}"><span class="w-5 text-center mr-2 opacity-70">✉️</span> {{email}}</p>
+          </div>
+          <button type="button" data-request-id="{{../id}}" data-user-id="{{userId}}"
+            class="notify-donor-btn w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:from-green-600 hover:to-green-700 hover:shadow-lg dark:shadow-none transition-all flex items-center justify-center space-x-2 transform hover:-translate-y-0.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span>Notify</span>
+          </button>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    <div
+      class="p-4 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#18181b] flex justify-end rounded-b-2xl">
+      <button type="button" data-request-id="{{id}}"
+        class="close-donor-modal-btn px-6 py-2.5 text-gray-600 dark:text-gray-400 font-semibold hover:bg-gray-100 dark:bg-[#09090b] hover:text-gray-900 dark:text-gray-100 rounded-lg transition-colors">Close</button>
+    </div>
+  </div>
+</div>
+{{/if}}
+{{/each}}
+
+<!-- Schedule Donation Modals -->
+{{#each requests}}
+{{#unless (eq status 'fulfilled')}}
+{{#unless (eq status 'cancelled')}}
+<div id="schedule-modal-{{id}}" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6"
+  style="z-index: 9999;">
+  <!-- Backdrop -->
+  <div
+    class="close-schedule-modal-backdrop absolute inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm transition-opacity"
+    data-request-id="{{id}}"></div>
+  <!-- Modal Panel -->
+  <div
+    class="relative bg-white dark:bg-[#18181b] rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden transform transition-all">
+    <div
+      class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-[#27272a]/80">
+      <div>
+        <h3 class="text-xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">Schedule & Fulfill</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 font-medium">For Request #{{id}} • <span
+            class="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">{{bloodType}}</span></p>
+      </div>
+      <button type="button" data-request-id="{{id}}"
+        class="close-schedule-modal-btn text-gray-400 hover:text-gray-600 dark:text-gray-400 hover:bg-gray-200 p-2 rounded-full transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <form class="schedule-form" data-request-id="{{id}}">
+      <div class="p-6 overflow-y-auto flex-1">
+        <div class="space-y-4">
+          <!-- Donor Selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign Donor
+              (Optional)</label>
+            <select name="donorId"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#09090b] dark:text-white">
+              <option value="">-- No donor assigned (Walk-in) --</option>
+              {{#each matchingDonors}}
+              <option value="{{id}}">{{fullName}} ({{mobileNumber}})</option>
+              {{/each}}
+            </select>
+          </div>
+          <!-- Units Provided -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Units Provided</label>
+            <input type="number" name="unitsProvided" value="{{unitsRequired}}" min="1" required
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#09090b] dark:text-white">
+          </div>
+          <!-- Schedule Date -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schedule Date & Time</label>
+            <input type="datetime-local" name="scheduledDate"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#09090b] dark:text-white">
+            <p class="text-xs text-gray-500 mt-1">Leave blank if fulfilling immediately.</p>
+          </div>
+          <!-- Notes -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes / Instructions</label>
+            <textarea name="notes" rows="3"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#09090b] dark:text-white"
+              placeholder="Add any instructions for the donor or hospital..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div
+        class="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#27272a]/80 flex justify-end space-x-3 rounded-b-2xl">
+        <button type="button" data-request-id="{{id}}"
+          class="close-schedule-modal-btn px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-[#18181b] border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-[#27272a] transition-colors shadow-sm">Cancel</button>
+        <button type="submit"
+          class="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-md hover:from-blue-600 hover:to-blue-700 shadow-md transition-all">Confirm
+          & Fulfill</button>
+      </div>
+    </form>
+  </div>
+</div>
+{{/unless}}
+{{/unless}}
+{{/each}}
+
+<style>
+  /* Sidebar Toggle Animation */
+  .sidebar-toggle:checked~.sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-toggle:checked~.sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+  }
+</style>
+
+<script>
+  // Test if JavaScript is working
+  console.log('Admin requests page JavaScript loaded');
+
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM fully loaded. Binding event listeners...');
+
+    // Bind all donor buttons to open modal
+    const donorButtons = document.querySelectorAll('.show-donor-btn');
+    donorButtons.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const requestId = e.currentTarget.getAttribute('data-request-id');
+        showDonors(requestId);
+      });
+    });
+
+    // Bind close modal buttons and backdrop
+    const closeElements = document.querySelectorAll('.close-donor-modal-btn, .close-donor-modal-backdrop');
+    closeElements.forEach(el => {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const requestId = e.currentTarget.getAttribute('data-request-id');
+        closeDonorModal(requestId);
+      });
+    });
+
+    // Bind notify donor buttons
+    const notifyButtons = document.querySelectorAll('.notify-donor-btn');
+    notifyButtons.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const requestId = e.currentTarget.getAttribute('data-request-id');
+        const userId = e.currentTarget.getAttribute('data-user-id');
+        contactDonor(requestId, userId);
+      });
+    });
+
+    // Bind close schedule modal buttons
+    const closeScheduleElements = document.querySelectorAll('.close-schedule-modal-btn, .close-schedule-modal-backdrop');
+    closeScheduleElements.forEach(el => {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const requestId = e.currentTarget.getAttribute('data-request-id');
+        closeScheduleModal(requestId);
+      });
+    });
+
+    // Bind fulfill buttons
+    const fulfillButtons = document.querySelectorAll('.fulfill-btn');
+    fulfillButtons.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const requestId = e.currentTarget.getAttribute('data-request-id');
+        markFulfilled(requestId);
+      });
+    });
+
+    // Bind schedule forms
+    const scheduleForms = document.querySelectorAll('.schedule-form');
+    scheduleForms.forEach(form => {
+      form.addEventListener('submit', function (e) {
+        const requestId = e.currentTarget.getAttribute('data-request-id');
+        submitSchedule(e, requestId);
+      });
+    });
+  });
+
+  // Enhanced donor contact functionality without confirm to avoid browser suppression issues
+  function contactDonor(requestId, donorUserId) {
+    console.log('Navigating to contact donor. Request ID:', requestId, 'Donor User ID:', donorUserId);
+    window.location.href = `/contact-donor/${requestId}/${donorUserId}`;
+  }
+
+  // Test function to verify JavaScript execution
+  function testDelete() {
+    alert('Delete function is working!');
+  }
+
+  function showDonors(requestId) {
+    console.log('Button clicked for request ID:', requestId);
+    const modal = document.getElementById('donor-modal-' + requestId);
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      modal.style.zIndex = '9999';
+      document.body.style.overflow = 'hidden';
+      console.log('Modal shown for request ID:', requestId);
+    } else {
+      console.error('Error: Modal element with ID donor-modal-' + requestId + ' was not found in the HTML.');
+    }
+  }
+
+  function closeDonorModal(requestId) {
+    const modal = document.getElementById('donor-modal-' + requestId);
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  }
+
+  function markFulfilled(requestId) {
+    // Open the schedule modal instead of browser confirm
+    console.log('Fulfill button clicked for request ID:', requestId);
+    const modal = document.getElementById('schedule-modal-' + requestId);
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+      modal.style.zIndex = '9999';
+      document.body.style.overflow = 'hidden';
+    } else {
+      console.error('Error: Modal element with ID schedule-modal-' + requestId + ' was not found in the HTML.');
+    }
+  }
+
+  function closeScheduleModal(requestId) {
+    const modal = document.getElementById('schedule-modal-' + requestId);
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  }
+
+  function submitSchedule(event, requestId) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    // Construct payload
+    const payload = {
+      donorId: formData.get('donorId') || null,
+      unitsProvided: formData.get('unitsProvided'),
+      scheduledDate: formData.get('scheduledDate') || null,
+      notes: formData.get('notes') || ''
+    };
+
+    fetch(`/admin/fulfill-request/${requestId}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message || 'Request updated successfully!');
+          location.reload();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        alert('Error processing request. You may have been logged out, please refresh the page. Details in console.');
+        console.error('Submit Schedule Error:', error);
+      });
+  }
+
+  function deleteRequest(requestId) {
+    console.log('Delete function called with ID:', requestId);
+
+    if (!requestId) {
+      alert('Error: No request ID provided');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete this blood request? This action cannot be undone.')) {
+      console.log('User confirmed deletion, making API call...');
+
+      fetch(`/admin/delete-request/${requestId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+        .then(response => {
+          console.log('Response received:', response.status);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Response data:', data);
+          if (data.success) {
+            alert('Blood request deleted successfully!');
+            window.location.reload();
+          } else {
+            alert('Error: ' + (data.message || 'Unknown error'));
+          }
+        })
+        .catch(error => {
+          console.error('Delete error:', error);
+          alert('Error deleting request: ' + error.message);
+        });
+    }
+  }
+
+
+  // Bulk actions functionality
+  function selectAllRequests() {
+    const checkboxes = document.querySelectorAll('input[name="selectedRequests"]');
+    const selectAllCheckbox = document.getElementById('selectAll');
+
+    checkboxes.forEach(checkbox => {
+      checkbox.checked = selectAllCheckbox.checked;
+    });
+
+    updateBulkActionsVisibility();
+  }
+
+  function updateBulkActionsVisibility() {
+    const selectedCheckboxes = document.querySelectorAll('input[name="selectedRequests"]:checked');
+    const bulkActions = document.getElementById('bulkActions');
+
+    if (selectedCheckboxes.length > 0) {
+      bulkActions.classList.remove('hidden');
+    } else {
+      bulkActions.classList.add('hidden');
+    }
+  }
+
+  function bulkFulfill() {
+    const selectedCheckboxes = document.querySelectorAll('input[name="selectedRequests"]:checked');
+    const requestIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+    if (requestIds.length === 0) {
+      alert('Please select requests to fulfill');
+      return;
+    }
+
+    if (confirm(`Mark ${requestIds.length} requests as fulfilled?`)) {
+      // Process each request
+      Promise.all(requestIds.map(id =>
+        fetch(`/admin/fulfill-request/${id}`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' }
+        }).then(r => r.json())
+      ))
+        .then(results => {
+          const successful = results.filter(r => r.success).length;
+          alert(`${successful} of ${requestIds.length} requests marked as fulfilled`);
+          location.reload();
+        })
+        .catch(error => {
+          alert('Error processing bulk fulfill');
+          console.error(error);
+        });
+    }
+  }
+
+  function bulkDelete() {
+    const selectedCheckboxes = document.querySelectorAll('input[name="selectedRequests"]:checked');
+    const requestIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+    if (requestIds.length === 0) {
+      alert('Please select requests to delete');
+      return;
+    }
+
+    if (confirm(`Delete ${requestIds.length} requests? This action cannot be undone.`)) {
+      // Process each request
+      Promise.all(requestIds.map(id =>
+        fetch(`/admin/delete-request/${id}`, {
+          method: 'DELETE',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' }
+        }).then(r => r.json())
+      ))
+        .then(results => {
+          const successful = results.filter(r => r.success).length;
+          alert(`${successful} of ${requestIds.length} requests deleted`);
+          location.reload();
+        })
+        .catch(error => {
+          alert('Error processing bulk delete');
+          console.error(error);
+        });
+    }
+  }
+</script>

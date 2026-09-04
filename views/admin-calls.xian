@@ -1,0 +1,112 @@
+<!-- Admin Calls Content -->
+<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="container mx-auto px-4">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Calls for Blood Donation</h1>
+      <p class="text-gray-600 dark:text-gray-400">Review public pledges and calls for donations submitted from the landing page</p>
+    </div>
+    
+    <!-- Filter Tabs -->
+    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none mb-6">
+      <div class="flex border-b">
+        <a href="/admin/calls" class="px-6 py-4 font-semibold {{#unless filter}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/unless}}">
+          All
+        </a>
+        <a href="/admin/calls?filter=pending" class="px-6 py-4 font-semibold {{#if (eq filter 'pending')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
+          Pending
+        </a>
+        <a href="/admin/calls?filter=contacted" class="px-6 py-4 font-semibold {{#if (eq filter 'contacted')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
+          Contacted
+        </a>
+      </div>
+    </div>
+    
+    <!-- Calls Table -->
+    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-x-auto">
+      {{#if calls.length}}
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+          <thead class="bg-gray-50 dark:bg-[#27272a]">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Patient / Organizer</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blood Type</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Details</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-200 dark:divide-gray-800">
+            {{#each calls}}
+              <tr class="hover:bg-gray-50 dark:bg-[#27272a]">
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  {{createdAt}}
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">
+                  {{fullName}}<br>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{location}}</span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <span class="text-lg font-bold text-red-600">{{bloodType}}</span>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 max-w-xs truncate">
+                  Age: {{age}} | Wt: {{weight}}kg | Sex: {{gender}} | Tattoo: {{hasTattoo}}<br>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{message}}</span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                  {{contactNumber}}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  {{#if (eq status "Pending")}}
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                  {{else}}
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">{{status}}</span>
+                  {{/if}}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                  <select onchange="updateStatus('{{id}}', this.value)" class="text-sm border-gray-300 rounded-md shadow-sm dark:shadow-none focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50">
+                    <option value="Pending" {{#if (eq status "Pending")}}selected{{/if}}>Pending</option>
+                    <option value="Reviewed" {{#if (eq status "Reviewed")}}selected{{/if}}>Reviewed</option>
+                    <option value="Contacted" {{#if (eq status "Contacted")}}selected{{/if}}>Contacted</option>
+                    <option value="Resolved" {{#if (eq status "Resolved")}}selected{{/if}}>Resolved</option>
+                  </select>
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{else}}
+        <div class="text-center py-12">
+          <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">No donation calls found</p>
+          <p class="text-gray-400">Submissions from the landing page will appear here</p>
+        </div>
+      {{/if}}
+    </div>
+    
+  </div>
+</div>
+
+<script>
+async function updateStatus(id, status) {
+  try {
+    const res = await fetch('/admin/calls/update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status })
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert('Failed to update status');
+    }
+  } catch (err) {
+    alert('Error connecting to server');
+  }
+}
+</script>

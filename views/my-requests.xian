@@ -1,0 +1,607 @@
+{{> head}}
+
+<!-- Navigation Bar -->
+<nav class="bg-white shadow-md">
+  <div class="container mx-auto px-4 py-4">
+    <div class="flex items-center justify-between">
+      <!-- Back Button & Logo/Brand -->
+      <div class="flex items-center space-x-1 sm:space-x-3">
+        <a href="javascript:history.length > 1 ? history.back() : window.location.href='/dashboard'"
+          class="p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+          </svg>
+          <a href="/dashboard" class="text-xl sm:text-2xl font-bold text-gray-800">VitalMatch</a>
+        </div>
+      </div>
+
+      <!-- User Menu -->
+      <div class="flex items-center space-x-4">
+        <a href="/dashboard" class="text-gray-700 hover:text-red-600 transition">Dashboard</a>
+        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Logout</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- My Requests Content -->
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="container mx-auto px-4">
+    <div class="max-w-6xl mx-auto">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-green-600 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold mb-2">My Requests</h1>
+            <p class="text-white/90">View and manage your blood requests and donation history</p>
+          </div>
+          <a href="/request-blood"
+            class="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg">
+            + New Request
+          </a>
+        </div>
+      </div>
+
+      <!-- Enhanced Filter Tabs with Search -->
+      <div class="bg-white rounded-xl shadow-md mb-6">
+        <div class="p-4 border-b">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <!-- Search Bar -->
+            <div class="relative flex-1 max-w-md">
+              <input type="text" id="searchInput" placeholder="Search requests..."
+                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+              <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="relative">
+              <select id="sortSelect"
+                class="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="urgency">By Urgency</option>
+                <option value="status">By Status</option>
+              </select>
+              <svg class="absolute right-2 top-2.5 h-5 w-5 text-gray-400 pointer-events-none" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex border-b overflow-x-auto">
+          <button
+            class="filter-tab px-6 py-4 font-semibold whitespace-nowrap transition-colors duration-200 text-green-600 border-b-2 border-green-600"
+            data-filter="all">
+            All Requests
+            <span class="ml-2 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs" id="countAll">0</span>
+          </button>
+          <button
+            class="filter-tab px-6 py-4 font-semibold whitespace-nowrap transition-colors duration-200 text-gray-500 hover:text-gray-700"
+            data-filter="active">
+            Active
+            <span class="ml-2 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs" id="countActive">0</span>
+          </button>
+          <button
+            class="filter-tab px-6 py-4 font-semibold whitespace-nowrap transition-colors duration-200 text-gray-500 hover:text-gray-700"
+            data-filter="fulfilled">
+            Fulfilled
+            <span class="ml-2 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs" id="countFulfilled">0</span>
+          </button>
+          <button
+            class="filter-tab px-6 py-4 font-semibold whitespace-nowrap transition-colors duration-200 text-gray-500 hover:text-gray-700"
+            data-filter="cancelled">
+            Cancelled
+            <span class="ml-2 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs" id="countCancelled">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Enhanced Request Cards with Animations -->
+      <div id="requestsContainer" class="space-y-6">
+        {{#if requests.length}}
+        {{#each requests}}
+        <div
+          class="request-card bg-white rounded-xl shadow-md p-6 border-l-4 {{#if (eq status 'active')}}border-red-500{{else if (eq status 'fulfilled')}}border-green-500{{else if (eq status 'cancelled')}}border-gray-500{{else}}border-yellow-500{{/if}} transform transition-all duration-300 hover:scale-105 hover:shadow-lg"
+          data-status="{{status}}" data-urgency="{{urgency}}" data-date="{{createdAt}}">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center space-x-3 mb-2">
+                <!-- Urgency Badge with Animation -->
+                <span
+                  class="{{#if (eq urgency 'critical')}}bg-red-100 text-red-700 animate-pulse{{else if (eq urgency 'urgent')}}bg-orange-100 text-orange-700{{else}}bg-yellow-100 text-yellow-700{{/if}} px-3 py-1 rounded-full text-sm font-semibold capitalize">{{urgency}}</span>
+                <!-- Status Badge -->
+                <span
+                  class="{{#if (eq status 'active')}}bg-green-100 text-green-700{{else if (eq status 'fulfilled')}}bg-blue-100 text-blue-700{{else if (eq status 'cancelled')}}bg-gray-100 text-gray-700{{else}}bg-yellow-100 text-yellow-700{{/if}} px-3 py-1 rounded-full text-sm font-semibold flex items-center capitalize">
+                  {{#if (eq status 'active')}}
+                  <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                  {{else if (eq status 'fulfilled')}}
+                  <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd" />
+                  </svg>
+                  {{/if}}
+                  {{status}}
+                </span>
+              </div>
+              <h3 class="text-xl font-bold text-gray-800 mb-1">Blood Request #{{id}}</h3>
+              <p class="text-gray-600 text-sm">Submitted on {{formatDate createdAt}}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-3xl font-bold {{#if (eq status 'fulfilled')}}text-green-600{{else}}text-red-600{{/if}}">
+                {{bloodType}}</p>
+              <p class="text-gray-600 text-sm">{{unitsRequired}} Units</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p class="text-gray-600 text-sm mb-1">Patient</p>
+              <p class="font-semibold text-gray-800">{{patientName}}</p>
+            </div>
+            <div>
+              <p class="text-gray-600 text-sm mb-1">Hospital</p>
+              <p class="font-semibold text-gray-800">{{hospitalName}}</p>
+            </div>
+            <div>
+              <p class="text-gray-600 text-sm mb-1">Location</p>
+              <p class="font-semibold text-gray-800">{{city}}, {{province}}</p>
+            </div>
+            <div>
+              <p class="text-gray-600 text-sm mb-1">Required By</p>
+              <p class="font-semibold text-gray-800">{{formatDate requiredByDate}}</p>
+            </div>
+          </div>
+
+          {{#if indicationOfTransfusion}}
+          <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+            <p class="text-gray-600 text-sm mb-1">Indication of Transfusion</p>
+            <p class="font-semibold text-gray-800">{{indicationOfTransfusion}}</p>
+          </div>
+          {{/if}}
+
+          {{#if bloodComponents}}
+          <div class="mb-4 p-3 bg-purple-50 rounded-lg">
+            <p class="text-gray-600 text-sm mb-2">Blood Components Required</p>
+            <div class="space-y-1">
+              {{#each bloodComponents}}
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-700 capitalize">{{type}}</span>
+                <span class="text-sm text-gray-600">{{volume}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+          {{/if}}
+
+          {{#if (eq status 'active')}}
+          <!-- Progress Bar for Active Requests -->
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-gray-600">Matching Progress</span>
+              <span class="text-sm text-gray-500">Searching for donors...</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-green-500 h-2 rounded-full transition-all duration-500 animate-pulse" style="width: 30%">
+              </div>
+            </div>
+          </div>
+          {{/if}}
+
+          <!-- Action Buttons -->
+          <div class="flex space-x-3">
+            <a href="/view-blood-request/{{id}}"
+              class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 transform hover:scale-105 text-center">
+              View Details
+            </a>
+            {{#if (eq status 'active')}}
+            <button
+              class="px-4 py-2 border border-red-300 rounded-lg text-red-600 font-semibold hover:bg-red-50 transition-all duration-200"
+              onclick="confirmCancel({{id}})">
+              Cancel Request
+            </button>
+            {{/if}}
+          </div>
+        </div>
+        {{/each}}
+        {{else}}
+        <!-- No Requests State -->
+        <div class="bg-white rounded-xl shadow-md p-12 text-center">
+          <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">No Blood Requests Yet</h3>
+          <p class="text-gray-600 mb-6">You haven't submitted any blood requests. Start by creating your first request.
+          </p>
+          <a href="/request-blood"
+            class="inline-flex items-center bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-all duration-200 transform hover:scale-105">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Create Blood Request
+          </a>
+        </div>
+        {{/if}}
+        <div>
+          <p class="text-gray-600 text-sm mb-1">Location</p>
+          <p class="font-semibold text-gray-800">Bongabong, Oriental Mindoro</p>
+        </div>
+        <div>
+          <p class="text-gray-600 text-sm mb-1">Fulfilled On</p>
+          <p class="font-semibold text-gray-800">January 11, 2024</p>
+        </div>
+      </div>
+
+      <!-- Success Message -->
+      <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clip-rule="evenodd" />
+          </svg>
+          <span class="text-green-800 text-sm font-semibold">Successfully matched with donor Maria Santos</span>
+        </div>
+      </div>
+
+      <div class="flex space-x-3">
+        <button
+          class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200">
+          View Details
+        </button>
+        <button
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200">
+          Thank Donor
+        </button>
+      </div>
+    </div>
+
+    <!-- No Results State -->
+    <div id="noResults" class="hidden bg-white rounded-xl shadow-md p-12 text-center">
+      <svg class="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <h3 class="text-xl font-semibold text-gray-800 mb-2">No requests found</h3>
+      <p class="text-gray-600 mb-6">Try adjusting your search or filter criteria</p>
+      <button onclick="clearFilters()"
+        class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+
+
+</div>
+</div>
+</div>
+
+{{> footer}}
+
+<!-- Cancel Confirmation Modal -->
+<div id="cancelModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform scale-95 transition-transform duration-300">
+    <div class="text-center">
+      <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+        <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">Cancel Blood Request?</h3>
+      <p class="text-gray-600 mb-6">Are you sure you want to cancel this blood request? This action cannot be undone and
+        may affect patients waiting for blood.</p>
+      <div class="flex space-x-3">
+        <button onclick="closeCancelModal()"
+          class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 transition">
+          Keep Request
+        </button>
+        <button id="confirmCancelBtn"
+          class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition">
+          Cancel Request
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Enhanced My Requests Page
+  class MyRequestsPage {
+    constructor() {
+      this.currentFilter = 'all';
+      this.currentSort = 'newest';
+      this.searchTerm = '';
+      this.requests = this.getAllRequests();
+
+      this.init();
+    }
+
+    init() {
+      this.setupEventListeners();
+      this.updateCounts();
+      this.filterAndSort();
+    }
+
+    setupEventListeners() {
+      // Filter tabs
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.setActiveFilter(e.target.dataset.filter);
+        });
+      });
+
+      // Search input
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        this.searchTerm = e.target.value.toLowerCase();
+        this.filterAndSort();
+      });
+
+      // Sort dropdown
+      document.getElementById('sortSelect').addEventListener('change', (e) => {
+        this.currentSort = e.target.value;
+        this.filterAndSort();
+      });
+
+      // Real-time updates (simulate)
+      this.startRealTimeUpdates();
+    }
+
+    getAllRequests() {
+      // Get all request cards from DOM
+      return Array.from(document.querySelectorAll('.request-card')).map(card => ({
+        element: card,
+        status: card.dataset.status,
+        urgency: card.dataset.urgency,
+        date: new Date(card.dataset.date),
+        text: card.textContent.toLowerCase()
+      }));
+    }
+
+    setActiveFilter(filter) {
+      this.currentFilter = filter;
+
+      // Update tab appearance
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        if (tab.dataset.filter === filter) {
+          tab.classList.add('text-green-600', 'border-b-2', 'border-green-600');
+          tab.classList.remove('text-gray-500');
+        } else {
+          tab.classList.remove('text-green-600', 'border-b-2', 'border-green-600');
+          tab.classList.add('text-gray-500');
+        }
+      });
+
+      this.filterAndSort();
+    }
+
+    filterAndSort() {
+      let filteredRequests = this.requests;
+
+      // Apply status filter
+      if (this.currentFilter !== 'all') {
+        filteredRequests = filteredRequests.filter(req => req.status === this.currentFilter);
+      }
+
+      // Apply search filter
+      if (this.searchTerm) {
+        filteredRequests = filteredRequests.filter(req => req.text.includes(this.searchTerm));
+      }
+
+      // Apply sorting
+      filteredRequests.sort((a, b) => {
+        switch (this.currentSort) {
+          case 'newest':
+            return b.date - a.date;
+          case 'oldest':
+            return a.date - b.date;
+          case 'urgency':
+            const urgencyOrder = { critical: 3, urgent: 2, moderate: 1 };
+            return (urgencyOrder[b.urgency] || 0) - (urgencyOrder[a.urgency] || 0);
+          case 'status':
+            return a.status.localeCompare(b.status);
+          default:
+            return 0;
+        }
+      });
+
+      this.displayRequests(filteredRequests);
+    }
+
+    displayRequests(filteredRequests) {
+      const container = document.getElementById('requestsContainer');
+      const noResults = document.getElementById('noResults');
+
+      // Hide all requests first
+      this.requests.forEach(req => {
+        req.element.style.display = 'none';
+      });
+
+      if (filteredRequests.length === 0) {
+        noResults.classList.remove('hidden');
+      } else {
+        noResults.classList.add('hidden');
+
+        // Show filtered requests with staggered animation
+        filteredRequests.forEach((req, index) => {
+          req.element.style.display = 'block';
+          req.element.style.opacity = '0';
+          req.element.style.transform = 'translateY(20px)';
+
+          setTimeout(() => {
+            req.element.style.transition = 'all 0.3s ease-out';
+            req.element.style.opacity = '1';
+            req.element.style.transform = 'translateY(0)';
+          }, index * 100);
+        });
+      }
+    }
+
+    updateCounts() {
+      const counts = {
+        all: this.requests.length,
+        active: this.requests.filter(req => req.status === 'active').length,
+        fulfilled: this.requests.filter(req => req.status === 'fulfilled').length,
+        cancelled: this.requests.filter(req => req.status === 'cancelled').length
+      };
+
+      Object.keys(counts).forEach(status => {
+        const countElement = document.getElementById(`count${status.charAt(0).toUpperCase() + status.slice(1)}`);
+        if (countElement) {
+          countElement.textContent = counts[status];
+        }
+      });
+    }
+
+    startRealTimeUpdates() {
+      // Simulate real-time updates every 30 seconds
+      setInterval(() => {
+        this.simulateStatusUpdate();
+      }, 30000);
+    }
+
+    simulateStatusUpdate() {
+      // Randomly update progress bars for active requests
+      document.querySelectorAll('[data-status="active"] .bg-green-500').forEach(progressBar => {
+        const currentWidth = parseInt(progressBar.style.width) || 0;
+        const newWidth = Math.min(currentWidth + Math.random() * 20, 100);
+        progressBar.style.width = newWidth + '%';
+
+        // Update donor count
+        const donorCount = progressBar.closest('.request-card').querySelector('.text-gray-500');
+        if (donorCount && donorCount.textContent.includes('donors found')) {
+          const count = Math.floor(newWidth / 20);
+          donorCount.textContent = `${count} donors found`;
+        }
+      });
+    }
+  }
+
+  // Cancel Request Functions
+  let requestToCancel = null;
+
+  function confirmCancel(requestId) {
+    requestToCancel = requestId;
+    const modal = document.getElementById('cancelModal');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      modal.querySelector('.transform').classList.remove('scale-95');
+      modal.querySelector('.transform').classList.add('scale-100');
+    }, 10);
+  }
+
+  function closeCancelModal() {
+    const modal = document.getElementById('cancelModal');
+    modal.querySelector('.transform').classList.remove('scale-100');
+    modal.querySelector('.transform').classList.add('scale-95');
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 300);
+    requestToCancel = null;
+  }
+
+  // Handle actual cancellation
+  document.getElementById('confirmCancelBtn').addEventListener('click', async () => {
+    if (!requestToCancel) return;
+
+    try {
+      // Show loading state
+      const btn = document.getElementById('confirmCancelBtn');
+      const originalText = btn.textContent;
+      btn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 inline" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Cancelling...';
+      btn.disabled = true;
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Update UI
+      const requestCard = document.querySelector(`[data-request-id="${requestToCancel}"]`);
+      if (requestCard) {
+        requestCard.dataset.status = 'cancelled';
+        // Update visual appearance
+        requestCard.classList.remove('border-red-500', 'border-green-500');
+        requestCard.classList.add('border-gray-400');
+
+        // Update status badge
+        const statusBadge = requestCard.querySelector('.bg-green-100');
+        if (statusBadge) {
+          statusBadge.className = 'bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold';
+          statusBadge.textContent = 'Cancelled';
+        }
+
+        // Remove cancel button
+        const cancelBtn = requestCard.querySelector('.border-red-300');
+        if (cancelBtn) {
+          cancelBtn.remove();
+        }
+      }
+
+      // Show success notification
+      showNotification('Request cancelled successfully', 'success');
+
+      // Close modal
+      closeCancelModal();
+
+      // Refresh page data
+      window.location.reload();
+
+    } catch (error) {
+      showNotification('Failed to cancel request. Please try again.', 'error');
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  });
+
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('sortSelect').value = 'newest';
+
+    const page = new MyRequestsPage();
+    page.searchTerm = '';
+    page.currentSort = 'newest';
+    page.setActiveFilter('all');
+  }
+
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 ${type === 'error' ? 'bg-red-600 text-white' :
+      type === 'success' ? 'bg-green-600 text-white' :
+        'bg-blue-600 text-white'
+      }`;
+    notification.textContent = message;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.classList.remove('translate-x-full');
+    }, 10);
+
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+      setTimeout(() => notification.remove(), 300);
+    }, 5000);
+  }
+
+  // Initialize page when DOM is loaded
+  document.addEventListener('DOMContentLoaded', () => {
+    new MyRequestsPage();
+  });
+</script>

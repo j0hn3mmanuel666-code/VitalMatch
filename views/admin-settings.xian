@@ -1,0 +1,509 @@
+<!-- Settings Content -->
+<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="container mx-auto px-4 max-w-4xl">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Settings</h1>
+      <p class="text-gray-600 dark:text-gray-400">Manage system configuration and preferences</p>
+    </div>
+
+    <!-- Settings Tabs -->
+    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
+      <div class="border-b border-gray-200 dark:border-gray-800">
+        <div class="flex flex-wrap">
+          <button class="settings-tab px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-700 active" data-tab="general">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            General
+          </button>
+          <button class="settings-tab px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-700" data-tab="email">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Email
+          </button>
+          <button class="settings-tab px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-700" data-tab="notifications">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            Notifications
+          </button>
+          <button class="settings-tab px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-700" data-tab="security">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Security
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6">
+        
+        <!-- General Settings Tab -->
+        <div id="general-tab" class="settings-content">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">General Settings</h2>
+          
+          <form id="generalSettingsForm" class="space-y-6">
+            <!-- Application Name -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Application Name</label>
+              <input type="text" id="appName" name="appName" value="VitalMatch" 
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Name of your application</p>
+            </div>
+
+            <!-- System Status -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">System Status</label>
+              <select id="systemStatus" name="systemStatus" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+                <option value="online">Online</option>
+                <option value="maintenance">Maintenance Mode</option>
+                <option value="offline">Offline</option>
+              </select>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Current system status</p>
+            </div>
+
+            <!-- Time Zone -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Zone</label>
+              <select id="timeZone" name="timeZone" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+                <option value="UTC">UTC</option>
+                <option value="Asia/Manila" selected>Asia/Manila (Philippines)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="Europe/London">Europe/London</option>
+              </select>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Select your time zone</p>
+            </div>
+
+            <!-- Database Status -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-3">Database Status</h3>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Status</p>
+                  <p class="text-lg font-semibold text-green-600 dark:text-green-400">Connected</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Database</p>
+                  <p class="text-sm text-gray-700 dark:text-gray-300">MySQL</p>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+              Save Changes
+            </button>
+          </form>
+        </div>
+
+        <!-- Email Settings Tab -->
+        <div id="email-tab" class="settings-content hidden">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Email Configuration</h2>
+          
+          <form id="emailSettingsForm" class="space-y-6">
+            <!-- SMTP Server -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SMTP Server</label>
+              <input type="text" id="smtpServer" name="smtpServer" placeholder="smtp.gmail.com" 
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">SMTP server address for sending emails</p>
+            </div>
+
+            <!-- SMTP Port -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SMTP Port</label>
+                <input type="number" id="smtpPort" name="smtpPort" placeholder="587" 
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Encryption</label>
+                <select id="emailEncryption" name="emailEncryption" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+                  <option value="tls">TLS</option>
+                  <option value="ssl">SSL</option>
+                  <option value="none">None</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Email Address -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From Email Address</label>
+              <input type="email" id="fromEmail" name="fromEmail" placeholder="noreply@vitalmatch.com" 
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Email address used for sending notifications</p>
+            </div>
+
+            <!-- Email Username -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Username</label>
+              <input type="text" id="emailUsername" name="emailUsername" placeholder="your-email@gmail.com" 
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+            </div>
+
+            <!-- Email Password -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Password</label>
+              <input type="password" id="emailPassword" name="emailPassword" placeholder="••••••••" 
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Use app password for Gmail accounts</p>
+            </div>
+
+            <!-- Test Email -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p class="text-sm text-blue-700 dark:text-blue-300 mb-3">Test your email configuration</p>
+              <button type="button" id="testEmailBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Send Test Email
+              </button>
+            </div>
+
+            <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+              Save Email Settings
+            </button>
+          </form>
+        </div>
+
+        <!-- Notifications Settings Tab -->
+        <div id="notifications-tab" class="settings-content hidden">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Notification Settings</h2>
+          
+          <form id="notificationsSettingsForm" class="space-y-6">
+            <!-- Email Notifications -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">Email Notifications</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Receive notifications via email</p>
+                </div>
+                <input type="checkbox" id="emailNotificationsEnabled" name="emailNotificationsEnabled" checked 
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+              </div>
+            </div>
+
+            <!-- Blood Request Notifications -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">Blood Request Alerts</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Notify admin on new blood requests</p>
+                </div>
+                <input type="checkbox" id="bloodRequestNotifications" name="bloodRequestNotifications" checked 
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+              </div>
+            </div>
+
+            <!-- User Registration Notifications -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">User Registration Alerts</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Notify admin on new user registrations</p>
+                </div>
+                <input type="checkbox" id="registrationNotifications" name="registrationNotifications" checked 
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+              </div>
+            </div>
+
+            <!-- System Alert Notifications -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">System Alerts</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Notify admin on system issues</p>
+                </div>
+                <input type="checkbox" id="systemAlertNotifications" name="systemAlertNotifications" checked 
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+              </div>
+            </div>
+
+            <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+              Save Notification Settings
+            </button>
+          </form>
+        </div>
+
+        <!-- Security Settings Tab -->
+        <div id="security-tab" class="settings-content hidden">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Security Settings</h2>
+          
+          <form id="securitySettingsForm" class="space-y-6">
+            <!-- Session Timeout -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Session Timeout (minutes)</label>
+              <input type="number" id="sessionTimeout" name="sessionTimeout" value="30" min="5" max="480"
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Auto-logout duration for inactive users</p>
+            </div>
+
+            <!-- Password Policy -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Minimum Password Length</label>
+              <input type="number" id="minPasswordLength" name="minPasswordLength" value="8" min="6" max="20"
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
+            </div>
+
+            <!-- Require Special Characters -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">Require Special Characters in Password</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Enforce stronger password requirements</p>
+                </div>
+                <input type="checkbox" id="requireSpecialChars" name="requireSpecialChars" checked 
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+              </div>
+            </div>
+
+            <!-- Two-Factor Authentication -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">Two-Factor Authentication (2FA)</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Require 2FA for admin accounts</p>
+                </div>
+                <input type="checkbox" id="twoFactorAuth" name="twoFactorAuth" 
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+              </div>
+            </div>
+
+            <!-- IP Whitelist -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">IP Whitelist (comma-separated)</label>
+              <textarea id="ipWhitelist" name="ipWhitelist" placeholder="192.168.1.1, 10.0.0.0/8" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"></textarea>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Leave empty to allow all IPs</p>
+            </div>
+
+            <!-- Audit Logging -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">Enable Audit Logging</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Log all admin activities</p>
+                </div>
+                <input type="checkbox" id="auditLogging" name="auditLogging" checked 
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+              </div>
+            </div>
+
+            <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+              Save Security Settings
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-4 right-4 hidden">
+  <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+    <p id="toastMessage">Settings saved successfully!</p>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  // Load current settings
+  await loadSettings();
+
+  // Tab switching
+  const tabs = document.querySelectorAll('.settings-tab');
+  const contents = document.querySelectorAll('.settings-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+      const tabName = this.dataset.tab;
+      
+      // Remove active state from all tabs
+      tabs.forEach(t => t.classList.remove('border-red-500', 'text-red-600', 'dark:text-red-400', 'active'));
+      contents.forEach(c => c.classList.add('hidden'));
+      
+      // Add active state to clicked tab
+      this.classList.add('border-red-500', 'text-red-600', 'dark:text-red-400', 'active');
+      this.style.borderBottomWidth = '2px';
+      
+      // Show corresponding content
+      document.getElementById(tabName + '-tab').classList.remove('hidden');
+    });
+  });
+
+  // Load settings from API
+  async function loadSettings() {
+    try {
+      const response = await fetch('/api/admin/settings');
+      const data = await response.json();
+      
+      if (data.success) {
+        const settings = data.settings;
+        
+        // Populate General Settings
+        if (settings.general) {
+          document.getElementById('appName').value = settings.general.appName || 'VitalMatch';
+          document.getElementById('systemStatus').value = settings.general.systemStatus || 'online';
+          document.getElementById('timeZone').value = settings.general.timeZone || 'Asia/Manila';
+        }
+        
+        // Populate Email Settings
+        if (settings.email) {
+          document.getElementById('smtpServer').value = settings.email.smtpServer || '';
+          document.getElementById('smtpPort').value = settings.email.smtpPort || '587';
+          document.getElementById('emailEncryption').value = settings.email.emailEncryption || 'tls';
+          document.getElementById('fromEmail').value = settings.email.fromEmail || '';
+          document.getElementById('emailUsername').value = settings.email.emailUsername || '';
+          document.getElementById('emailPassword').value = ''; // Never pre-fill password
+        }
+        
+        // Populate Notification Settings
+        if (settings.notifications) {
+          document.getElementById('emailNotificationsEnabled').checked = settings.notifications.emailNotificationsEnabled;
+          document.getElementById('bloodRequestNotifications').checked = settings.notifications.bloodRequestNotifications;
+          document.getElementById('registrationNotifications').checked = settings.notifications.registrationNotifications;
+          document.getElementById('systemAlertNotifications').checked = settings.notifications.systemAlertNotifications;
+        }
+        
+        // Populate Security Settings
+        if (settings.security) {
+          document.getElementById('sessionTimeout').value = settings.security.sessionTimeout || '30';
+          document.getElementById('minPasswordLength').value = settings.security.minPasswordLength || '8';
+          document.getElementById('requireSpecialChars').checked = settings.security.requireSpecialChars;
+          document.getElementById('twoFactorAuth').checked = settings.security.twoFactorAuth;
+          document.getElementById('ipWhitelist').value = settings.security.ipWhitelist || '';
+          document.getElementById('auditLogging').checked = settings.security.auditLogging;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      showToast('Error loading settings', 'error');
+    }
+  }
+
+  // Form submissions
+  document.getElementById('generalSettingsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await submitForm('/admin/settings/general', {
+      appName: document.getElementById('appName').value,
+      systemStatus: document.getElementById('systemStatus').value,
+      timeZone: document.getElementById('timeZone').value
+    }, 'General settings saved successfully!');
+  });
+
+  document.getElementById('emailSettingsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await submitForm('/admin/settings/email', {
+      smtpServer: document.getElementById('smtpServer').value,
+      smtpPort: document.getElementById('smtpPort').value,
+      emailEncryption: document.getElementById('emailEncryption').value,
+      fromEmail: document.getElementById('fromEmail').value,
+      emailUsername: document.getElementById('emailUsername').value,
+      emailPassword: document.getElementById('emailPassword').value
+    }, 'Email settings saved successfully!');
+  });
+
+  document.getElementById('notificationsSettingsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await submitForm('/admin/settings/notifications', {
+      emailNotificationsEnabled: document.getElementById('emailNotificationsEnabled').checked,
+      bloodRequestNotifications: document.getElementById('bloodRequestNotifications').checked,
+      registrationNotifications: document.getElementById('registrationNotifications').checked,
+      systemAlertNotifications: document.getElementById('systemAlertNotifications').checked
+    }, 'Notification settings saved successfully!');
+  });
+
+  document.getElementById('securitySettingsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await submitForm('/admin/settings/security', {
+      sessionTimeout: document.getElementById('sessionTimeout').value,
+      minPasswordLength: document.getElementById('minPasswordLength').value,
+      requireSpecialChars: document.getElementById('requireSpecialChars').checked,
+      twoFactorAuth: document.getElementById('twoFactorAuth').checked,
+      ipWhitelist: document.getElementById('ipWhitelist').value,
+      auditLogging: document.getElementById('auditLogging').checked
+    }, 'Security settings saved successfully!');
+  });
+
+  // Test Email Button
+  document.getElementById('testEmailBtn').addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    
+    try {
+      const response = await fetch('/admin/settings/test-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.error || 'Failed to send test email', 'error');
+      }
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      showToast('Error sending test email', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send Test Email';
+    }
+  });
+
+  // Submit form data
+  async function submitForm(url, data, successMessage) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showToast(successMessage || result.message, 'success');
+      } else {
+        showToast(result.error || 'Error saving settings', 'error');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      showToast('Error saving settings', 'error');
+    }
+  }
+
+  // Toast notification
+  function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastDiv = toast.querySelector('div');
+    
+    toastMessage.textContent = message;
+    
+    // Set color based on type
+    if (type === 'error') {
+      toastDiv.className = 'bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg';
+    } else {
+      toastDiv.className = 'bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg';
+    }
+    
+    toast.classList.remove('hidden');
+    
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 3000);
+  }
+});
+</script>

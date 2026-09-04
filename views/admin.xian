@@ -1,0 +1,6 @@
+{{> admin-head}}
+{{> admin-sidebar}}
+
+{{{body}}}
+
+{{> footer}}

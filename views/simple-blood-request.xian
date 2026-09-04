@@ -1,0 +1,316 @@
+{{> head}}
+
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="container mx-auto px-4">
+    <div class="max-w-2xl mx-auto">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-red-600 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+        <h1 class="text-3xl font-bold mb-2">Request Blood - Simple Form</h1>
+        <p class="text-white/90">Submit a blood request (simplified version)</p>
+      </div>
+
+      <!-- Simple Form -->
+      <div class="bg-white rounded-xl shadow-md p-8">
+        <form action="/simple-blood-request" method="POST">
+
+          <!-- Patient Information -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Patient Information</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Patient Name *</label>
+                <input type="text" name="patientName" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Patient Age *</label>
+                <input type="number" name="patientAge" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Blood Type *</label>
+                <select name="bloodType" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                  <option value="">Select blood type</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Units Required *</label>
+                <input type="number" name="unitsRequired" min="1" max="10" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- Blood Component and Transfusion Information -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Blood Component & Transfusion Details</h3>
+
+            <div class="grid grid-cols-1 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Indication of Transfusion *</label>
+                <textarea name="indicationOfTransfusion" required rows="3"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="Enter the medical indication for transfusion (e.g., Acute blood loss, Anemia, Surgery preparation, etc.)"></textarea>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">Blood Component Required *</label>
+                <div class="space-y-3">
+                  <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="simple_wholeBlood" name="bloodComponents[]" value="wholeBlood"
+                      class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                    <label for="simple_wholeBlood" class="text-sm font-medium text-gray-700">() Whole blood</label>
+                    <input type="text" name="wholeBloodVolume" placeholder="Units/Volume"
+                      class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+                      disabled>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="simple_packedRBC" name="bloodComponents[]" value="packedRBC"
+                      class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                    <label for="simple_packedRBC" class="text-sm font-medium text-gray-700">() Packed RBC</label>
+                    <input type="text" name="packedRBCVolume" placeholder="Units/Volume"
+                      class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+                      disabled>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="simple_plateletConcentrate" name="bloodComponents[]"
+                      value="plateletConcentrate"
+                      class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                    <label for="simple_plateletConcentrate" class="text-sm font-medium text-gray-700">() Platelet
+                      concentrate</label>
+                    <input type="text" name="plateletConcentrateVolume" placeholder="Units/Volume"
+                      class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+                      disabled>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="simple_freshFrozenPlasma" name="bloodComponents[]"
+                      value="freshFrozenPlasma"
+                      class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                    <label for="simple_freshFrozenPlasma" class="text-sm font-medium text-gray-700">() Fresh Frozen
+                      Plasma</label>
+                    <input type="text" name="freshFrozenPlasmaVolume" placeholder="Units/Volume"
+                      class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+                      disabled>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="simple_cryoprecipitate" name="bloodComponents[]" value="cryoprecipitate"
+                      class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                    <label for="simple_cryoprecipitate" class="text-sm font-medium text-gray-700">()
+                      Cryoprecipitate</label>
+                    <input type="text" name="cryoprecipitateVolume" placeholder="Units/Volume"
+                      class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+                      disabled>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="simple_plateletApheresis" name="bloodComponents[]"
+                      value="plateletApheresis"
+                      class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                    <label for="simple_plateletApheresis" class="text-sm font-medium text-gray-700">() Platelet
+                      Apheresis</label>
+                    <input type="text" name="plateletApheresisVolume" placeholder="Units/Volume"
+                      class="flex-1 px-3 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500"
+                      disabled>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hospital Information -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Hospital Information</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Hospital Name *</label>
+                <input type="text" name="hospitalName" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Hospital Address *</label>
+                <input type="text" name="hospitalAddress" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                <input type="text" name="city" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Province *</label>
+                <input type="text" name="province" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Information -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person *</label>
+                <input type="text" name="contactPerson" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number *</label>
+                <input type="tel" name="contactNumber" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                <input type="email" name="email" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Urgency Level *</label>
+                <select name="urgency" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                  <option value="">Select urgency</option>
+                  <option value="critical">Critical - Immediate (within hours)</option>
+                  <option value="urgent">Urgent - Within 24 hours</option>
+                  <option value="moderate">Moderate - Within 2-3 days</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Details -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Additional Details</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Required By Date *</label>
+                <input type="date" name="requiredByDate" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes (Optional)</label>
+              <textarea name="notes" rows="3"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                placeholder="Any additional information about the blood request..."></textarea>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="flex justify-end space-x-4">
+            <a href="/dashboard"
+              class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition">
+              Cancel
+            </a>
+            <button type="submit"
+              class="px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition">
+              Submit Blood Request
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{{> footer}}
+
+<script>
+  // Simple form blood component handlers
+  document.addEventListener('DOMContentLoaded', function () {
+    const bloodComponents = [
+      'simple_wholeBlood',
+      'simple_packedRBC',
+      'simple_plateletConcentrate',
+      'simple_freshFrozenPlasma',
+      'simple_cryoprecipitate',
+      'simple_plateletApheresis'
+    ];
+
+    bloodComponents.forEach(componentId => {
+      const checkbox = document.getElementById(componentId);
+      const volumeInput = checkbox.parentElement.querySelector('input[type="text"]');
+
+      if (checkbox && volumeInput) {
+        checkbox.addEventListener('change', function () {
+          if (this.checked) {
+            volumeInput.disabled = false;
+            volumeInput.focus();
+            volumeInput.classList.remove('bg-gray-100');
+            volumeInput.classList.add('bg-white');
+          } else {
+            volumeInput.disabled = true;
+            volumeInput.value = '';
+            volumeInput.classList.remove('bg-white');
+            volumeInput.classList.add('bg-gray-100');
+          }
+        });
+      }
+    });
+  });
+</script>
+function detectRequestLocation() {
+const statusText = document.getElementById('requestLocationStatus');
+const latInput = document.getElementById('requestLatitude');
+const lonInput = document.getElementById('requestLongitude');
+
+statusText.innerText = 'Detecting...';
+statusText.className = 'text-[10px] text-blue-600 font-medium animate-pulse';
+
+if (!navigator.geolocation) {
+statusText.innerText = 'Not supported';
+statusText.className = 'text-[10px] text-red-600 font-medium';
+return;
+}
+
+navigator.geolocation.getCurrentPosition(
+(position) => {
+const lat = position.coords.latitude;
+const lon = position.coords.longitude;
+latInput.value = lat;
+lonInput.value = lon;
+statusText.innerText = `Detected: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+statusText.className = 'text-[10px] text-green-600 font-bold';
+},
+(error) => {
+console.error('Geolocation error:', error);
+// Simulate coordinates for Mindoro if user blocks location to ensure the feature remains demo-able!
+const simulatedLat = (13.3 + Math.random() * 0.2).toFixed(6);
+const simulatedLon = (121.1 + Math.random() * 0.2).toFixed(6);
+latInput.value = simulatedLat;
+lonInput.value = simulatedLon;
+statusText.innerText = `Simulated: ${simulatedLat}, ${simulatedLon}`;
+statusText.className = 'text-[10px] text-orange-600 font-semibold';
+},
+{ timeout: 10000, enableHighAccuracy: true }
+);
+}
+</script>

@@ -1,0 +1,571 @@
+{{> head-public }}
+
+<!-- Success Message for Guest Submissions -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      const requestId = urlParams.get('requestId');
+      const successDiv = document.createElement('div');
+      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-md';
+      successDiv.innerHTML = `
+        <div class="flex items-center">
+          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <div>
+            <h4 class="font-semibold">Blood Request Submitted Successfully!</h4>
+            <p class="text-sm">Request ID: ${requestId || 'N/A'}</p>
+            <p class="text-sm">Recorded on blockchain. Donors will be notified.</p>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+      document.body.appendChild(successDiv);
+
+      // Auto-remove after 10 seconds
+      setTimeout(() => {
+        if (successDiv.parentElement) {
+          successDiv.remove();
+        }
+      }, 10000);
+
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  });
+</script>
+
+<style>
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+
+    50% {
+      transform: translateY(-15px) rotate(2deg);
+    }
+  }
+
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 30px rgba(220, 38, 38, 0.6);
+    }
+
+    50% {
+      box-shadow: 0 0 50px rgba(220, 38, 38, 0.9);
+    }
+  }
+
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-50px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2.5s ease-in-out infinite;
+  }
+
+  .animate-slide-in {
+    animation: slide-in-left 1s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 1.5s ease-out;
+  }
+
+  .abstract-wave {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(135deg, #7c0a02 0%, #991b1b 20%, #dc2626 40%, #ef4444 60%, #f87171 80%, #fca5a5 100%);
+    clip-path: polygon(30% 0%, 100% 0%, 100% 100%, 0% 100%, 20% 50%);
+  }
+
+  .abstract-overlay {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 60%;
+    height: 100%;
+    background: radial-gradient(circle at 70% 30%, rgba(127, 29, 29, 0.4) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(185, 28, 28, 0.3) 0%, transparent 50%);
+    clip-path: polygon(30% 0%, 100% 0%, 100% 100%, 0% 100%, 20% 50%);
+  }
+</style>
+
+<!-- Hero Section with Abstract Wave Design -->
+<section class="relative min-h-screen flex items-center bg-white overflow-hidden">
+
+  <!-- Abstract Red Wave Background -->
+  <div class="abstract-wave animate-fade-in"></div>
+  <div class="abstract-overlay"></div>
+
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+      <!-- Left Content -->
+      <div class="animate-slide-in max-w-2xl mx-auto lg:mx-0">
+        <h1 class="text-5xl sm:text-6xl md:text-7xl font-bold text-red-600 mb-2 leading-tight tracking-tight">
+          {{#if hero.title}}{{hero.title}}{{else}}VITALMATCH{{/if}}
+        </h1>
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-light text-red-600 mb-8 uppercase tracking-widest">
+          {{#if hero.subtitle}}{{hero.subtitle}}{{else}}Digital Blood Request Platform{{/if}}
+        </h2>
+
+        <p class="text-gray-700 text-base sm:text-lg leading-relaxed mb-8 max-w-xl">
+          {{#if hero.description}}{{{hero.description}}}{{else}}VitalMatch is a web-based blood request and donor matching system designed to assist the Philippine Red Cross in improving emergency blood coordination and response time. The system allows hospitals to post real-time blood requests, automatically matches qualified donors, and enables instant notifications for faster response across Oriental Mindoro.{{/if}}
+        </p>
+
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+          <a href="{{#if hero.primaryButtonLink}}{{hero.primaryButtonLink}}{{else}}/login{{/if}}"
+            class="inline-block bg-red-600 text-white px-7 py-3 rounded-xl font-semibold text-base hover:bg-red-700 transition shadow-lg hover:shadow-xl">
+            {{#if hero.primaryButtonText}}{{hero.primaryButtonText}}{{else}}Request Blood Now{{/if}}
+          </a>
+          {{#if hero.secondaryButtonText}}
+          <a href="{{#if hero.secondaryButtonLink}}{{hero.secondaryButtonLink}}{{else}}/register{{/if}}"
+            class="inline-block border border-red-600 text-red-600 bg-white px-7 py-3 rounded-xl font-semibold text-base hover:bg-red-50 transition shadow-sm">
+            {{hero.secondaryButtonText}}
+          </a>
+          {{/if}}
+        </div>
+      </div>
+
+      <!-- Right Side - Logo Floating Over Abstract Design -->
+      <div class="relative h-72 sm:h-80 md:h-96 lg:h-[600px] flex items-center justify-center">
+        <!-- Floating Philippine Red Cross Logo -->
+        <div class="relative z-20 animate-float">
+          <div class="w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 animate-pulse-glow mx-auto">
+            <!-- Philippine Red Cross Logo SVG -->
+            <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+              <!-- Outer Circle (Blue) -->
+              <circle cx="100" cy="100" r="95" fill="#1e3a8a" stroke="#1e40af" stroke-width="3" />
+
+              <!-- Inner White Circle -->
+              <circle cx="100" cy="100" r="72" fill="white" />
+
+              <!-- Red Cross -->
+              <rect x="84" y="48" width="32" height="104" fill="#dc2626" rx="2" />
+              <rect x="48" y="84" width="104" height="32" fill="#dc2626" rx="2" />
+
+              <!-- Text: PHILIPPINE (Top Arc) -->
+              <path id="topArc" d="M 28,100 A 72,72 0 0,1 172,100" fill="none" />
+              <text font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="white" letter-spacing="3">
+                <textPath href="#topArc" startOffset="50%" text-anchor="middle">
+                  PHILIPPINE
+                </textPath>
+              </text>
+
+              <!-- Text: RED CROSS (Bottom Arc) -->
+              <path id="bottomArc" d="M 172,100 A 72,72 0 0,1 28,100" fill="none" />
+              <text font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="white" letter-spacing="3">
+                <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">
+                  RED CROSS
+                </textPath>
+              </text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-20 bg-gray-50">
+  <div class="container mx-auto px-4">
+    <div class="text-center mb-16">
+      <h2 class="text-4xl font-bold text-gray-800 mb-4">How VitalMatch Works</h2>
+      <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+        Streamlining blood donation coordination with cutting-edge technology
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-2">
+        <div class="mb-4">
+          <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Real-Time Requests</h3>
+        <p class="text-gray-600">
+          Hospitals post urgent blood needs instantly with patient details and required blood type.
+        </p>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-2">
+        <div class="mb-4">
+          <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Smart Matching</h3>
+        <p class="text-gray-600">
+          Automated filtering by blood type, availability, eligibility, and geographic proximity.
+        </p>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-2">
+        <div class="mb-4">
+          <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Instant Notifications</h3>
+        <p class="text-gray-600">
+          Qualified donors receive immediate alerts enabling quick confirmation to donate.
+        </p>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition transform hover:-translate-y-2">
+        <div class="mb-4">
+          <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-800 mb-3">Verified Coordination</h3>
+        <p class="text-gray-600">
+          Administrators monitor responses, verify eligibility, and coordinate donation schedules.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{{!-- Render additional CMS sections created via admin --}}
+{{#if about.title}}
+<section class="py-16 bg-red-50">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <h2 class="text-4xl font-bold text-gray-900 mb-4">{{about.title}}</h2>
+        {{#if about.subtitle}}<p class="text-xl text-gray-700 mb-4">{{about.subtitle}}</p>{{/if}}
+        {{#if about.description}}<p class="text-gray-600 leading-relaxed">{{{about.description}}}</p>{{/if}}
+      </div>
+      {{#if about.imageUrl}}
+      <div class="rounded-3xl overflow-hidden shadow-xl bg-white">
+        <img src="{{about.imageUrl}}" alt="About section image" class="w-full h-full object-cover" />
+      </div>
+      {{/if}}
+    </div>
+  </div>
+</section>
+{{/if}}
+
+{{#if otherSections}}
+  {{#each otherSections}}
+    <section class="py-12 bg-white border-t border-gray-100">
+      <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          {{!-- If an imageUrl exists --}}
+          {{#if imageUrl}}
+            {{!-- If no description, center and enlarge the image for clarity --}}
+              {{#unless description}}
+              <div class="text-center">
+                <div class="rounded-lg shadow-md mx-auto w-full md:w-4/5 h-56 md:h-80 bg-center bg-cover" style="background-image: url('{{imageUrl}}')"></div>
+                {{#if title}}<h2 class="text-3xl font-bold text-gray-900 mt-6 mb-4">{{title}}</h2>{{/if}}
+                {{#if subtitle}}<p class="text-lg text-gray-600 mb-4">{{subtitle}}</p>{{/if}}
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                  {{#if primaryButtonText}}<a href="{{primaryButtonLink}}" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold">{{primaryButtonText}}</a>{{/if}}
+                  {{#if secondaryButtonText}}<a href="{{secondaryButtonLink}}" class="bg-blue-800 text-white px-6 py-3 rounded-lg font-semibold">{{secondaryButtonText}}</a>{{/if}}
+                </div>
+              </div>
+            {{else}}
+              <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-8">
+                {{#equals metadata.layout "image-right"}}
+                  <div class="order-2 md:order-1">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">{{title}}</h2>
+                    {{#if subtitle}}<p class="text-lg text-gray-600 mb-4">{{subtitle}}</p>{{/if}}
+                    {{#if description}}<p class="text-gray-600 mb-6">{{{description}}}</p>{{/if}}
+                    <div class="flex flex-col sm:flex-row gap-4">
+                      {{#if primaryButtonText}}<a href="{{primaryButtonLink}}" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold">{{primaryButtonText}}</a>{{/if}}
+                      {{#if secondaryButtonText}}<a href="{{secondaryButtonLink}}" class="bg-blue-800 text-white px-6 py-3 rounded-lg font-semibold">{{secondaryButtonText}}</a>{{/if}}
+                    </div>
+                  </div>
+                    <div class="order-1 md:order-2 flex justify-center">
+                    <img src="{{imageUrl}}" alt="{{title}}" class="rounded-lg shadow-md max-h-96 object-cover w-full" />
+                  </div>
+                {{else}}
+                  <div class="order-1 md:order-1 flex justify-center">
+                    <img src="{{imageUrl}}" alt="{{title}}" class="rounded-lg shadow-md max-h-96 object-cover w-full" />
+                  </div>
+                  <div class="order-2 md:order-2">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">{{title}}</h2>
+                    {{#if subtitle}}<p class="text-lg text-gray-600 mb-4">{{subtitle}}</p>{{/if}}
+                    {{#if description}}<p class="text-gray-600 mb-6">{{{description}}}</p>{{/if}}
+                    <div class="flex flex-col sm:flex-row gap-4">
+                      {{#if primaryButtonText}}<a href="{{primaryButtonLink}}" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold">{{primaryButtonText}}</a>{{/if}}
+                      {{#if secondaryButtonText}}<a href="{{secondaryButtonLink}}" class="bg-blue-800 text-white px-6 py-3 rounded-lg font-semibold">{{secondaryButtonText}}</a>{{/if}}
+                    </div>
+                  </div>
+                {{/equals}}
+              </div>
+            {{/unless}}
+          {{else}}
+            <div class="text-center">
+              {{#if title}}<h2 class="text-3xl font-bold text-gray-900 mb-4">{{title}}</h2>{{/if}}
+              {{#if subtitle}}<p class="text-lg text-gray-600 mb-4">{{subtitle}}</p>{{/if}}
+              {{#if description}}<p class="text-gray-600 mb-6">{{{description}}}</p>{{/if}}
+              <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                {{#if primaryButtonText}}<a href="{{primaryButtonLink}}" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold">{{primaryButtonText}}</a>{{/if}}
+                {{#if secondaryButtonText}}<a href="{{secondaryButtonLink}}" class="bg-blue-800 text-white px-6 py-3 rounded-lg font-semibold">{{secondaryButtonText}}</a>{{/if}}
+              </div>
+            </div>
+          {{/if}}
+        </div>
+      </div>
+    </section>
+  {{/each}}
+{{/if}}
+
+<!-- CTA Section -->
+<section class="py-20 bg-gradient-to-r from-red-600 to-blue-600 text-white">
+  <div class="container mx-auto px-4 text-center">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-4xl font-bold mb-6">{{#if callForDonation.title}}{{callForDonation.title}}{{else}}Ready to Save Lives?{{/if}}</h2>
+      <p class="text-xl mb-10 text-white/90">
+        {{#if callForDonation.description}}{{{callForDonation.description}}}{{else}}Join the Philippine Red Cross - Mindoro Chapter in making blood donation coordination faster and more efficient.{{/if}}
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{{#if callForDonation.primaryButtonLink}}{{callForDonation.primaryButtonLink}}{{else}}/login{{/if}}"
+          class="bg-white text-red-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition shadow-lg">
+          {{#if callForDonation.primaryButtonText}}{{callForDonation.primaryButtonText}}{{else}}Request Blood{{/if}}
+        </a>
+        <a href="{{#if callForDonation.secondaryButtonLink}}{{callForDonation.secondaryButtonLink}}{{else}}/register{{/if}}"
+          class="bg-blue-800 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-900 transition shadow-lg">
+          {{#if callForDonation.secondaryButtonText}}{{callForDonation.secondaryButtonText}}{{else}}Become a Donor{{/if}}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- Call for Donation Section -->
+<section id="call-for-donation-section" class="py-16 bg-white border-t border-gray-100">
+  <div class="container mx-auto px-4 text-center">
+    <div class="max-w-2xl mx-auto">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-6">
+        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+      <h2 class="text-3xl font-bold text-gray-900 mb-4">Call for Blood Donation</h2>
+      <p class="text-lg text-gray-600 mb-8">
+        Are you organizing a blood drive or urgently need donors for a patient? Submit a call for donation and our team
+        will coordinate with you.
+      </p>
+
+      {{#if error_msg}}
+      <div class="bg-red-50 text-red-600 p-4 rounded-lg mb-6 border border-red-200">
+        {{error_msg}}
+      </div>
+      {{/if}}
+
+      <button id="openCallDonationBtn" type="button"
+        class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-red-700 transition shadow-lg relative z-10 cursor-pointer">
+        Submit a Call for Donation
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Call for Donation Modal -->
+<div id="callDonationModal" style="display: none;"
+  class="fixed inset-0 bg-gray-900 bg-opacity-50 z-[100] flex items-center justify-center overflow-y-auto px-4 py-10">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden relative my-auto">
+
+    <!-- Modal Header -->
+    <div class="bg-red-600 px-6 py-4 flex justify-between items-center text-white">
+      <h3 class="text-xl font-bold">Call for Blood Donation</h3>
+      <button type="button" class="close-call-modal text-white hover:text-red-200 focus:outline-none">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body (Form) -->
+    <div class="p-6 md:p-8 max-h-[80vh] overflow-y-auto">
+      <form action="/submit-call-for-donation" method="POST">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <!-- Full Name -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Patient/Organizer Full Name *</label>
+            <input type="text" name="fullName" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+          </div>
+
+          <!-- Contact Number -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number *</label>
+            <input type="text" name="contactNumber" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+          </div>
+
+          <!-- Age & Weight -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Age *</label>
+              <input type="number" name="age" required
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Weight (kg) *</label>
+              <input type="text" name="weight" required
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+            </div>
+          </div>
+
+          <!-- Gender -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
+            <select name="gender" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Blood Type -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Blood Type Required *</label>
+            <select name="bloodType" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              <option value="">Select Blood Type</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="Any">Any Type (Blood Drive)</option>
+            </select>
+          </div>
+
+          <!-- Tattoo History -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Recent Tattoo/Piercing (last 12 mos)? *</label>
+            <select name="hasTattoo" required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+              <option value="">Select</option>
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+              <option value="Not Applicable">Not Applicable (I am organizing a drive)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Hospital / Donation Location *</label>
+          <input type="text" name="location" required placeholder="e.g., Oriental Mindoro Provincial Hospital"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+        </div>
+
+        <!-- Message -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Additional Details / Message</label>
+          <textarea name="message" rows="3" placeholder="Briefly describe the situation..."
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="mt-8 flex justify-end space-x-3">
+          <button type="button"
+            class="close-call-modal px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+            Cancel
+          </button>
+          <button type="submit"
+            class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md">
+            Submit Request
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const openBtn = document.getElementById('openCallDonationBtn');
+    const modal = document.getElementById('callDonationModal');
+    const closeBtns = document.querySelectorAll('.close-call-modal');
+
+    if (openBtn && modal) {
+      openBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      });
+    }
+
+    if (closeBtns.length > 0) {
+      closeBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+          }
+        });
+      });
+    }
+
+    window.addEventListener('click', function (event) {
+      if (event.target == modal) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    });
+  });
+</script>
+
+{{> footer }}

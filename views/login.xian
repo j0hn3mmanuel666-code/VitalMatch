@@ -1,0 +1,182 @@
+{{> head }}
+
+<style>
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(2deg); }
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 30px rgba(220, 38, 38, 0.6); }
+    50% { box-shadow: 0 0 50px rgba(220, 38, 38, 0.9); }
+  }
+  
+  @keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-50px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2.5s ease-in-out infinite;
+  }
+  
+  .animate-slide-in {
+    animation: slide-in-left 1s ease-out;
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 1.5s ease-out;
+  }
+  
+  .abstract-wave {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(135deg, #7c0a02 0%, #991b1b 20%, #dc2626 40%, #ef4444 60%, #f87171 80%, #fca5a5 100%);
+    clip-path: polygon(30% 0%, 100% 0%, 100% 100%, 0% 100%, 20% 50%);
+  }
+  
+  .abstract-overlay {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 60%;
+    height: 100%;
+    background: radial-gradient(circle at 70% 30%, rgba(127, 29, 29, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(185, 28, 28, 0.3) 0%, transparent 50%);
+    clip-path: polygon(30% 0%, 100% 0%, 100% 100%, 0% 100%, 20% 50%);
+  }
+</style>
+
+<!-- Login Section with Abstract Wave Design -->
+<section class="relative min-h-screen flex items-center bg-white overflow-hidden">
+  
+  <!-- Abstract Red Wave Background -->
+  <div class="abstract-wave animate-fade-in"></div>
+  <div class="abstract-overlay"></div>
+  
+  <div class="container mx-auto px-8 py-12 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      
+      <!-- Left Content - Login Form -->
+      <div class="animate-slide-in max-w-md mx-auto w-full">
+        <h1 class="text-5xl md:text-6xl font-bold text-red-600 mb-2 leading-none tracking-tight">
+          Welcome Back
+        </h1>
+        <h2 class="text-2xl md:text-3xl font-light text-red-600 mb-8 uppercase tracking-widest">
+          Login to VitalMatch
+        </h2>
+        
+        <form class="bg-white p-8 rounded-xl shadow-2xl" method="POST" action="/login" autocomplete="off">
+          
+          {{#if error}}
+          <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow-sm animate-fade-in" role="alert">
+            <div class="flex items-center">
+              <svg class="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p class="font-medium">{{error}}</p>
+            </div>
+          </div>
+          {{/if}}
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-semibold mb-2" for="email">
+              Email Address
+            </label>
+            <input 
+              type="email" 
+              name="email" 
+              id="email"
+              placeholder="Enter your email" 
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition" 
+              required 
+              autocomplete="off"
+            />
+          </div>
+          
+          <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-semibold mb-2" for="password">
+              Password
+            </label>
+            <input 
+              type="password" 
+              name="password" 
+              id="password"
+              placeholder="Enter your password" 
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition" 
+              required 
+              autocomplete="new-password"
+            />
+          </div>
+          
+          <button 
+            type="submit" 
+            class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-red-700 transition shadow-lg hover:shadow-xl"
+          >
+            Login
+          </button>
+          
+          <div class="mt-6 text-center">
+            <p class="text-gray-600">
+              Don't have an account? 
+              <a href="/register" class="text-red-600 font-semibold hover:text-red-700 transition">
+                Register
+              </a>
+            </p>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Right Side - Logo Floating Over Abstract Design -->
+      <div class="relative h-[600px] flex items-center justify-center">
+        <!-- Floating Philippine Red Cross Logo -->
+        <div class="relative z-20 animate-float">
+          <div class="w-72 h-72 animate-pulse-glow">
+            <!-- Philippine Red Cross Logo SVG -->
+            <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+              <!-- Outer Circle (Blue) -->
+              <circle cx="100" cy="100" r="95" fill="#1e3a8a" stroke="#1e40af" stroke-width="3"/>
+              
+              <!-- Inner White Circle -->
+              <circle cx="100" cy="100" r="72" fill="white"/>
+              
+              <!-- Red Cross -->
+              <rect x="84" y="48" width="32" height="104" fill="#dc2626" rx="2"/>
+              <rect x="48" y="84" width="104" height="32" fill="#dc2626" rx="2"/>
+              
+              <!-- Text: PHILIPPINE (Top Arc) -->
+              <path id="topArc" d="M 28,100 A 72,72 0 0,1 172,100" fill="none"/>
+              <text font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="white" letter-spacing="3">
+                <textPath href="#topArc" startOffset="50%" text-anchor="middle">
+                  PHILIPPINE
+                </textPath>
+              </text>
+              
+              <!-- Text: RED CROSS (Bottom Arc) -->
+              <path id="bottomArc" d="M 172,100 A 72,72 0 0,1 28,100" fill="none"/>
+              <text font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="white" letter-spacing="3">
+                <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">
+                  RED CROSS
+                </textPath>
+              </text>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+{{> footer }}

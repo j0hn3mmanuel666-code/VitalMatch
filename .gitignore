@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Secrets - NEVER commit
+.env
+
+# Logs
+*.log
+logs/
+xian.log
+
+# User uploads (auto-recreated by multer at runtime)
+public/uploads/
+
+# OS / editor
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,29 @@
+{
+  "general": {
+    "appName": "VitalMatch",
+    "systemStatus": "online",
+    "timeZone": "Asia/Manila"
+  },
+  "email": {
+    "smtpServer": "",
+    "smtpPort": 587,
+    "emailEncryption": "tls",
+    "fromEmail": "",
+    "emailUsername": "",
+    "emailPassword": ""
+  },
+  "notifications": {
+    "emailNotificationsEnabled": true,
+    "bloodRequestNotifications": true,
+    "registrationNotifications": true,
+    "systemAlertNotifications": true
+  },
+  "security": {
+    "sessionTimeout": 30,
+    "minPasswordLength": 8,
+    "requireSpecialChars": true,
+    "twoFactorAuth": false,
+    "ipWhitelist": "",
+    "auditLogging": true
+  }
+}

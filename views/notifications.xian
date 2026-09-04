@@ -1,0 +1,235 @@
+{{> head}}
+
+<!-- Navigation Bar -->
+<nav class="bg-white shadow-md sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4">
+    <div class="flex items-center justify-between">
+      <!-- Back Button & Logo -->
+      <div class="flex items-center space-x-3">
+        <a href="javascript:history.length > 1 ? history.back() : window.location.href='/dashboard'" class="p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <div class="flex items-center space-x-2">
+          <svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+          </svg>
+          <a href="/dashboard" class="text-2xl font-bold text-gray-800">VitalMatch</a>
+        </div>
+      </div>
+      
+      <!-- User Menu -->
+      <div class="flex items-center space-x-4">
+        <a href="/dashboard" class="text-gray-700 hover:text-red-600 transition hidden sm:block">Dashboard</a>
+        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Logout</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4 max-w-4xl">
+    
+    <!-- Header Area -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+          <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          Notifications
+        </h1>
+        <p class="text-gray-600 mt-2">Stay updated on your blood requests, donation matches, and system alerts.</p>
+      </div>
+      <div class="flex gap-3 w-full md:w-auto">
+        <button onclick="markAllNotificationsRead()" class="flex-1 md:flex-none flex items-center justify-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition shadow-sm font-semibold">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Mark all as read
+        </button>
+        <button onclick="clearAllNotifications()" class="flex-1 md:flex-none flex items-center justify-center bg-white border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition shadow-sm font-semibold">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          Clear all
+        </button>
+      </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+      {{#if notifications.length}}
+        <div class="divide-y divide-gray-100">
+          {{#each notifications}}
+            <div class="p-5 transition-colors duration-200 hover:bg-gray-50 {{#unless this.isRead}}bg-blue-50/40{{/unless}}" id="notification-{{this.id}}">
+              <div class="flex items-start gap-4">
+                
+                <!-- Icon based on type -->
+                <div class="flex-shrink-0 mt-1">
+                  {{#if (eq this.type 'request')}}
+                    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </div>
+                  {{else if (eq this.type 'match')}}
+                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </div>
+                  {{else if (eq this.type 'alert')}}
+                    <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                      </svg>
+                    </div>
+                  {{else}}
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </div>
+                  {{/if}}
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-start mb-1">
+                    <h3 class="text-base font-semibold text-gray-900 {{#unless this.isRead}}font-bold{{/unless}}">
+                      {{this.title}}
+                    </h3>
+                    <span class="text-xs text-gray-500 whitespace-nowrap ml-2">
+                      {{this.createdAt}}
+                    </span>
+                  </div>
+                  <p class="text-gray-600 text-sm mb-3">
+                    {{this.message}}
+                  </p>
+                  
+                  <!-- Actions -->
+                  <div class="flex items-center gap-3 mt-2">
+                    {{#if this.link}}
+                      <a href="{{this.link}}" onclick="markNotificationRead({{this.id}}, event)" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
+                        View Details
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                      </a>
+                    {{/if}}
+                    
+                    {{#unless this.isRead}}
+                      <button onclick="markNotificationRead({{this.id}})" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Mark as read
+                      </button>
+                    {{/unless}}
+                  </div>
+                </div>
+                
+                <!-- Unread dot -->
+                {{#unless this.isRead}}
+                  <div class="flex-shrink-0 w-3 h-3 mt-2 bg-blue-500 rounded-full shadow-sm" id="unread-dot-{{this.id}}"></div>
+                {{/unless}}
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      {{else}}
+        <!-- Empty State -->
+        <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
+          <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">You're all caught up!</h3>
+          <p class="text-gray-500 max-w-sm mx-auto">
+            You don't have any notifications right now. When you receive updates about your requests or donations, they will appear here.
+          </p>
+          <a href="/dashboard" class="mt-8 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md">
+            Return to Dashboard
+          </a>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</div>
+
+<script>
+  async function markNotificationRead(id, event) {
+    let targetLink = null;
+    
+    if (event) {
+      event.preventDefault(); // Prevent immediate navigation
+      const anchor = event.target.closest('a');
+      if (anchor && anchor.hasAttribute('href') && anchor.getAttribute('href') !== '#') {
+        targetLink = anchor.getAttribute('href');
+      }
+    }
+    
+    try {
+      const response = await fetch(`/api/notifications/${id}/read`, { method: 'POST' });
+      if (response.ok) {
+        if (targetLink) {
+          // Navigate AFTER marking as read
+          window.location.href = targetLink;
+          return;
+        }
+        
+        // Update UI optimistically if staying on page
+        const notifRow = document.getElementById(`notification-${id}`);
+        if (notifRow) {
+          notifRow.classList.remove('bg-blue-50/40');
+          notifRow.querySelector('h3').classList.remove('font-bold');
+        }
+        
+        const unreadDot = document.getElementById(`unread-dot-${id}`);
+        if (unreadDot) {
+          unreadDot.remove();
+        }
+        
+        // Hide the "Mark as read" button if it exists
+        const markReadBtn = notifRow?.querySelector('button');
+        if (markReadBtn) {
+          markReadBtn.remove();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to mark as read", error);
+    }
+  }
+  
+  async function markAllNotificationsRead() {
+    try {
+      const response = await fetch('/api/notifications/read-all', { method: 'POST' });
+      if (response.ok) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Failed to mark all as read", error);
+    }
+  }
+
+  async function clearAllNotifications() {
+    if (!confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/notifications/clear-all', { method: 'POST' });
+      if (response.ok) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error("Failed to clear notifications", error);
+    }
+  }
+</script>
+
+{{> footer}}

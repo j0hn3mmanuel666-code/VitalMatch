@@ -1,0 +1,473 @@
+<!-- Admin Dashboard Content -->
+<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="container mx-auto px-4">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Admin Dashboard</h1>
+      <p class="text-gray-600 dark:text-gray-400">Monitor and manage VitalMatch blood donation system</p>
+    </div>
+
+    <!-- Key Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+      <!-- Total Requests -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6 border-l-4 border-l-red-500 dark:border-l-red-600">
+        <div class="flex items-center justify-between mb-4">
+          <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-lg">
+            <svg class="w-8 h-8 text-red-600 dark:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Requests</p>
+        <p class="text-3xl font-bold text-gray-800 dark:text-white">{{stats.totalRequests}}</p>
+        <p class="text-gray-500 dark:text-gray-500 text-xs mt-2">All time</p>
+      </div>
+
+      <!-- Active Donors -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6 border-l-4 border-l-blue-500 dark:border-l-blue-600">
+        <div class="flex items-center justify-between mb-4">
+          <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg">
+            <svg class="w-8 h-8 text-blue-600 dark:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">Active Donors</p>
+        <p class="text-3xl font-bold text-gray-800 dark:text-white">{{stats.activeDonors}}</p>
+        <p class="text-gray-500 dark:text-gray-500 text-xs mt-2">Available now</p>
+      </div>
+
+      <!-- Successful Matches -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6 border-l-4 border-l-green-500 dark:border-l-green-600">
+        <div class="flex items-center justify-between mb-4">
+          <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">
+            <svg class="w-8 h-8 text-green-600 dark:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">Successful Matches</p>
+        <p class="text-3xl font-bold text-gray-800 dark:text-white">{{stats.successfulMatches}}</p>
+        <p class="text-gray-500 dark:text-gray-500 text-xs mt-2">Fulfilled requests</p>
+      </div>
+
+      <!-- Lives Saved -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6 border-l-4 border-l-purple-500 dark:border-l-purple-600">
+        <div class="flex items-center justify-between mb-4">
+          <div class="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-lg">
+            <svg class="w-8 h-8 text-purple-600 dark:text-purple-500" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+          </div>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">Lives Saved</p>
+        <p class="text-3xl font-bold text-gray-800 dark:text-white">{{stats.livesSaved}}</p>
+        <p class="text-gray-500 dark:text-gray-500 text-xs mt-2">Estimated impact</p>
+      </div>
+
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      <!-- Blood Requests Over Time Area Chart -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+        <div class="flex justify-between items-start mb-6 z-10">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white tracking-wide">Blood Requests Trend</h2>
+            <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Monthly request volume analysis</p>
+          </div>
+          <div class="text-right border-l border-gray-200 dark:border-gray-800 pl-4 sm:pl-6 transition-colors duration-200">
+            <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Total</p>
+            <p class="text-3xl font-black text-blue-600 dark:text-blue-500 leading-none tracking-tight">{{stats.totalRequests}}</p>
+          </div>
+        </div>
+        <div style="height: 280px;" class="z-10 w-full">
+          <canvas id="requestsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Blood Type Distribution Chart -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Blood Type Distribution</h2>
+        <div style="height: 300px;">
+          <canvas id="bloodTypeChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      <!-- Donor Registration Trend -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Donor Registration Trend</h2>
+        <div style="height: 300px;">
+          <canvas id="donorTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Request Status Breakdown -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Request Status Breakdown</h2>
+        <div style="height: 300px;">
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Recent Activity and Top Hospitals -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+      <!-- Recent Blood Requests -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Recent Blood Requests</h2>
+        <div class="space-y-4">
+          {{#each recentRequests}}
+          <div
+            class="flex items-center justify-between p-4 bg-{{#if (eq urgency 'critical')}}red{{else if (eq urgency 'urgent')}}orange{{else}}blue{{/if}}-50 dark:bg-{{#if (eq urgency 'critical')}}red{{else if (eq urgency 'urgent')}}orange{{else}}blue{{/if}}-900/20 rounded-lg border border-{{#if (eq urgency 'critical')}}red{{else if (eq urgency 'urgent')}}orange{{else}}blue{{/if}}-200 dark:border-{{#if (eq urgency 'critical')}}red{{else if (eq urgency 'urgent')}}orange{{else}}blue{{/if}}-800/50">
+            <div class="flex items-center space-x-4">
+              <div
+                class="bg-{{#if (eq urgency 'critical')}}red{{else if (eq urgency 'urgent')}}orange{{else}}blue{{/if}}-600 dark:bg-{{#if (eq urgency 'critical')}}red{{else if (eq urgency 'urgent')}}orange{{else}}blue{{/if}}-700 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm">
+                {{bloodType}}
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800 dark:text-gray-100">{{hospitalName}}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{unitsRequired}} units needed - {{#if (eq urgency
+                  'critical')}}Critical{{else if (eq urgency 'urgent')}}Urgent{{else}}Moderate{{/if}}</p>
+              </div>
+            </div>
+            <span class="text-xs text-gray-500">{{city}}</span>
+          </div>
+          {{else}}
+          <div class="text-center py-8 text-gray-500">
+            <p>No recent requests</p>
+            <p class="text-sm mt-2">Blood requests will appear here as they are submitted</p>
+          </div>
+          {{/each}}
+        </div>
+        <a href="/admin/requests" class="block text-center mt-4 text-blue-600 hover:text-blue-700 font-semibold">
+          View All Requests →
+        </a>
+      </div>
+
+      <!-- Top Hospitals -->
+      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Top Hospitals by Requests</h2>
+        <div class="space-y-4">
+          {{#each topHospitals}}
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span
+                class="bg-{{#if (eq @index 0)}}yellow-500{{else if (eq @index 1)}}gray-400{{else if (eq @index 2)}}orange-600{{else}}blue-600{{/if}} text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">{{add
+                @index 1}}</span>
+              <div>
+                <p class="font-semibold text-gray-800 dark:text-gray-100">{{hospitalName}}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{city}}</p>
+              </div>
+            </div>
+            <span class="text-lg font-bold text-gray-800 dark:text-white">{{count}}</span>
+          </div>
+          {{else}}
+          <div class="text-center py-8 text-gray-500">
+            <p>No hospital data yet</p>
+            <p class="text-sm mt-2">Hospital rankings will appear as requests are submitted</p>
+          </div>
+          {{/each}}
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <span
+              class="bg-gray-400 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">2</span>
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100">St. Luke's Medical Center</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Quezon City</p>
+            </div>
+          </div>
+          <span class="text-lg font-bold text-gray-800 dark:text-white">287</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <span
+              class="bg-orange-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100">Makati Medical Center</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Makati City</p>
+            </div>
+          </div>
+          <span class="text-lg font-bold text-gray-800 dark:text-white">234</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <span
+              class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">4</span>
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100">Manila General Hospital</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Manila</p>
+            </div>
+          </div>
+          <span class="text-lg font-bold text-gray-800 dark:text-white">198</span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <span
+              class="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">5</span>
+            <div>
+              <p class="font-semibold text-gray-800 dark:text-gray-100">Asian Hospital</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Muntinlupa</p>
+            </div>
+          </div>
+          <span class="text-lg font-bold text-gray-800 dark:text-white">176</span>
+        </div>
+
+      </div>
+      <a href="/admin/hospitals" class="block text-center mt-4 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold">
+        View All Hospitals →
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Regional Distribution - Oriental Mindoro -->
+  <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+    <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Municipal Distribution - Oriental Mindoro</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {{#each regionalDistribution}}
+      <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-center border border-blue-200 dark:border-blue-800/50">
+        <p class="text-2xl font-bold text-blue-600 dark:text-blue-500">{{this.count}}</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{this.province}}</p>
+      </div>
+      {{else}}
+      <div class="col-span-full text-center py-8 text-gray-500">
+        <p>No data available yet</p>
+        <p class="text-sm mt-2">Data will appear as blood requests are submitted</p>
+      </div>
+      {{/each}}
+    </div>
+    <p class="text-xs text-gray-500 mt-4 text-center">Showing blood request distribution across Oriental Mindoro
+      municipalities</p>
+  </div>
+
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // Parse data from server
+  const monthlyRequestsData = {{{ monthlyRequests }}};
+  const bloodTypeData = {{{ bloodTypeDistribution }}};
+  const monthlyDonorsData = {{{ monthlyDonors }}};
+  const statusData = {{{ statusBreakdown }}};
+
+  // Blood Requests Over Time Premium Area Chart
+  const requestsCtx = document.getElementById('requestsChart').getContext('2d');
+  
+  // Create beautiful gradient for the area chart
+  const gradientFill = requestsCtx.createLinearGradient(0, 0, 0, 300);
+  gradientFill.addColorStop(0, 'rgba(59, 130, 246, 0.6)'); // Tailwind blue-500, 60% opacity
+  gradientFill.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); // Transparent at the bottom
+
+  const requestLabels = monthlyRequestsData.map(d => {
+    const date = new Date(d.month + '-01');
+    return date.toLocaleDateString('en-US', { month: 'short' });
+  });
+  const requestCounts = monthlyRequestsData.map(d => d.count);
+
+  new Chart(requestsCtx, {
+    type: 'line',
+    data: {
+      labels: requestLabels.length > 0 ? requestLabels : ['No Data'],
+      datasets: [{
+        label: 'Blood Requests',
+        data: requestCounts.length > 0 ? requestCounts : [0],
+        borderColor: '#3B82F6', // Vibrant blue
+        borderWidth: 3,
+        backgroundColor: gradientFill,
+        pointBackgroundColor: '#FFFFFF',
+        pointBorderColor: '#3B82F6',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        pointHoverBackgroundColor: '#3B82F6',
+        pointHoverBorderColor: '#FFFFFF',
+        tension: 0.4, // Smooth curve
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(17, 24, 39, 0.95)',
+          titleColor: '#F3F4F6',
+          bodyColor: '#F3F4F6',
+          borderColor: '#374151',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            title: function(context) {
+              return context[0].label + ' Requests';
+            },
+            label: function(context) {
+              return `${context.parsed.y} units requested`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            display: false,
+            drawBorder: false
+          },
+          ticks: {
+            color: '#9CA3AF',
+            font: {
+              size: 12,
+              weight: '500'
+            }
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(156, 163, 175, 0.2)', // Light gray with opacity, works on dark/light
+            drawBorder: false,
+            borderDash: [5, 5] // Modern dashed grid lines
+          },
+          ticks: {
+            color: '#9CA3AF',
+            font: {
+              size: 11
+            },
+            stepSize: 1,
+            padding: 10
+          },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  // Blood Type Distribution Chart
+  const bloodTypeCtx = document.getElementById('bloodTypeChart').getContext('2d');
+  const bloodTypeLabels = bloodTypeData.map(d => d.bloodType);
+  const bloodTypeCounts = bloodTypeData.map(d => d.count);
+
+  new Chart(bloodTypeCtx, {
+    type: 'doughnut',
+    data: {
+      labels: bloodTypeLabels.length > 0 ? bloodTypeLabels : ['No Data'],
+      datasets: [{
+        data: bloodTypeCounts.length > 0 ? bloodTypeCounts : [1],
+        backgroundColor: [
+          '#DC2626',
+          '#EF4444',
+          '#2563EB',
+          '#3B82F6',
+          '#16A34A',
+          '#22C55E',
+          '#9333EA',
+          '#A855F7'
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right'
+        }
+      }
+    }
+  });
+
+  // Donor Registration Trend Chart
+  const donorTrendCtx = document.getElementById('donorTrendChart').getContext('2d');
+  const donorLabels = monthlyDonorsData.map(d => {
+    const date = new Date(d.month + '-01');
+    return date.toLocaleDateString('en-US', { month: 'short' });
+  });
+  const donorCounts = monthlyDonorsData.map(d => d.count);
+
+  new Chart(donorTrendCtx, {
+    type: 'bar',
+    data: {
+      labels: donorLabels.length > 0 ? donorLabels : ['No Data'],
+      datasets: [{
+        label: 'New Donors',
+        data: donorCounts.length > 0 ? donorCounts : [0],
+        backgroundColor: '#2563EB'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+
+  // Request Status Breakdown Chart
+  const statusCtx = document.getElementById('statusChart').getContext('2d');
+  const statusLabels = statusData.map(d => d.status.charAt(0).toUpperCase() + d.status.slice(1));
+  const statusCounts = statusData.map(d => d.count);
+
+  new Chart(statusCtx, {
+    type: 'pie',
+    data: {
+      labels: statusLabels.length > 0 ? statusLabels : ['No Data'],
+      datasets: [{
+        data: statusCounts.length > 0 ? statusCounts : [1],
+        backgroundColor: [
+          '#16A34A',
+          '#F59E0B',
+          '#3B82F6',
+          '#EF4444'
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right'
+        }
+      }
+    }
+  });
+</script>
