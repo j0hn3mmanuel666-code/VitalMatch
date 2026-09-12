@@ -87,12 +87,15 @@ export const settingsPage = async (req, res) => {
     const settings = await loadSettings();
     console.log('✅ Settings loaded');
     
-    // Render the admin-settings view with all required data
+    // Render the admin-settings view with all required data.
+    // NOTE: the local must NOT be named `settings` — Express exposes render
+    // locals as options.settings, which would shadow the app settings object
+    // (incl. the views dir) and crash layout resolution in hbs.
     res.render('admin-settings', {
       layout: 'admin',
       title: 'Admin Settings',
       user: req.session.user || {},
-      settings: settings
+      settingsData: settings
     });
   } catch (error) {
     console.error('❌ Error loading settings page:', error);

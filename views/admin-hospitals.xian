@@ -68,5 +68,72 @@
       {{/if}}
     </div>
 
+    <!-- Hospital Accounts -->
+    <div class="mt-8 mb-8">
+      <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Hospital Accounts</h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-4">Verify new registrations or suspend accounts. Suspended hospitals cannot log in.</p>
+    </div>
+    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
+      {{#if hospitalUsers.length}}
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+          <thead class="bg-gray-50 dark:bg-[#27272a]">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hospital</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-200 dark:divide-gray-800">
+            {{#each hospitalUsers}}
+            <tr class="hover:bg-gray-50 dark:bg-[#27272a]" id="hospital-row-{{id}}">
+              <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{{firstName}} {{lastName}}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{{email}}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                {{#if isActive}}
+                <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">Verified</span>
+                {{else}}
+                <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
+                {{/if}}
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                {{#if isActive}}
+                <button onclick="setHospitalStatus({{id}}, 'suspend')" class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-red-200 transition">Suspend</button>
+                {{else}}
+                <button onclick="setHospitalStatus({{id}}, 'verify')" class="bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-green-700 transition">Verify</button>
+                {{/if}}
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+      <div class="text-center py-12">
+        <p class="text-gray-500 dark:text-gray-400 text-lg">No hospital accounts registered yet</p>
+      </div>
+      {{/if}}
+    </div>
+
   </div>
 </div>
+
+<script>
+  async function setHospitalStatus(id, action) {
+    const verb = action === 'verify' ? 'verify' : 'suspend';
+    if (!confirm('Are you sure you want to ' + verb + ' this hospital account?')) return;
+    try {
+      const response = await fetch('/admin/hospitals/' + id + '/' + action, { method: 'POST' });
+      const result = await response.json();
+      if (result.success) {
+        location.reload();
+      } else {
+        alert(result.message || 'Could not update hospital status');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Could not update hospital status');
+    }
+  }
+</script>

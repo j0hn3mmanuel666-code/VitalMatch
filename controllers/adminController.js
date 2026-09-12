@@ -28,6 +28,8 @@ import { Donor } from "../models/donorModel.js";
 import { sequelize } from "../models/db.js";
 import { vitalMatchBlockchain } from "../services/blockchainService.js";
 import { Notification } from "../models/notificationModel.js";
+import { getUserSettings } from "../models/userSettingModel.js";
+import { createScheduleToken } from "../models/scheduleTokenModel.js";
 import { Op } from "sequelize";
 import { notifyNearestDonors } from "../services/matchingService.js";
 
@@ -169,8 +171,18 @@ export const adminRequestsPage = async (req, res) => {
 
     const requests = await BloodRequest.findAll({
       where: whereClause,
-      order: [['createdAt', 'DESC']]
+      order: [['isEmergency', 'DESC'], ['createdAt', 'DESC']]
     });
+
+    // Pledge counts per request (single grouped query)
+    const { Pledge } = await import("../models/pledgeModel.js");
+    const pledgeRows = await Pledge.findAll({
+      attributes: ["requestId", [sequelize.fn("COUNT", sequelize.col("id")), "cnt"]],
+      group: ["requestId"],
+      raw: true
+    });
+    const pledgeCounts = {};
+    pledgeRows.forEach(r => { pledgeCounts[r.requestId] = parseInt(r.cnt, 10); });
 
     // For each request, find matching donors
     const requestsWithDonors = await Promise.all(requests.map(async (request) => {
@@ -189,8 +201,14 @@ export const adminRequestsPage = async (req, res) => {
         limit: 10
       });
 
+      const emergencyActive = !!(
+        request.isEmergency && request.emergencyExpiresAt &&
+        new Date(request.emergencyExpiresAt) > new Date() && request.status === "active"
+      );
       return {
         ...request.toJSON(),
+        pledgeCount: pledgeCounts[request.id] || 0,
+        emergencyActive,
         matchingDonorsCount: matchingDonors.length,
         matchingDonors: matchingDonors.map(d => ({
           id: d.id,
@@ -293,11 +311,20 @@ export const adminHospitalsPage = async (req, res) => {
       raw: true
     });
 
+    // Registered hospital accounts (includes those with zero requests)
+    const { User } = await import("../models/userModel.js");
+    const hospitalUsers = await User.findAll({
+      where: { role: "hospital" },
+      attributes: ["id", "firstName", "lastName", "email", "phone", "address", "isActive", "emailVerified", "createdAt"],
+      order: [["createdAt", "DESC"]]
+    });
+
     res.render("admin-hospitals", {
       layout: "admin",
       title: "Manage Hospitals - VitalMatch Admin",
       isHospitals: true,
-      hospitals: hospitalStats
+      hospitals: hospitalStats,
+      hospitalUsers
     });
   } catch (error) {
     console.error("Error fetching hospitals:", error);
@@ -305,13 +332,43 @@ export const adminHospitalsPage = async (req, res) => {
       layout: "admin",
       title: "Manage Hospitals - VitalMatch Admin",
       isHospitals: true,
-      hospitals: []
+      hospitals: [],
+      hospitalUsers: []
     });
   }
 };
 
-// Display admin reports page
-export const adminReportsPage = async (req, res) => {
+// Verify a hospital account (activate) or suspend it (deactivate)
+export const setHospitalStatus = async (req, res) => {
+  try {
+    const { User } = await import("../models/userModel.js");
+    const hospital = await User.findOne({ where: { id: req.params.id, role: "hospital" } });
+    if (!hospital) {
+      return res.status(404).json({ success: false, message: "Hospital account not found" });
+    }
+    const activate = req.params.action === "verify";
+    if (req.params.action !== "verify" && req.params.action !== "suspend") {
+      return res.status(400).json({ success: false, message: "Invalid action" });
+    }
+    await hospital.update({ isActive: activate });
+    await AuditService.logAction(
+      req.session.userId,
+      activate ? "HOSPITAL_VERIFY" : "HOSPITAL_SUSPEND",
+      "Users",
+      hospital.id,
+      null,
+      { isActive: activate },
+      AuditService.getRequestContext(req)
+    );
+    res.json({ success: true, isActive: activate });
+  } catch (error) {
+    console.error("Set hospital status error:", error);
+    res.status(500).json({ success: false, message: "Could not update hospital status" });
+  }
+};
+
+// Shared report dataset for the page and the CSV export
+async function getReportsData() {
   try {
     // Summary statistics
     const totalRequests = await BloodRequest.count();
@@ -375,6 +432,21 @@ export const adminReportsPage = async (req, res) => {
       raw: true
     });
 
+    // Real average response time: request creation to fulfillment
+    const fulfilledForAvg = await BloodRequest.findAll({
+      where: { status: "fulfilled" },
+      attributes: ["createdAt", "updatedAt"],
+      raw: true
+    });
+    let avgResponseTime = "N/A";
+    if (fulfilledForAvg.length > 0) {
+      const totalMs = fulfilledForAvg.reduce((sum, r) => sum + (new Date(r.updatedAt) - new Date(r.createdAt)), 0);
+      const avgHours = totalMs / fulfilledForAvg.length / 3600000;
+      avgResponseTime = avgHours < 48
+        ? `${Math.max(1, Math.round(avgHours))}h`
+        : `${Math.round(avgHours / 24)}d`;
+    }
+
     // Merge monthly data
     const monthlyReport = monthlyRequests.map(req => {
       const donor = monthlyDonors.find(d => d.month === req.month);
@@ -388,10 +460,7 @@ export const adminReportsPage = async (req, res) => {
       };
     });
 
-    res.render("admin-reports", {
-      layout: "admin",
-      title: "Reports - VitalMatch Admin",
-      isReports: true,
+    return {
       summary: {
         totalRequests,
         activeRequests,
@@ -402,8 +471,26 @@ export const adminReportsPage = async (req, res) => {
         unavailableDonors,
         livesSaved: fulfilledRequests * 2,
         successRate,
-        avgResponseTime: '24h' // Placeholder
+        avgResponseTime
       },
+      bloodTypeReport,
+      monthlyReport
+    };
+  } catch (error) {
+    console.error("Error generating reports data:", error);
+    throw error;
+  }
+}
+
+// Display admin reports page
+export const adminReportsPage = async (req, res) => {
+  try {
+    const { summary, bloodTypeReport, monthlyReport } = await getReportsData();
+    res.render("admin-reports", {
+      layout: "admin",
+      title: "Reports - VitalMatch Admin",
+      isReports: true,
+      summary,
       bloodTypeReport,
       monthlyReport
     });
@@ -428,6 +515,34 @@ export const adminReportsPage = async (req, res) => {
       bloodTypeReport: [],
       monthlyReport: []
     });
+  }
+};
+
+// Export reports to CSV
+export const exportReports = async (req, res) => {
+  try {
+    const { summary, bloodTypeReport, monthlyReport } = await getReportsData();
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [];
+    lines.push("VitalMatch System Report," + new Date().toISOString().slice(0, 10));
+    lines.push("");
+    lines.push("Summary");
+    lines.push("Metric,Value");
+    Object.entries(summary).forEach(([k, v]) => lines.push(`${k},${v}`));
+    lines.push("");
+    lines.push("Blood Type Report");
+    lines.push("Blood Type,Requests,Units,Fulfilled,Share %");
+    bloodTypeReport.forEach(r => lines.push([r.bloodType, r.requestCount, r.totalUnits, r.fulfilledCount, r.percentage].map(esc).join(",")));
+    lines.push("");
+    lines.push("Monthly Trend");
+    lines.push("Month,Requests,Donors,Fulfilled,Success Rate %");
+    monthlyReport.forEach(r => lines.push([r.month, r.requests, r.donors, r.fulfilled, r.successRate].map(esc).join(",")));
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", 'attachment; filename="vitalmatch-report.csv"');
+    res.send(lines.join("\n"));
+  } catch (error) {
+    console.error("Error exporting reports:", error);
+    res.status(500).json({ success: false, message: "Error exporting reports" });
   }
 };
 
@@ -574,12 +689,15 @@ export const fulfillRequest = async (req, res) => {
 
     const parsedDonorId = donorId ? parseInt(donorId) : null;
 
-    // Update request status and tracking fields
+    // Update request status and tracking fields (fulfill/schedule clears any escalation)
     await request.update({
       status: newStatus,
       assignedDonorId: parsedDonorId,
       scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
-      fulfillmentNotes: notes || null
+      fulfillmentNotes: notes || null,
+      isEmergency: false,
+      emergencyAt: null,
+      emergencyExpiresAt: null
     });
 
     // Add fulfillment record to blockchain
@@ -595,31 +713,39 @@ export const fulfillRequest = async (req, res) => {
     // Mine the blockchain
     vitalMatchBlockchain.minePendingTransactions();
 
-    // Send email notification to donor if selected
+    // Send email notification to donor if selected (background: never block the response)
     if (parsedDonorId) {
       try {
         const donor = await Donor.findByPk(parsedDonorId);
         if (donor && donor.email) {
           const { emailService } = await import('../services/emailService.js');
-          await emailService.sendDonationScheduleEmail(
+          const donorToken = await createScheduleToken(request.id, 'donor');
+          const donorConfirmUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/schedule-confirm/${donorToken.token}`;
+          emailService.sendDonationScheduleEmail(
             donor.email,
             donor.fullName,
             request,
             scheduledDate,
-            notes
-          );
-          console.log(`📧 Notification email sent to assigned donor: ${donor.email}`);
+            notes,
+            donorConfirmUrl
+          ).then(result => {
+            console.log(`📧 Donor email ${result.success ? "sent" : "FAILED"}: ${donor.email}`);
+          }).catch(err => console.error("Background donor email failed:", err.message));
+          console.log(`📧 Donor email queued for: ${donor.email}`);
 
-          // Add in-app notification for the donor
+          // Add in-app notification for the donor (respect notification prefs)
           if (donor.userId) {
-            await Notification.create({
-              userId: donor.userId,
-              title: "Donation Appointment Scheduled",
-              message: `You have been scheduled for a blood donation appointment for request #${request.id}. Please confirm your availability.`,
-              type: "alert",
-              link: `/confirm-schedule/${request.id}/donor`
-            });
-            console.log(`🔔 In-app notification created for donor userId: ${donor.userId}`);
+            const donorPrefs = await getUserSettings(donor.userId);
+            if (!donorPrefs || donorPrefs.notifyAppointments) {
+              await Notification.create({
+                userId: donor.userId,
+                title: "Donation Appointment Scheduled",
+                message: `You have been scheduled for a blood donation appointment for request #${request.id}. Please confirm your availability.`,
+                type: "alert",
+                link: `/schedule-confirm/${donorToken.token}`
+              });
+              console.log(`🔔 In-app notification created for donor userId: ${donor.userId}`);
+            }
           }
         }
       } catch (err) {
@@ -627,29 +753,37 @@ export const fulfillRequest = async (req, res) => {
       }
     }
 
-    // Send email notification to requester
+    // Send email notification to requester (background: never block the response)
     try {
       if (request.email) {
         const { emailService } = await import('../services/emailService.js');
-        await emailService.sendRequesterScheduleEmail(
+        const requesterToken = await createScheduleToken(request.id, 'requester');
+        const requesterConfirmUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/schedule-confirm/${requesterToken.token}`;
+        emailService.sendRequesterScheduleEmail(
           request.email,
           request.contactPerson,
           request,
           scheduledDate,
-          notes
-        );
-        console.log(`📧 Notification email sent to requester: ${request.email}`);
+          notes,
+          requesterConfirmUrl
+        ).then(result => {
+          console.log(`📧 Requester email ${result.success ? "sent" : "FAILED"}: ${request.email}`);
+        }).catch(err => console.error("Background requester email failed:", err.message));
+        console.log(`📧 Requester email queued for: ${request.email}`);
 
-        // Add in-app notification for the requester
+        // Add in-app notification for the requester (respect notification prefs)
         if (request.userId) {
-          await Notification.create({
-            userId: request.userId,
-            title: "Blood Request Scheduled",
-            message: `Your blood request #${request.id} has been scheduled for fulfillment. Please confirm the schedule details.`,
-            type: "success",
-            link: `/confirm-schedule/${request.id}/requester`
-          });
-          console.log(`🔔 In-app notification created for requester userId: ${request.userId}`);
+          const requesterPrefs = await getUserSettings(request.userId);
+          if (!requesterPrefs || requesterPrefs.notifyAppointments) {
+            await Notification.create({
+              userId: request.userId,
+              title: "Blood Request Scheduled",
+              message: `Your blood request #${request.id} has been scheduled for fulfillment. Please confirm the schedule details.`,
+              type: "success",
+              link: `/schedule-confirm/${requesterToken.token}`
+            });
+            console.log(`🔔 In-app notification created for requester userId: ${request.userId}`);
+          }
         }
       }
     } catch (err) {
@@ -777,7 +911,7 @@ export const getUserDetails = async (req, res) => {
 // Create new user
 export const createUser = async (req, res) => {
   try {
-    const adminId = req.session.user?.id || 1; // Get from session
+    const adminId = req.session.userId; // Session stores userId (see authController loginUser)
     const context = AuditService.getRequestContext(req);
     const result = await UserService.createUser(req.body, adminId, context);
 
@@ -797,7 +931,7 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const adminId = req.session.user?.id || 1; // Get from session
+    const adminId = req.session.userId; // Session stores userId (see authController loginUser)
     const context = AuditService.getRequestContext(req);
 
     const result = await UserService.updateUser(userId, req.body, adminId, context);
@@ -818,7 +952,7 @@ export const updateUser = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const adminId = req.session.user?.id || 1; // Get from session
+    const adminId = req.session.userId; // Session stores userId (see authController loginUser)
     const context = AuditService.getRequestContext(req);
 
     await UserService.deleteUser(userId, adminId, context);
@@ -830,7 +964,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// Bulk update users
+// Bulk update users (only role and active status may be changed in bulk)
 export const bulkUpdateUsers = async (req, res) => {
   try {
     const { userIds, updates } = req.body;
@@ -839,9 +973,34 @@ export const bulkUpdateUsers = async (req, res) => {
       return res.json({ success: false, message: 'No users selected' });
     }
 
-    const result = await User.update(updates, {
-      where: { id: userIds }
+    const allowedRoles = ['user', 'donor', 'hospital', 'hospital_admin', 'admin'];
+    const safeUpdates = {};
+    if (updates && typeof updates.role === 'string' && allowedRoles.includes(updates.role)) {
+      safeUpdates.role = updates.role;
+    }
+    if (updates && typeof updates.isActive === 'boolean') {
+      safeUpdates.isActive = updates.isActive;
+    }
+    if (Object.keys(safeUpdates).length === 0) {
+      return res.json({ success: false, message: 'No valid bulk changes provided' });
+    }
+
+    // Never let an admin lock themselves out
+    const targets = userIds.map(Number).filter(id => id !== req.session.userId);
+    if (targets.length === 0) {
+      return res.json({ success: false, message: 'You cannot change your own role or status in bulk' });
+    }
+
+    const result = await User.update(safeUpdates, {
+      where: { id: targets }
     });
+
+    await AuditService.logBulkOperation(
+      "update",
+      targets,
+      req.session.userId,
+      AuditService.getRequestContext(req)
+    );
 
     res.json({
       success: true,

@@ -25,6 +25,9 @@
           <select id="roleFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
             <option value="">All Roles</option>
             <option value="user">Users</option>
+            <option value="donor">Donors</option>
+            <option value="hospital">Hospitals</option>
+            <option value="hospital_admin">Hospital Admins</option>
             <option value="admin">Admins</option>
           </select>
         </div>
@@ -47,6 +50,22 @@
       </div>
     </div>
     
+    <!-- Bulk Actions Bar -->
+    <div id="bulkBar" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <span class="text-sm font-semibold text-blue-800 dark:text-blue-300"><span id="selectedCount">0</span> selected</span>
+      <select id="bulkAction" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent">
+        <option value="">Bulk actions...</option>
+        <option value="role:user">Set role: User</option>
+        <option value="role:donor">Set role: Donor</option>
+        <option value="role:hospital">Set role: Hospital</option>
+        <option value="role:hospital_admin">Set role: Hospital Admin</option>
+        <option value="role:admin">Set role: Admin</option>
+        <option value="activate">Activate accounts</option>
+        <option value="deactivate">Deactivate accounts</option>
+      </select>
+      <button id="applyBulk" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">Apply</button>
+    </div>
+
     <!-- Users Table -->
     <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
       <div class="overflow-x-auto">
@@ -153,12 +172,19 @@
             </select>
           </div>
         </div>
-        <div class="mb-6">
+        <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
           <select id="editRole" name="role" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
             <option value="user">User</option>
+            <option value="donor">Donor</option>
+            <option value="hospital">Hospital</option>
+            <option value="hospital_admin">Hospital Admin</option>
             <option value="admin">Admin</option>
           </select>
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Official Hospital Name <span class="text-gray-400 font-normal">(hospital accounts only)</span></label>
+          <input type="text" id="editHospitalName" name="hospitalName" placeholder="e.g. Calapan City Hospital" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
         </div>
         <div class="flex justify-end gap-3">
           <button type="button" id="cancelEdit" class="px-4 py-2 bg-gray-300 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 transition-colors">
@@ -220,6 +246,9 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
           <select name="role" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
             <option value="user">User</option>
+            <option value="donor">Donor</option>
+            <option value="hospital">Hospital</option>
+            <option value="hospital_admin">Hospital Admin</option>
             <option value="admin">Admin</option>
           </select>
         </div>
@@ -298,6 +327,16 @@ document.addEventListener('DOMContentLoaded', function() {
     currentPage = 1;
     loadUsers();
   });
+
+  // Bulk selection
+  document.getElementById('selectAll').addEventListener('change', function(e) {
+    document.querySelectorAll('.user-checkbox').forEach(function(cb) { cb.checked = e.target.checked; });
+    refreshBulkBar();
+  });
+  document.getElementById('usersTableBody').addEventListener('change', function(e) {
+    if (e.target.classList && e.target.classList.contains('user-checkbox')) refreshBulkBar();
+  });
+  document.getElementById('applyBulk').addEventListener('click', applyBulkAction);
   
   // Create user modal
   document.getElementById('createUser').addEventListener('click', function() {
@@ -359,6 +398,8 @@ async function loadUsers() {
     if (data.success) {
       renderUsers(data.users);
       renderPagination(data.pagination);
+      document.getElementById('selectAll').checked = false;
+      refreshBulkBar();
     } else {
       showError('Failed to load users');
     }
@@ -402,7 +443,7 @@ function renderUsers(users) {
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${user.email}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${user.phone}</td>
       <td class="px-6 py-4 whitespace-nowrap">
-        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}">
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : user.role === 'hospital' ? 'bg-blue-100 text-blue-800' : user.role === 'hospital_admin' ? 'bg-orange-100 text-orange-800' : user.role === 'donor' ? 'bg-teal-100 text-teal-800' : 'bg-green-100 text-green-800'}">
           ${user.role}
         </span>
       </td>
@@ -442,6 +483,54 @@ function renderPagination(pagination) {
   }
   
   nav.innerHTML = paginationHTML;
+}
+
+function selectedIds() {
+  return Array.from(document.querySelectorAll('.user-checkbox:checked')).map(function(cb) { return cb.value; });
+}
+
+function refreshBulkBar() {
+  const ids = selectedIds();
+  document.getElementById('selectedCount').textContent = ids.length;
+  document.getElementById('bulkBar').classList.toggle('hidden', ids.length === 0);
+}
+
+async function applyBulkAction() {
+  const ids = selectedIds();
+  const action = document.getElementById('bulkAction').value;
+  if (ids.length === 0) { alert('Select at least one user first'); return; }
+  if (!action) { alert('Choose a bulk action first'); return; }
+
+  let updates;
+  if (action === 'activate') {
+    updates = { isActive: true };
+  } else if (action === 'deactivate') {
+    if (!confirm('Deactivate ' + ids.length + ' account(s)? They will be logged out immediately.')) return;
+    updates = { isActive: false };
+  } else if (action.startsWith('role:')) {
+    updates = { role: action.slice(5) };
+  } else {
+    return;
+  }
+
+  try {
+    const response = await fetch('/admin/users/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userIds: ids, updates })
+    });
+    const result = await response.json();
+    if (result.success) {
+      alert(result.message);
+      document.getElementById('selectAll').checked = false;
+      loadUsers();
+    } else {
+      alert(result.message || 'Bulk update failed');
+    }
+  } catch (error) {
+    console.error('Bulk update error:', error);
+    alert('Bulk update failed');
+  }
 }
 
 function changePage(page) {
@@ -528,6 +617,7 @@ async function editUser(userId) {
       document.getElementById('editDateOfBirth').value = user.dateOfBirth;
       document.getElementById('editGender').value = user.gender;
       document.getElementById('editRole').value = user.role;
+      document.getElementById('editHospitalName').value = user.hospitalName || '';
       
       // Show the edit modal
       document.getElementById('editUserModal').classList.remove('hidden');

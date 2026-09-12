@@ -7,10 +7,21 @@ Mindoro State University - Philippines
 
 import { DataTypes } from "sequelize";
 import { sequelize } from "./db.js";
+import { User } from "./userModel.js";
 
 export const Message = sequelize.define("Message", {
-  senderId: { type: DataTypes.INTEGER, allowNull: false },
-  receiverId: { type: DataTypes.INTEGER, allowNull: false },
+  senderId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: { model: User, key: "id" },
+    onDelete: "CASCADE"
+  },
+  receiverId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: { model: User, key: "id" },
+    onDelete: "CASCADE"
+  },
   message: { type: DataTypes.TEXT, allowNull: true }, // Made nullable for voice messages
   messageType: { type: DataTypes.ENUM('text', 'voice'), defaultValue: 'text', allowNull: false },
   audioFilePath: { type: DataTypes.STRING, allowNull: true }, // Path to audio file for voice messages
@@ -19,5 +30,8 @@ export const Message = sequelize.define("Message", {
   isRead: { type: DataTypes.BOOLEAN, defaultValue: false },
   conversationId: { type: DataTypes.STRING, allowNull: false } // Format: "userId1-userId2" (smaller ID first)
 });
+
+Message.belongsTo(User, { as: "sender", foreignKey: "senderId", onDelete: "CASCADE" });
+Message.belongsTo(User, { as: "receiver", foreignKey: "receiverId", onDelete: "CASCADE" });
 
 export { sequelize };

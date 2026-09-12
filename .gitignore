@@ -12,6 +12,9 @@ xian.log
 # User uploads (auto-recreated by multer at runtime)
 public/uploads/
 
+# Blockchain ledger (runtime data, rebuilt from genesis on fresh installs)
+blockchain.json
+
 # OS / editor
 .vscode/
 .DS_Store

@@ -5,27 +5,6 @@
 {{/if}}
 
 <style>
-  /* Sidebar Animation */
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
-  }
-  
-  .sidebar-toggle:checked ~ .sidebar-container .sidebar {
-    transform: translateX(0);
-  }
-  
-  .sidebar-toggle:checked ~ .sidebar-overlay {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  
-  .sidebar-overlay {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease-in-out;
-  }
-  
   .chat-container {
     height: calc(100vh - 80px);
   }
@@ -57,10 +36,7 @@
 
 {{else}}
 
-
-
-<!-- Sidebar Toggle Checkbox (Hidden) -->
-<input type="checkbox" id="sidebar-toggle" class="hidden sidebar-toggle" />
+{{> user-sidebar}}
 
 <!-- Single Top Navigation Bar -->
 <nav class="bg-white dark:bg-[#18181b] shadow-md dark:shadow-none sticky top-0 z-50">
@@ -69,12 +45,12 @@
       <!-- Left: Hamburger + Logo -->
       <div class="flex items-center space-x-4">
         <!-- Hamburger Button -->
-        <label for="sidebar-toggle" class="cursor-pointer hover:bg-gray-100 dark:bg-[#09090b] p-2 rounded-lg transition">
+        <label for="sidebar-toggle" class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg transition" title="Menu">
           <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
         </label>
-        
+
         <!-- Logo -->
         <div class="flex items-center space-x-2">
           <svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
@@ -83,7 +59,7 @@
           <span class="text-2xl font-bold text-gray-800 dark:text-gray-200">VitalMatch</span>
         </div>
       </div>
-      
+
       <!-- Right: User Menu -->
       <div class="flex items-center space-x-4">
         <span class="text-gray-700 dark:text-gray-300 hidden sm:inline">Welcome, <span class="font-semibold">{{userName}}</span></span>
@@ -93,111 +69,6 @@
   </div>
 </nav>
 
-<!-- Sidebar Overlay (Dark Background) -->
-<label for="sidebar-toggle" class="sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-40"></label>
-
-<!-- Sidebar Container -->
-<div class="sidebar-container">
-  <!-- Sidebar -->
-  <aside class="sidebar fixed top-0 left-0 h-full w-72 bg-white dark:bg-[#18181b] shadow-2xl z-50 overflow-y-auto">
-    <div class="p-6">
-      
-      <!-- Close Button -->
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">Menu</h2>
-        <label for="sidebar-toggle" class="cursor-pointer hover:bg-gray-100 dark:bg-[#09090b] p-2 rounded-lg transition">
-          <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </label>
-      </div>
-      
-      <!-- User Profile Section -->
-      <div class="mb-6 pb-6 border-b">
-        <div class="flex items-center space-x-3">
-          <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg dark:shadow-none">
-            {{userInitial}}
-          </div>
-          <div>
-            <p class="font-semibold text-gray-800 dark:text-gray-200 text-lg">{{userName}}</p>
-            <p class="text-sm text-green-600 font-medium">● Active Donor</p>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Navigation Links -->
-      <nav class="space-y-1">
-        
-        <!-- Dashboard -->
-        <a href="/dashboard" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#09090b] transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-          </svg>
-          <span>Dashboard</span>
-        </a>
-        
-        <!-- My Profile -->
-        <a href="/view-donor-profile" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#09090b] transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-          </svg>
-          <span>My Profile</span>
-        </a>
-        
-        <!-- My Requests -->
-        <a href="/my-requests" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#09090b] transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-          </svg>
-          <span>My Requests</span>
-        </a>
-        
-        <!-- Notifications -->
-        <a href="/notifications" class="flex items-center justify-between px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#09090b] transition">
-          <div class="flex items-center space-x-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
-            <span>Notifications</span>
-          </div>
-          <span id="sidebarNotificationBadge" class="bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-semibold" style="display: none;"></span>
-        </a>
-        
-        <!-- Messages/Chats -->
-        <a href="/messages" class="flex items-center justify-between px-4 py-3 rounded-lg bg-red-50 text-red-600 font-semibold">
-          <div class="flex items-center space-x-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-            </svg>
-            <span>Messages</span>
-          </div>
-          <span class="bg-blue-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-semibold">{{unreadCount}}</span>
-        </a>
-        
-        <!-- Divider -->
-        <div class="border-t my-4"></div>
-        
-        <!-- Request Blood -->
-        <a href="/request-blood" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#09090b] transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <span>Request Blood</span>
-        </a>
-        
-        <!-- Settings -->
-        <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#09090b] transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          </svg>
-          <span>Settings</span>
-        </a>
-        
-      </nav>
-    </div>
-  </aside>
-</div>
 {{/if}}
 
 <!-- Messages Content -->
@@ -275,14 +146,55 @@
             </svg>
           </button>
           
-          <button class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-            </svg>
-          </button>
+          <div class="relative">
+            <button onclick="toggleThreadMenu(event)" title="Conversation options"
+              class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+              </svg>
+            </button>
+            <div id="threadMenu"
+              class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-[#18181b] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden">
+              <button onclick="toggleThreadSearch();toggleThreadMenu();"
+                class="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search in conversation
+              </button>
+              <button onclick="window.location.reload();"
+                class="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh conversation
+              </button>
+              <a href="/messages"
+                class="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Close conversation
+              </a>
+            </div>
+          </div>
         </div>
       </div>
       
+      <!-- In-Conversation Search (hidden until toggled from the menu) -->
+      <div id="threadSearchBar" class="hidden px-4 py-2 bg-white dark:bg-[#18181b] border-b">
+        <div class="relative">
+          <input type="text" id="threadSearchInput" placeholder="Search messages..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-[#27272a] text-gray-800 dark:text-gray-200 text-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+        <p id="threadSearchCount" class="text-xs text-gray-500 dark:text-gray-400 mt-1 hidden"></p>
+      </div>
+
       <!-- Messages Area -->
       <div class="messages-list p-4 space-y-4">
         {{#each messages}}
@@ -354,6 +266,7 @@
       <div class="p-4 bg-white dark:bg-[#18181b] border-t">
         <!-- Normal Message Input -->
         <form id="text-message-form" action="/messages/send" method="POST" class="flex items-center space-x-2">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
           <input type="hidden" name="recipientId" value="{{selectedUser.selectedUserId}}" />
           
           <!-- Microphone Button -->
@@ -643,6 +556,65 @@
     }
   }
   
+  // Thread options menu
+  function toggleThreadMenu(event) {
+    if (event) event.stopPropagation();
+    document.getElementById('threadMenu').classList.toggle('hidden');
+  }
+
+  document.addEventListener('click', function (e) {
+    const menu = document.getElementById('threadMenu');
+    if (menu && !menu.classList.contains('hidden') && !menu.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      const menu = document.getElementById('threadMenu');
+      if (menu) menu.classList.add('hidden');
+    }
+  });
+
+  // In-conversation search: filters message bubbles client-side
+  function toggleThreadSearch() {
+    const bar = document.getElementById('threadSearchBar');
+    const input = document.getElementById('threadSearchInput');
+    bar.classList.toggle('hidden');
+    if (!bar.classList.contains('hidden')) {
+      input.focus();
+    } else {
+      input.value = '';
+      filterThreadMessages('');
+    }
+  }
+
+  function filterThreadMessages(query) {
+    const q = query.trim().toLowerCase();
+    let visible = 0;
+    let total = 0;
+    document.querySelectorAll('.messages-list > div').forEach(function (bubble) {
+      total++;
+      const match = q === '' || bubble.textContent.toLowerCase().includes(q);
+      bubble.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+    const count = document.getElementById('threadSearchCount');
+    if (q === '') {
+      count.classList.add('hidden');
+    } else {
+      count.textContent = visible === 0 ? 'No messages match' : visible + ' of ' + total + ' messages';
+      count.classList.remove('hidden');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const threadInput = document.getElementById('threadSearchInput');
+    if (threadInput) {
+      threadInput.addEventListener('input', function () { filterThreadMessages(threadInput.value); });
+    }
+  });
+
   // Voice Message Playback
   let currentAudio = null;
   

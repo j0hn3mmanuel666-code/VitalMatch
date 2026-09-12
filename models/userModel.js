@@ -36,7 +36,9 @@ export const User = sequelize.define("User", {
   address: { type: DataTypes.TEXT, allowNull: false },
   dateOfBirth: { type: DataTypes.DATEONLY, allowNull: false },
   gender: { type: DataTypes.STRING, allowNull: false },
-  role: { type: DataTypes.STRING, defaultValue: "user" }, // 'user' or 'admin'
+  role: { type: DataTypes.STRING, defaultValue: "user" }, // 'user', 'donor', 'hospital', or 'admin'
+  isActive: { type: DataTypes.BOOLEAN, defaultValue: true }, // false = pending verification or suspended
+  hospitalName: { type: DataTypes.STRING, allowNull: true }, // official name for hospital accounts
   emailVerified: { type: DataTypes.BOOLEAN, defaultValue: false },
   emailVerificationToken: { type: DataTypes.STRING, allowNull: true },
   emailVerificationExpires: { type: DataTypes.DATE, allowNull: true }

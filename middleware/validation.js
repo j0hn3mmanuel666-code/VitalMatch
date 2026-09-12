@@ -229,7 +229,7 @@ export const validateAdminUserCreation = (req, res, next) => {
     errors.push('Password must be at least 8 characters with uppercase, lowercase, and number');
   }
 
-  const validRoles = ['user', 'admin', 'hospital'];
+  const validRoles = ['user', 'donor', 'hospital', 'hospital_admin', 'admin'];
   if (!role || !validRoles.includes(role)) {
     errors.push('Please select a valid role');
   }

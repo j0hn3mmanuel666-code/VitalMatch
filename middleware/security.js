@@ -217,19 +217,27 @@ export const sessionSecurity = (req, res, next) => {
 
 // CSRF protection (simple implementation)
 export const csrfProtection = (req, res, next) => {
-  if (req.method === 'GET') {
-    // Generate CSRF token for GET requests
-    if (!req.session.csrfToken) {
-      req.session.csrfToken = Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15);
-    }
-    res.locals.csrfToken = req.session.csrfToken;
+  // Always ensure a token exists and expose it to views (POSTs may re-render forms)
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15);
+  }
+  res.locals.csrfToken = req.session.csrfToken;
+
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
     return next();
   }
 
   // Verify CSRF token for POST/PUT/DELETE requests
-  const token = req.body._csrf || req.headers['x-csrf-token'];
+  const token = req.body?._csrf || req.headers['x-csrf-token'];
   if (!token || token !== req.session.csrfToken) {
+    // Classic form posts get a friendly redirect; API/fetch callers get JSON
+    const isFormPost = (req.headers.accept || '').includes('text/html') &&
+      req.is('application/x-www-form-urlencoded');
+    if (isFormPost && typeof req.flash === 'function') {
+      req.flash('error_msg', 'Your session expired. Please try again.');
+      return res.redirect('back');
+    }
     return res.status(403).json({
       error: 'CSRF token mismatch',
       details: 'Invalid or missing CSRF token'

@@ -1,0 +1,86 @@
+{{> head}}
+
+{{> user-sidebar}}
+
+<!-- Navigation Bar -->
+<nav class="bg-white shadow-md">
+  <div class="container mx-auto px-4 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-1 sm:space-x-3">
+        <label for="sidebar-toggle" class="cursor-pointer p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors" title="Menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </label>
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+          </svg>
+          <a href="/dashboard" class="text-xl sm:text-2xl font-bold text-gray-800">VitalMatch</a>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="/dashboard" class="text-gray-700 hover:text-red-600 transition">Dashboard</a>
+        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Logout</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Help Content -->
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="container mx-auto px-4">
+    <div class="max-w-3xl mx-auto">
+
+      <div class="bg-gradient-to-r from-blue-600 to-teal-500 rounded-xl shadow-lg p-8 mb-8 text-white">
+        <h1 class="text-3xl font-bold mb-2">Help and Support</h1>
+        <p class="text-white/90">Answers, eligibility rules, and where to get help</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Frequently Asked Questions</h2>
+        <div class="space-y-3">
+          <details class="border border-gray-200 rounded-lg p-4">
+            <summary class="font-semibold text-gray-800 cursor-pointer">Who can donate blood?</summary>
+            <p class="text-sm text-gray-600 mt-2">You must be 18 to 65 years old, weigh at least 50 kg, and be in good health. Whole blood donors should wait at least 56 days between donations. Your Next Eligible date on the dashboard tracks this for you.</p>
+          </details>
+          <details class="border border-gray-200 rounded-lg p-4">
+            <summary class="font-semibold text-gray-800 cursor-pointer">How does matching work?</summary>
+            <p class="text-sm text-gray-600 mt-2">When a request is submitted, VitalMatch finds available donors with a compatible blood type, nearest first. Matched donors receive a notification and email, and the admin schedules the donation with your confirmation.</p>
+          </details>
+          <details class="border border-gray-200 rounded-lg p-4">
+            <summary class="font-semibold text-gray-800 cursor-pointer">How do I pause donations temporarily?</summary>
+            <p class="text-sm text-gray-600 mt-2">Open Settings, then Donor, and switch off availability. You disappear from matching immediately, and your profile, history, and data stay intact.</p>
+          </details>
+          <details class="border border-gray-200 rounded-lg p-4">
+            <summary class="font-semibold text-gray-800 cursor-pointer">How do I stop emails or notifications?</summary>
+            <p class="text-sm text-gray-600 mt-2">Open Settings, then Notifications, and switch off any category. Appointment updates, match alerts, and emails are controlled separately.</p>
+          </details>
+          <details class="border border-gray-200 rounded-lg p-4">
+            <summary class="font-semibold text-gray-800 cursor-pointer">I forgot my password. What do I do?</summary>
+            <p class="text-sm text-gray-600 mt-2">Use the Forgot your password link on the login page. You will receive a reset link valid for one hour. Links are single-use.</p>
+          </details>
+          <details class="border border-gray-200 rounded-lg p-4">
+            <summary class="font-semibold text-gray-800 cursor-pointer">Is my location shared publicly?</summary>
+            <p class="text-sm text-gray-600 mt-2">No. The Blood Map shows only approximate city-level pins for donors. Your exact location is visible only to you, and your name and contact details never appear on the map.</p>
+          </details>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Red Cross Chapters</h2>
+        {{#each chapters}}
+        <div class="border border-gray-200 rounded-lg p-4 mb-3">
+          <p class="font-semibold text-gray-800">{{name}}</p>
+          <p class="text-sm text-gray-600">{{address}}</p>
+          {{#if phone}}<p class="text-sm text-gray-600">{{phone}}</p>{{/if}}
+        </div>
+        {{/each}}
+        <p class="text-sm text-gray-500 mt-4">For emergencies, go directly to the nearest hospital. For account issues, contact your system administrator.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{{> footer}}

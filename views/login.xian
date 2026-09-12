@@ -79,6 +79,7 @@
         </h2>
         
         <form class="bg-white p-8 rounded-xl shadow-2xl" method="POST" action="/login" autocomplete="off">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
           
           {{#if error}}
           <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow-sm animate-fade-in" role="alert">
@@ -127,7 +128,12 @@
             Login
           </button>
           
-          <div class="mt-6 text-center">
+          <div class="mt-6 text-center space-y-2">
+            <p>
+              <a href="/forgot-password" class="text-gray-600 hover:text-red-600 transition text-sm">
+                Forgot your password?
+              </a>
+            </p>
             <p class="text-gray-600">
               Don't have an account? 
               <a href="/register" class="text-red-600 font-semibold hover:text-red-700 transition">

@@ -1,0 +1,104 @@
+{{> head}}
+
+{{> user-sidebar}}
+
+<!-- Navigation Bar -->
+<nav class="bg-white shadow-md">
+  <div class="container mx-auto px-4 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-1 sm:space-x-3">
+        <label for="sidebar-toggle" class="cursor-pointer p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors" title="Menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </label>
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+          </svg>
+          <a href="/dashboard" class="text-xl sm:text-2xl font-bold text-gray-800">VitalMatch</a>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="/dashboard" class="text-gray-700 hover:text-red-600 transition">Dashboard</a>
+        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Logout</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- History Content -->
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="container mx-auto px-4">
+    <div class="max-w-4xl mx-auto">
+
+      <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+        <h1 class="text-3xl font-bold mb-2">My History</h1>
+        <p class="text-white/90">Your blood requests and donations over time</p>
+      </div>
+
+      <!-- Summary -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl shadow-md p-5 text-center">
+          <p class="text-3xl font-bold text-gray-800">{{summary.totalRequests}}</p>
+          <p class="text-sm text-gray-500">Requests Made</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-5 text-center">
+          <p class="text-3xl font-bold text-green-600">{{summary.fulfilledRequests}}</p>
+          <p class="text-sm text-gray-500">Requests Fulfilled</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-5 text-center">
+          <p class="text-3xl font-bold text-red-600">{{summary.totalDonations}}</p>
+          <p class="text-sm text-gray-500">Donations Given</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-5 text-center">
+          <p class="text-3xl font-bold text-blue-600">{{summary.livesImpacted}}</p>
+          <p class="text-sm text-gray-500">Lives Impacted</p>
+        </div>
+      </div>
+
+      <!-- Donations -->
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Donations Given</h2>
+      {{#if donations.length}}
+      <div class="space-y-4 mb-10">
+        {{#each donations}}
+        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-red-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-semibold text-gray-800">{{bloodType}} · {{unitsRequired}} unit(s) · {{hospitalName}}</p>
+              <p class="text-sm text-gray-500">{{city}}, {{province}} · {{formatDate updatedAt}}</p>
+            </div>
+            <a href="/view-blood-request/{{id}}" class="text-red-600 hover:text-red-700 font-semibold text-sm">Details</a>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{else}}
+      <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500 mb-10">No donations recorded yet. Your fulfilled donations will appear here.</div>
+      {{/if}}
+
+      <!-- Requests -->
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Blood Requests</h2>
+      {{#if requests.length}}
+      <div class="space-y-4">
+        {{#each requests}}
+        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 {{#if (eq status "fulfilled")}}border-green-500{{else}}{{#if (eq status "active")}}border-red-500{{else}}border-gray-400{{/if}}{{/if}}">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-semibold text-gray-800">Request #{{id}} · {{bloodType}} · {{unitsRequired}} unit(s)</p>
+              <p class="text-sm text-gray-500">{{hospitalName}} · {{formatDate createdAt}} · <span class="capitalize font-semibold">{{status}}</span></p>
+            </div>
+            <a href="/view-blood-request/{{id}}" class="text-red-600 hover:text-red-700 font-semibold text-sm">Details</a>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{else}}
+      <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">No requests yet. <a href="/request-blood" class="text-red-600 font-semibold">Create your first request</a>.</div>
+      {{/if}}
+
+    </div>
+  </div>
+</div>
+
+{{> footer}}

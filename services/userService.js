@@ -466,7 +466,7 @@ export class UserService {
    */
   static detectChanges(oldData, newData) {
     const changes = {};
-    const fieldsToCheck = ['firstName', 'lastName', 'email', 'phone', 'address', 'dateOfBirth', 'gender', 'role'];
+    const fieldsToCheck = ['firstName', 'lastName', 'email', 'phone', 'address', 'dateOfBirth', 'gender', 'role', 'hospitalName', 'isActive'];
     
     fieldsToCheck.forEach(field => {
       if (newData[field] !== undefined && newData[field] !== oldData[field]) {

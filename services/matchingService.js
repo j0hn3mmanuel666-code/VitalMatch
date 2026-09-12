@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 import { Donor } from "../models/donorModel.js";
 import { Notification } from "../models/notificationModel.js";
+import { getUserSettings } from "../models/userSettingModel.js";
 import { emailService } from "./emailService.js";
 
 const EARTH_RADIUS_KM = 6371;
@@ -61,6 +62,40 @@ export const findNearestDonors = async (request, limit = 10) => {
     .slice(0, limit);
 };
 
+// Emergency broadcast: same donor pool definition as normal matching but with
+// NO distance limit or count cap. Preferences are still respected.
+export const broadcastEmergency = async request => {
+  const matches = await findNearestDonors(request, 1000);
+  let notified = 0;
+
+  await Promise.all(matches.map(async ({ donor, distanceKm }) => {
+    try {
+      const prefs = donor.userId ? await getUserSettings(donor.userId) : null;
+      const distanceText = distanceKm === null ? 'in your area' : `${distanceKm.toFixed(1)} km away`;
+
+      if (donor.userId && (!prefs || prefs.notifyMatches)) {
+        await Notification.create({
+          userId: donor.userId,
+          title: "EMERGENCY Blood Request",
+          message: `EMERGENCY: ${request.bloodType} blood urgently needed at ${request.hospitalName}, ${distanceText}.`,
+          type: "alert",
+          link: `/view-blood-request/${request.id}`
+        });
+        notified++;
+      }
+
+      if (donor.email && (!prefs || prefs.emailUpdates)) {
+        emailService.sendNearbyRequestEmail(donor.email, donor.fullName, request, distanceText)
+          .catch(err => console.error(`Background emergency email failed for donor ${donor.id}:`, err.message));
+      }
+    } catch (error) {
+      console.error(`Failed to emergency-notify donor ${donor.id}:`, error);
+    }
+  }));
+
+  return notified;
+};
+
 export const notifyNearestDonors = async request => {
   const matches = await findNearestDonors(request);
 
@@ -68,7 +103,9 @@ export const notifyNearestDonors = async request => {
     const distanceText = distanceKm === null ? 'in your area' : `${distanceKm.toFixed(1)} km away`;
 
     try {
-      if (donor.userId) {
+      const donorPrefs = donor.userId ? await getUserSettings(donor.userId) : null;
+
+      if (donor.userId && (!donorPrefs || donorPrefs.notifyMatches)) {
         await Notification.create({
           userId: donor.userId,
           title: "Nearby Blood Request",
@@ -78,8 +115,12 @@ export const notifyNearestDonors = async request => {
         });
       }
 
-      if (donor.email) {
-        await emailService.sendNearbyRequestEmail(donor.email, donor.fullName, request, distanceText);
+      if (donor.email && (!donorPrefs || donorPrefs.emailUpdates)) {
+        emailService.sendNearbyRequestEmail(donor.email, donor.fullName, request, distanceText)
+          .then(result => {
+            console.log(`📧 Nearby-request email ${result.success ? "sent" : "FAILED"}: ${donor.email}`);
+          })
+          .catch(err => console.error("Background nearby-request email failed:", err.message));
       }
     } catch (error) {
       console.error(`Failed to notify donor ${donor.id}:`, error);
@@ -93,13 +134,16 @@ export const notifyNearestDonors = async request => {
         ? 'in your area'
         : `${nearestMatch.distanceKm.toFixed(1)} km away`;
 
-      await Notification.create({
-        userId: request.userId,
-        title: 'Nearby Donor Found',
-        message: `A matching ${request.bloodType} donor was found ${distanceText} for your request at ${request.hospitalName}.`,
-        type: 'success',
-        link: `/view-blood-request/${request.id}`
-      });
+      const requesterPrefs = await getUserSettings(request.userId);
+      if (!requesterPrefs || requesterPrefs.notifyMatches) {
+        await Notification.create({
+          userId: request.userId,
+          title: 'Nearby Donor Found',
+          message: `A matching ${request.bloodType} donor was found ${distanceText} for your request at ${request.hospitalName}.`,
+          type: 'success',
+          link: `/view-blood-request/${request.id}`
+        });
+      }
     } catch (error) {
       console.error(`Failed to notify requester for request ${request.id}:`, error);
     }

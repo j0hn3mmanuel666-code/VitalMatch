@@ -139,8 +139,9 @@ class VitalMatchBlockchain {
     return true;
   }
 
-  // Verify blockchain integrity
+  // Verify blockchain integrity (hashes, links, and proof-of-work)
   isChainValid() {
+    const target = Array(this.difficulty + 1).join('0');
     for (let i = 1; i < this.chain.length; i++) {
       const currentBlock = this.chain[i];
       const previousBlock = this.chain[i - 1];
@@ -152,6 +153,11 @@ class VitalMatchBlockchain {
 
       if (currentBlock.previousHash !== previousBlock.hash) {
         console.log('❌ Invalid previous hash at block', i);
+        return false;
+      }
+
+      if (currentBlock.hash.substring(0, this.difficulty) !== target) {
+        console.log('❌ Invalid proof-of-work at block', i);
         return false;
       }
     }
@@ -167,7 +173,8 @@ class VitalMatchBlockchain {
     for (const block of this.chain) {
       if (block.data && Array.isArray(block.data)) {
         for (const transaction of block.data) {
-          if (transaction.type === 'donation' && transaction.donorId === donorId) {
+          // Loose equality: ids are stored as numbers in some records and strings in others
+          if (transaction.type === 'donation' && transaction.donorId == donorId) {
             history.push({
               blockIndex: block.index,
               timestamp: transaction.timestamp,
@@ -189,7 +196,8 @@ class VitalMatchBlockchain {
     for (const block of this.chain) {
       if (block.data && Array.isArray(block.data)) {
         for (const transaction of block.data) {
-          if (transaction.requestId === requestId) {
+          // Loose equality: ids are stored as numbers in some records and strings in others
+          if (transaction.requestId == requestId) {
             chain.push({
               type: transaction.type,
               blockIndex: block.index,

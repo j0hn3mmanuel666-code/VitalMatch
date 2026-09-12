@@ -9,7 +9,8 @@ export const Notification = sequelize.define("Notification", {
     references: {
       model: User,
       key: 'id'
-    }
+    },
+    onDelete: 'CASCADE'
   },
   title: {
     type: DataTypes.STRING,
@@ -34,5 +35,5 @@ export const Notification = sequelize.define("Notification", {
 });
 
 // Setup Associations
-User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
-Notification.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications', onDelete: 'CASCADE' });
+Notification.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });

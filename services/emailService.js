@@ -53,11 +53,14 @@ export class EmailService {
   async setupRealTransporter() {
     try {
       console.log('📧 Setting up real email transporter...');
+      // Gmail displays app passwords with spaces ("xxxx xxxx xxxx xxxx")
+      // but SMTP rejects them — strip all whitespace first.
+      const appPassword = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
       this.transporter = nodemailer.createTransport({
         service: 'gmail', // You can change this to other services
         auth: {
           user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS, // Use App Password for Gmail
+          pass: appPassword, // Use App Password for Gmail
         },
       });
       console.log('📧 Real email transporter configured successfully');
@@ -183,6 +186,38 @@ export class EmailService {
   }
 
   /**
+   * Send password reset email
+   * @param {string} email - User's email address
+   * @param {string} firstName - User's first name
+   * @param {string} token - Password reset token
+   * @returns {Promise<{success: boolean, previewUrl: string|null}>} Success status and optional preview URL
+   */
+  async sendPasswordResetEmail(email, firstName, token) {
+    try {
+      const resetUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/reset-password/${token}`;
+
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'VitalMatch <noreply@vitalmatch.com>',
+        to: email,
+        subject: 'Reset Your VitalMatch Password',
+        html: `<h2>Hello ${firstName},</h2>
+          <p>We received a request to reset your VitalMatch password. Click the link below to choose a new password. This link expires in 1 hour.</p>
+          <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#dc2626;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;">Reset My Password</a></p>
+          <p>Or copy this link into your browser:<br><a href="${resetUrl}">${resetUrl}</a></p>
+          <p>If you did not request this, you can safely ignore this email.</p>`
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log('📧 Password reset email sent:', info.messageId);
+
+      return { success: true, previewUrl: nodemailer.getTestMessageUrl(info) || null };
+    } catch (error) {
+      console.error('❌ [EmailService] Error sending password reset email:', error);
+      return { success: false, previewUrl: null };
+    }
+  }
+
+  /**
    * Send welcome email after verification
    * @param {string} email - User's email address
    * @param {string} firstName - User's first name
@@ -243,7 +278,7 @@ export class EmailService {
    * @param {string} notes - Additional notes
    * @returns {Promise<boolean>} Success status
    */
-  async sendDonationScheduleEmail(email, firstName, request, scheduledDate, notes) {
+  async sendDonationScheduleEmail(email, firstName, request, scheduledDate, notes, confirmUrl = null) {
     try {
       const formattedDate = scheduledDate ? new Date(scheduledDate).toLocaleString('en-US', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -254,7 +289,7 @@ export class EmailService {
         from: process.env.EMAIL_FROM || 'VitalMatch <noreply@vitalmatch.com>',
         to: email,
         subject: 'VitalMatch - Blood Donation Scheduled',
-        html: this.getDonationScheduleTemplate(firstName, request, formattedDate, notes)
+        html: this.getDonationScheduleTemplate(firstName, request, formattedDate, notes, confirmUrl)
       };
 
       const info = await this.transporter.sendMail(mailOptions);
@@ -282,7 +317,7 @@ export class EmailService {
    * @param {string} notes - Additional notes
    * @returns {Promise<boolean>} Success status
    */
-  async sendRequesterScheduleEmail(email, firstName, request, scheduledDate, notes) {
+  async sendRequesterScheduleEmail(email, firstName, request, scheduledDate, notes, confirmUrl = null) {
     try {
       const formattedDate = scheduledDate ? new Date(scheduledDate).toLocaleString('en-US', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -293,7 +328,7 @@ export class EmailService {
         from: process.env.EMAIL_FROM || 'VitalMatch <noreply@vitalmatch.com>',
         to: email,
         subject: 'VitalMatch - Your Request is Scheduled',
-        html: this.getRequesterScheduleTemplate(firstName, request, formattedDate, notes)
+        html: this.getRequesterScheduleTemplate(firstName, request, formattedDate, notes, confirmUrl)
       };
 
       const info = await this.transporter.sendMail(mailOptions);
@@ -450,7 +485,7 @@ export class EmailService {
    * @param {string} notes - Additional instructions
    * @returns {string} HTML email template
    */
-  getDonationScheduleTemplate(firstName, request, formattedDate, notes) {
+  getDonationScheduleTemplate(firstName, request, formattedDate, notes, confirmUrl = null) {
     return `
       <!DOCTYPE html>
       <html>
@@ -504,7 +539,7 @@ export class EmailService {
             </ul>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.BASE_URL || 'http://localhost:3000'}/confirm-schedule/${request.id}/donor" style="display: inline-block; background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Confirm My Availability</a>
+              <a href="${confirmUrl || `${process.env.BASE_URL || 'http://localhost:3000'}/confirm-schedule/${request.id}/donor`}" style="display: inline-block; background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Confirm My Availability</a>
             </div>
             
             <p>If you are unable to make this appointment, please contact the admin team as soon as possible through the VitalMatch portal.</p>
@@ -528,7 +563,7 @@ export class EmailService {
    * @param {string} notes - Additional instructions
    * @returns {string} HTML email template
    */
-  getRequesterScheduleTemplate(firstName, request, formattedDate, notes) {
+  getRequesterScheduleTemplate(firstName, request, formattedDate, notes, confirmUrl = null) {
     return `
       <!DOCTYPE html>
       <html>
@@ -574,7 +609,7 @@ export class EmailService {
             ` : ''}
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.BASE_URL || 'http://localhost:3000'}/confirm-schedule/${request.id}/requester" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Confirm Appointment Details</a>
+              <a href="${confirmUrl || `${process.env.BASE_URL || 'http://localhost:3000'}/confirm-schedule/${request.id}/requester`}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Confirm Appointment Details</a>
             </div>
             
             <p>Please make sure to coordinate with the hospital regarding the specific blood transfusion arrangements.</p>

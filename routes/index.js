@@ -47,22 +47,38 @@ const router = express.Router();
 router.get("/", homePage);
 
 // Authentication routes
-import { loginPage, registerPage, forgotPasswordPage, dashboardPage, hospitalDashboardPage, loginUser, registerUser, logoutUser, verifyEmail, resendVerification } from "../controllers/authController.js";
+import { loginPage, registerPage, forgotPasswordPage, dashboardPage, hospitalDashboardPage, loginUser, registerUser, logoutUser, verifyEmail, resendVerification, requestPasswordReset, resetPasswordPage, resetPassword, searchDashboard } from "../controllers/authController.js";
 
 router.get("/login", loginPage);
 router.post("/login", authLimiter, validateLogin, loginUser);
 router.get("/register", registerPage);
 router.post("/register", authLimiter, validateRegistration, registerUser);
 router.get("/forgot-password", forgotPasswordPage);
+router.post("/forgot-password", authLimiter, requestPasswordReset);
+router.get("/reset-password/:token", resetPasswordPage);
+router.post("/reset-password/:token", authLimiter, resetPassword);
 router.get("/dashboard", isAuthenticated, dashboardPage);
+router.get("/api/search", isAuthenticated, searchDashboard);
 router.get("/logout", logoutUser);
+
+// User History + Help pages
+import { historyPage, helpPage } from "../controllers/userPagesController.js";
+
+router.get("/history", isAuthenticated, historyPage);
+router.get("/help", isAuthenticated, helpPage);
+
+// Blood map (Leaflet + OpenStreetMap, no API key needed)
+import { mapPage, mapPins } from "../controllers/mapController.js";
+
+router.get("/map", isAuthenticated, mapPage);
+router.get("/api/map-pins", isAuthenticated, mapPins);
 
 // Email verification routes
 router.get("/verify-email", verifyEmail);
 router.post("/resend-verification", authLimiter, resendVerification);
 
 // Blood Request Routes (Protected)
-import { requestBloodPage, newRequestBloodPage, simpleRequestBloodPage, viewBloodRequestPage, submitBloodRequest } from "../controllers/bloodRequestController.js";
+import { requestBloodPage, newRequestBloodPage, simpleRequestBloodPage, viewBloodRequestPage, submitBloodRequest, pledgeToDonate, withdrawPledge, escalateRequest, clearEmergency } from "../controllers/bloodRequestController.js";
 
 // Test route to debug routing issues
 router.get("/test-route", (req, res) => {
@@ -91,19 +107,28 @@ router.get("/admin/debug-session", (req, res) => {
   });
 });
 
-router.get("/simple-blood-request", simpleRequestBloodPage);
-router.get("/new-blood-request", newRequestBloodPage);
-router.get("/blood-request", requestBloodPage);
-router.get("/request-blood", requestBloodPage);
+router.get("/simple-blood-request", isAuthenticated, simpleRequestBloodPage);
+router.get("/new-blood-request", isAuthenticated, newRequestBloodPage);
+router.get("/blood-request", isAuthenticated, requestBloodPage);
+router.get("/request-blood", isAuthenticated, requestBloodPage);
 router.get("/view-blood-request/:id", isAuthenticated, viewBloodRequestPage);
-router.post("/simple-blood-request", submitBloodRequest);
-router.post("/new-blood-request", validateBloodRequest, submitBloodRequest);
-router.post("/blood-request", validateBloodRequest, submitBloodRequest);
-router.post("/request-blood", validateBloodRequest, submitBloodRequest);
+router.post("/requests/:id/pledge", isAuthenticated, pledgeToDonate);
+router.post("/requests/:id/pledge/withdraw", isAuthenticated, withdrawPledge);
+router.post("/requests/:id/escalate", isAuthenticated, escalateRequest);
+router.post("/requests/:id/clear-emergency", isAuthenticated, clearEmergency);
+router.post("/simple-blood-request", isAuthenticated, validateBloodRequest, submitBloodRequest);
+router.post("/new-blood-request", isAuthenticated, validateBloodRequest, submitBloodRequest);
+router.post("/blood-request", isAuthenticated, validateBloodRequest, submitBloodRequest);
+router.post("/request-blood", isAuthenticated, validateBloodRequest, submitBloodRequest);
 
-// Appointment / Schedule Routes
-import { confirmSchedule } from "../controllers/appointmentController.js";
-router.get("/confirm-schedule/:id/:role", confirmSchedule);
+// Appointment / Schedule Routes (GET shows the page, POST performs the confirmation)
+import { confirmSchedulePage, confirmScheduleSubmit, confirmByTokenPage, confirmByTokenSubmit, donorAppointmentsPage, declineAppointment } from "../controllers/appointmentController.js";
+router.get("/confirm-schedule/:id/:role", isAuthenticated, confirmSchedulePage);
+router.post("/confirm-schedule/:id/:role", isAuthenticated, confirmScheduleSubmit);
+router.get("/schedule-confirm/:token", confirmByTokenPage);
+router.post("/schedule-confirm/:token", confirmByTokenSubmit);
+router.get("/my-appointments", isAuthenticated, donorAppointmentsPage);
+router.post("/appointments/:id/decline", isAuthenticated, declineAppointment);
 
 // Notification Routes (Protected)
 import { getNotifications, markAsRead, markAllAsRead, clearAll, notificationsPage } from "../controllers/notificationController.js";
@@ -124,10 +149,26 @@ router.post("/donor-profile", isAuthenticated, validateProfileUpdate, updateDono
 router.get("/my-requests", isAuthenticated, myRequestsPage);
 router.post("/cancel-request/:id", isAuthenticated, cancelRequest);
 
+// User Settings Routes (Protected)
+import { settingsPage as userSettingsPage, updateProfile, updateDonorSettings, updateNotificationPrefs, changePassword } from "../controllers/userSettingsController.js";
+
+router.get("/settings", isAuthenticated, userSettingsPage);
+router.post("/settings/profile", isAuthenticated, updateProfile);
+router.post("/settings/donor", isAuthenticated, updateDonorSettings);
+router.post("/settings/notifications", isAuthenticated, updateNotificationPrefs);
+router.post("/settings/password", isAuthenticated, changePassword);
+
 // Admin Routes (Protected - Admin Only)
-import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsPage, adminReportsPage, adminBlockchainPage, adminNewBloodRequestPage, createBloodRequest, fulfillRequest, deleteRequest, getUserManagementPage, getUserList, getUserDetails, createUser, updateUser, deleteUser, bulkUpdateUsers, exportUsers, adminAppointmentsPage } from "../controllers/adminController.js";
+import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsPage, adminReportsPage, adminBlockchainPage, adminNewBloodRequestPage, createBloodRequest, fulfillRequest, deleteRequest, getUserManagementPage, getUserList, getUserDetails, createUser, updateUser, deleteUser, bulkUpdateUsers, exportUsers, adminAppointmentsPage, setHospitalStatus, exportReports } from "../controllers/adminController.js";
 
 router.get("/hospital/dashboard", isAuthenticated, isHospital, hospitalDashboardPage);
+
+// Hospital patient records
+import { patientRecordsPage, approveRequest, declineRequest } from "../controllers/hospitalController.js";
+
+router.get("/hospital/patients", isAuthenticated, isHospital, patientRecordsPage);
+router.post("/hospital/requests/:id/approve", isAuthenticated, isHospital, approveRequest);
+router.post("/hospital/requests/:id/decline", isAuthenticated, isHospital, declineRequest);
 router.get("/admin/dashboard", isAdmin, adminDashboardPage);
 router.get("/admin/requests", isAdmin, adminRequestsPage);
 router.get("/admin/appointments", isAdmin, adminAppointmentsPage);
@@ -135,7 +176,9 @@ router.get("/admin/new-blood-request", isAdmin, adminNewBloodRequestPage);
 router.post("/admin/new-blood-request", isAdmin, validateBloodRequest, createBloodRequest);
 router.get("/admin/donors", isAdmin, adminDonorsPage);
 router.get("/admin/hospitals", isAdmin, adminHospitalsPage);
+router.post("/admin/hospitals/:id/:action", isAdmin, setHospitalStatus);
 router.get("/admin/reports", isAdmin, adminReportsPage);
+router.get("/admin/reports/export", isAdmin, exportReports);
 router.get("/admin/blockchain", isAdmin, adminBlockchainPage);
 router.post("/admin/fulfill-request/:id", isAdmin, fulfillRequest);
 router.delete("/admin/delete-request/:id", isAdmin, deleteRequest);
@@ -145,7 +188,7 @@ router.get("/admin/users", isAdmin, getUserManagementPage);
 router.get("/admin/users/api", isAdmin, apiLimiter, dbOptimization, getUserList);
 router.get("/admin/users/:id", isAdmin, apiLimiter, getUserDetails);
 router.post("/admin/users", isAdmin, validateAdminUserCreation, createUser);
-router.put("/admin/users/:id", isAdmin, validateApiParams(['firstName', 'lastName', 'email', 'role'], ['phone', 'bloodType', 'isActive']), updateUser);
+router.put("/admin/users/:id", isAdmin, validateApiParams(['firstName', 'lastName', 'email', 'role'], ['phone', 'bloodType', 'isActive', 'id', 'address', 'dateOfBirth', 'gender', 'hospitalName']), updateUser);
 router.delete("/admin/users/:id", isAdmin, deleteUser);
 router.post("/admin/users/bulk", isAdmin, bulkUpdateUsers);
 router.get("/admin/users/export", isAdmin, exportUsers);

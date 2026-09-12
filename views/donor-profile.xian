@@ -1,17 +1,18 @@
 {{> head}}
 
+{{> user-sidebar}}
+
 <!-- Navigation Bar -->
 <nav class="bg-white shadow-md">
   <div class="container mx-auto px-4 py-4">
     <div class="flex items-center justify-between">
       <!-- Back Button & Logo/Brand -->
       <div class="flex items-center space-x-1 sm:space-x-3">
-        <a href="javascript:history.length > 1 ? history.back() : window.location.href='/dashboard'"
-          class="p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors">
+        <label for="sidebar-toggle" class="cursor-pointer p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors" title="Menu">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
-        </a>
+        </label>
         <div class="flex items-center space-x-1 sm:space-x-2">
           <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -54,12 +55,19 @@
         </div>
 
         <form id="donorProfileForm" action="/donor-profile" method="POST" novalidate>
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
 
-          <!-- Progress Indicator -->
-          <div class="mb-8">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-semibold text-gray-600">Profile Completion</span>
+          <!-- Step Indicator -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-sm font-semibold text-gray-600">Step <span id="donorStepNumber">1</span> of 4</span>
               <span id="progressText" class="text-sm text-gray-500">0% Complete</span>
+            </div>
+            <div class="flex items-center mb-4">
+              <div class="donor-step-pill flex-1 text-center text-xs font-semibold py-2 rounded-l-lg" data-step-pill="1">1. Personal</div>
+              <div class="donor-step-pill flex-1 text-center text-xs font-semibold py-2" data-step-pill="2">2. Contact</div>
+              <div class="donor-step-pill flex-1 text-center text-xs font-semibold py-2" data-step-pill="3">3. Medical</div>
+              <div class="donor-step-pill flex-1 text-center text-xs font-semibold py-2 rounded-r-lg" data-step-pill="4">4. Finish</div>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2">
               <div id="progressBar"
@@ -69,7 +77,7 @@
           </div>
 
           <!-- Personal Information Section -->
-          <div class="mb-8">
+          <div class="mb-8 donor-step" data-step="1">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -231,7 +239,7 @@
           </div>
 
           <!-- Contact Information Section -->
-          <div class="mb-8">
+          <div class="mb-8 donor-step hidden" data-step="2">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -258,7 +266,7 @@
           </div>
 
           <!-- Address Information Section -->
-          <div class="mb-8">
+          <div class="mb-8 donor-step hidden" data-step="2">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -280,9 +288,30 @@
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label class="block text-gray-700 font-semibold mb-2">City *</label>
-                  <input type="text" name="city" required
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter city">
+                  <div data-city-wrap>
+                    <select name="city" data-city-select required
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                      <option value="">Select municipality</option>
+                      <option>Baco</option>
+                      <option>Bansud</option>
+                      <option>Bongabong</option>
+                      <option>Bulalacao</option>
+                      <option>Calapan City</option>
+                      <option>Gloria</option>
+                      <option>Mansalay</option>
+                      <option>Naujan</option>
+                      <option>Pinamalayan</option>
+                      <option>Pola</option>
+                      <option>Puerto Galera</option>
+                      <option>Roxas</option>
+                      <option>San Teodoro</option>
+                      <option>Socorro</option>
+                      <option>Victoria</option>
+                      <option value="__other">Others (specify)</option>
+                    </select>
+                    <input type="text" data-city-other placeholder="Specify municipality"
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2 hidden">
+                  </div>
                 </div>
 
                 <div>
@@ -305,7 +334,7 @@
           </div>
 
           <!-- Medical Information Section -->
-          <div class="mb-8">
+          <div class="mb-8 donor-step hidden" data-step="3">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -331,7 +360,7 @@
           </div>
 
           <!-- Availability Status Section -->
-          <div class="mb-8">
+          <div class="mb-8 donor-step hidden" data-step="4">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -355,7 +384,7 @@
           </div>
 
           <!-- Emergency Contact Section -->
-          <div class="mb-8">
+          <div class="mb-8 donor-step hidden" data-step="4">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -388,14 +417,18 @@
             </div>
           </div>
 
-          <!-- Submit Button -->
-          <div class="flex justify-end space-x-4">
-            <a href="/dashboard"
-              class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition">
-              Cancel
-            </a>
-            <button type="submit"
-              class="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+          <!-- Wizard Navigation -->
+          <div class="flex justify-between items-center">
+            <button type="button" id="donorWizardBack"
+              class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition invisible">
+              &larr; Back
+            </button>
+            <button type="button" id="donorWizardNext"
+              class="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl">
+              Next &rarr;
+            </button>
+            <button type="submit" id="donorSubmitBtn"
+              class="hidden px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1">
               Save Donor Profile
             </button>
           </div>
@@ -429,6 +462,33 @@
 
 {{> footer}}
 
+{{#if donor}}
+<script type="application/json" id="donor-data">{{{donorJson}}}</script>
+<script>
+  // Pre-fill the form when editing an existing donor profile
+  (function () {
+    try {
+      var data = JSON.parse(document.getElementById("donor-data").textContent);
+      if (!data) return;
+      var form = document.getElementById("donorProfileForm");
+      Object.keys(data).forEach(function (key) {
+        var field = form.querySelector("[name=\"" + key + "\"]");
+        if (!field || data[key] === null || data[key] === undefined || data[key] === "") return;
+        if (field.type === "checkbox") {
+          field.checked = !!data[key];
+        } else {
+          field.value = data[key];
+        }
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        field.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    } catch (e) {
+      console.error("Could not pre-fill donor form:", e);
+    }
+  })();
+</script>
+{{/if}}
+
 <script>
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(position => {
@@ -436,6 +496,63 @@
       document.getElementById('donorLongitude').value = position.coords.longitude;
     }, () => {});
   }
+</script>
+
+<script>
+  // Multi-step wizard for the donor form: validate each short step before advancing
+  (function () {
+    var currentStep = 1;
+    var totalSteps = 4;
+    var form = document.getElementById('donorProfileForm');
+    if (!form) return;
+
+    function validateStep(n) {
+      var steps = form.querySelectorAll('.donor-step[data-step="' + n + '"]');
+      for (var s = 0; s < steps.length; s++) {
+        var fields = steps[s].querySelectorAll('input, select, textarea');
+        for (var i = 0; i < fields.length; i++) {
+          var f = fields[i];
+          if (f.type === 'hidden' || f.type === 'checkbox' || f.disabled) continue;
+          if (f.hasAttribute('required') && !String(f.value).trim()) {
+            f.focus();
+            if (f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            f.classList.add('border-red-500');
+            (function (el) { setTimeout(function () { el.classList.remove('border-red-500'); }, 2500); })(f);
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function showStep(n) {
+      currentStep = Math.min(Math.max(n, 1), totalSteps);
+      form.querySelectorAll('.donor-step').forEach(function (s) {
+        s.classList.toggle('hidden', s.getAttribute('data-step') != currentStep);
+      });
+      document.querySelectorAll('[data-step-pill].donor-step-pill').forEach(function (p) {
+        var pn = parseInt(p.getAttribute('data-step-pill'), 10);
+        p.classList.remove('bg-blue-600', 'text-white', 'bg-green-100', 'text-green-700', 'bg-gray-100', 'text-gray-500');
+        if (pn < currentStep) { p.classList.add('bg-green-100', 'text-green-700'); }
+        else if (pn === currentStep) { p.classList.add('bg-blue-600', 'text-white'); }
+        else { p.classList.add('bg-gray-100', 'text-gray-500'); }
+      });
+      document.getElementById('donorStepNumber').textContent = currentStep;
+      document.getElementById('donorWizardBack').classList.toggle('invisible', currentStep === 1);
+      document.getElementById('donorWizardNext').classList.toggle('hidden', currentStep === totalSteps);
+      document.getElementById('donorSubmitBtn').classList.toggle('hidden', currentStep !== totalSteps);
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.getElementById('donorWizardNext').addEventListener('click', function () {
+      if (validateStep(currentStep)) showStep(currentStep + 1);
+    });
+    document.getElementById('donorWizardBack').addEventListener('click', function () {
+      showStep(currentStep - 1);
+    });
+
+    showStep(1);
+  })();
 </script>
 
 <!-- Tooltip Container -->

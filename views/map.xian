@@ -1,0 +1,138 @@
+{{> head}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+{{> user-sidebar}}
+
+<style>
+  @keyframes emgPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+    50% { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
+  }
+</style>
+
+<!-- Navigation Bar -->
+<nav class="bg-white shadow-md">
+  <div class="container mx-auto px-4 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-1 sm:space-x-3">
+        <label for="sidebar-toggle" class="cursor-pointer p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors" title="Menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </label>
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+          </svg>
+          <a href="/dashboard" class="text-xl sm:text-2xl font-bold text-gray-800">VitalMatch</a>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="/dashboard" class="text-gray-700 hover:text-red-600 transition">Dashboard</a>
+        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Logout</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Map Content -->
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="container mx-auto px-4">
+    <div class="max-w-6xl mx-auto">
+
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Blood Map of Mindoro</h1>
+        <p class="text-gray-600">Hospitals with open requests, urgent needs, Red Cross centers, and donor coverage. Toggle layers on the map.</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div id="bloodMap" class="w-full" style="height: 70vh; min-height: 480px;"></div>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-6 py-4 border-t border-gray-100 text-sm text-gray-600">
+          <span class="flex items-center"><span class="inline-block w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold text-center leading-4 mr-2">H</span>Hospital</span>
+          <span class="flex items-center"><span class="inline-block w-4 h-4 rounded-full bg-red-600 text-white text-[10px] font-bold text-center leading-4 mr-2">!</span>Urgent request</span>
+          <span class="flex items-center"><span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white border-2 border-red-600 text-red-600 text-[10px] font-bold mr-2">+</span>Red Cross</span>
+          <span class="flex items-center"><span class="inline-block w-4 h-4 rounded-full bg-green-600 mr-2"></span>Available donor (approx.)</span>
+          <span class="flex items-center"><span class="inline-block w-4 h-4 rounded-full bg-orange-500 text-white text-[10px] font-bold text-center leading-4 mr-2">#</span>Donor coverage</span>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-500 mt-4">Donor pins are approximate city-level locations to protect privacy. Only hospitals see available-donor coverage; your exact location is visible only to you.</p>
+
+    </div>
+  </div>
+</div>
+
+{{> footer}}
+
+<script>
+  var map = L.map("bloodMap").setView([12.95, 121.30], 9);
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Esri, HERE, Garmin, OpenStreetMap contributors" }).addTo(map);
+
+  function dot(bg, text, extra) {
+    return L.divIcon({ className: "", html: "<span style='display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9999px;background:" + bg + ";color:#fff;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);" + (extra || "") + "'>" + text + "</span>", iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -14] });
+  }
+
+  var layers = {
+    "Hospitals": L.layerGroup().addTo(map),
+    "Urgent requests": L.layerGroup().addTo(map),
+    "Red Cross": L.layerGroup().addTo(map),
+    "Donors": L.layerGroup().addTo(map)
+  };
+  L.control.layers(null, layers, { collapsed: false }).addTo(map);
+
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  fetch("/api/map-pins")
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.success) return;
+      var pins = data.pins;
+
+      pins.hospitals.forEach(function (h) {
+        L.marker([h.lat, h.lng], { icon: dot("#2563eb", "H") })
+          .bindPopup("<strong>" + esc(h.name) + "</strong><br>" + esc(h.city || "") + ", " + esc(h.province || "") + "<br>Open requests: " + h.openRequests + (h.approximate ? "<br><em>Approximate location</em>" : ""))
+          .addTo(layers["Hospitals"]);
+      });
+
+      pins.requests.forEach(function (q) {
+        var reqIcon = q.emergencyActive
+          ? dot("#dc2626", esc(q.bloodType || "!"), "width:38px !important;height:38px !important;animation:emgPulse 1.2s infinite;")
+          : dot("#dc2626", esc(q.bloodType || "!"));
+        L.marker([q.lat, q.lng], { icon: reqIcon })
+          .bindPopup((q.emergencyActive ? "<strong style='color:#dc2626;'>EMERGENCY</strong><br>" : "") + "<strong>" + esc(q.bloodType) + " needed (" + q.units + " unit" + (q.units > 1 ? "s" : "") + ")</strong><br>" + esc(q.hospital) + ", " + esc(q.city) + "<br>Urgency: " + esc(q.urgency) + (q.approximate ? "<br><em>Approximate location</em>" : "") + "<br><a href='/view-blood-request/" + q.id + "' style='color:#dc2626;font-weight:600;'>View request</a>")
+          .addTo(layers["Urgent requests"]);
+      });
+
+      pins.redcross.forEach(function (c) {
+        L.marker([c.lat, c.lng], { icon: dot("#ffffff", "+", "color:#dc2626 !important;border-color:#dc2626 !important;") })
+          .bindPopup("<strong>" + esc(c.name) + "</strong><br>" + esc(c.address) + "<br>" + esc(c.phone || ""))
+          .addTo(layers["Red Cross"]);
+      });
+
+      pins.donors.forEach(function (d) {
+        L.marker([d.lat, d.lng], { icon: dot("#16a34a", esc(d.bloodType || "")) })
+          .bindPopup("<strong>" + esc(d.bloodType) + " donor</strong><br>" + esc(d.city || "") + "<br><em>Approximate location</em>")
+          .addTo(layers["Donors"]);
+      });
+
+      pins.donorCounts.forEach(function (c) {
+        var breakdown = Object.keys(c.types).map(function (k) { return k + ": " + c.types[k]; }).join(", ");
+        L.marker([c.lat, c.lng], { icon: dot("#f97316", String(c.count)) })
+          .bindPopup("<strong>" + esc(c.city) + "</strong><br>" + c.count + " available donor" + (c.count > 1 ? "s" : "") + "<br>" + esc(breakdown))
+          .addTo(layers["Donors"]);
+      });
+
+      if (pins.self) {
+        L.marker([pins.self.lat, pins.self.lng], { icon: dot("#2563eb", "You", "width:auto !important;padding:0 10px;") })
+          .bindPopup("<strong>Your location</strong><br>" + esc(pins.self.city || "") + "<br>Status: " + (pins.self.isAvailable ? "Available" : "Paused") + (pins.self.approximate ? "<br><em>Approximate location</em>" : ""))
+          .addTo(map);
+      }
+
+      var all = [];
+      ["hospitals", "requests", "redcross", "donors", "donorCounts"].forEach(function (k) { (pins[k] || []).forEach(function (p) { all.push([p.lat, p.lng]); }); });
+      if (pins.self) all.push([pins.self.lat, pins.self.lng]);
+      if (all.length > 0) map.fitBounds(all, { padding: [40, 40] });
+    })
+    .catch(function (err) { console.error("Map pins failed:", err); });
+</script>

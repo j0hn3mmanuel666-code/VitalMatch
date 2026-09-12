@@ -8,6 +8,7 @@
     content="VitalMatch - Digital Blood Request Platform connecting hospitals with qualified donors in real-time, powered by the Philippine Red Cross">
   <script src="https://cdn.tailwindcss.com"></script>
   <title>{{ title }}</title>
+  <meta name="csrf-token" content="{{csrfToken}}">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -15,7 +16,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#ef4444">
-  <script src="/js/pwa-register.js" defer></script>
+  <script src="/js/pwa-register.js?v=3" defer></script>
 </head>
 
 <body>

@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-import { DataTypes } from "sequelize";
+import { DataTypes, Op } from "sequelize";
 import { sequelize } from "../models/db.js";
 
 // Define AuditLog model
@@ -109,7 +109,7 @@ class AuditService {
   static async logAction(adminId, action, tableName, targetId, oldValues, newValues, context = {}) {
     try {
       await AuditLog.create({
-        userId: null,
+        userId: targetId ?? null,
         adminId,
         action,
         tableName,

@@ -1,45 +1,5 @@
 {{> head-public }}
 
-<!-- Success Message for Guest Submissions -->
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('success') === 'true') {
-      const requestId = urlParams.get('requestId');
-      const successDiv = document.createElement('div');
-      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-md';
-      successDiv.innerHTML = `
-        <div class="flex items-center">
-          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          <div>
-            <h4 class="font-semibold">Blood Request Submitted Successfully!</h4>
-            <p class="text-sm">Request ID: ${requestId || 'N/A'}</p>
-            <p class="text-sm">Recorded on blockchain. Donors will be notified.</p>
-          </div>
-          <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-      `;
-      document.body.appendChild(successDiv);
-
-      // Auto-remove after 10 seconds
-      setTimeout(() => {
-        if (successDiv.parentElement) {
-          successDiv.remove();
-        }
-      }, 10000);
-
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  });
-</script>
-
 <style>
   @keyframes float {
 
@@ -427,6 +387,7 @@
     <!-- Modal Body (Form) -->
     <div class="p-6 md:p-8 max-h-[80vh] overflow-y-auto">
       <form action="/submit-call-for-donation" method="POST">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <!-- Full Name -->

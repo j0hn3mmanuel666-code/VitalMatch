@@ -28,11 +28,35 @@ import { BloodRequest } from "../models/bloodRequestModel.js";
 import { vitalMatchBlockchain } from "../services/blockchainService.js";
 await sequelize.sync();
 
-// Display the donor profile form
-export const donorProfilePage = (req, res) => {
-  res.render("donor-profile", {
-    title: "Donor Profile - VitalMatch"
-  });
+// Display the donor profile form (pre-filled when the user already has one)
+export const donorProfilePage = async (req, res) => {
+  try {
+    const donor = await Donor.findOne({
+      where: { userId: req.session.userId },
+      order: [["createdAt", "DESC"]]
+    });
+
+    let donorJson = "null";
+    if (donor) {
+      const data = donor.toJSON();
+      if (data.dateOfBirth) data.dateOfBirth = new Date(data.dateOfBirth).toISOString().slice(0, 10);
+      if (data.lastDonationDate) data.lastDonationDate = new Date(data.lastDonationDate).toISOString().slice(0, 10);
+      donorJson = JSON.stringify(data);
+    }
+
+    res.render("donor-profile", {
+      title: "Donor Profile - VitalMatch",
+      donor: donor ? donor.toJSON() : null,
+      donorJson
+    });
+  } catch (error) {
+    console.error("Error loading donor profile form:", error);
+    res.render("donor-profile", {
+      title: "Donor Profile - VitalMatch",
+      donor: null,
+      donorJson: "null"
+    });
+  }
 };
 
 // Display the donor profile view (read-only)
@@ -124,8 +148,7 @@ export const updateDonorProfile = async (req, res) => {
       return res.redirect("/donor-profile");
     }
 
-    // Save to database
-    const newDonor = await Donor.create({
+    const donorData = {
       fullName,
       dateOfBirth,
       gender,
@@ -145,7 +168,25 @@ export const updateDonorProfile = async (req, res) => {
       isAvailable: isAvailable === 'on',
       emergencyContactName,
       emergencyContactNumber,
-      emergencyContactRelationship,
+      emergencyContactRelationship
+    };
+
+    // Update the existing record instead of creating a duplicate
+    const existingDonor = await Donor.findOne({
+      where: { userId: req.session.userId },
+      order: [["createdAt", "DESC"]]
+    });
+
+    if (existingDonor) {
+      await existingDonor.update(donorData);
+      console.log("Donor profile updated:", existingDonor.id);
+      req.flash("success_msg", "Donor profile updated successfully!");
+      return res.redirect("/view-donor-profile");
+    }
+
+    // First-time registration: save to database
+    const newDonor = await Donor.create({
+      ...donorData,
       userId: req.session.userId
     });
 
@@ -222,29 +263,34 @@ export const cancelRequest = async (req, res) => {
 
     if (!request) {
       req.flash("error_msg", "Request not found or you don't have permission to cancel it");
-      return res.redirect("/my-requests");
+      return res.redirect(req.get("Referer") || "/my-requests");
     }
 
     // Check if request is already cancelled or fulfilled
     if (request.status === 'cancelled') {
       req.flash("error_msg", "This request is already cancelled");
-      return res.redirect("/my-requests");
+      return res.redirect(req.get("Referer") || "/my-requests");
     }
 
     if (request.status === 'fulfilled') {
       req.flash("error_msg", "Cannot cancel a fulfilled request");
-      return res.redirect("/my-requests");
+      return res.redirect(req.get("Referer") || "/my-requests");
     }
 
-    // Update status to cancelled
-    await request.update({ status: 'cancelled' });
+    // Update status to cancelled (clears any escalation)
+    await request.update({
+      status: 'cancelled',
+      isEmergency: false,
+      emergencyAt: null,
+      emergencyExpiresAt: null
+    });
 
     req.flash("success_msg", "Blood request cancelled successfully");
-    res.redirect("/my-requests");
+    res.redirect(req.get("Referer") || "/my-requests");
 
   } catch (error) {
     console.error("Error cancelling request:", error);
     req.flash("error_msg", "An error occurred while cancelling the request");
-    res.redirect("/my-requests");
+    res.redirect(req.get("Referer") || "/my-requests");
   }
 };

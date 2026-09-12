@@ -1,17 +1,18 @@
 {{> head}}
 
+{{> user-sidebar}}
+
 <!-- Navigation Bar -->
 <nav class="bg-white shadow-md">
   <div class="container mx-auto px-4 py-4">
     <div class="flex items-center justify-between">
       <!-- Back Button & Logo/Brand -->
       <div class="flex items-center space-x-1 sm:space-x-3">
-        <a href="javascript:history.length > 1 ? history.back() : window.location.href='/dashboard'"
-          class="p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors">
+        <label for="sidebar-toggle" class="cursor-pointer p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors" title="Menu">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
-        </a>
+        </label>
         <div class="flex items-center space-x-1 sm:space-x-2">
           <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -147,6 +148,9 @@
             </div>
           </div>
 
+          <p class="text-sm text-gray-600 mb-3 truncate">{{patientName}} · {{hospitalName}} · {{city}}</p>
+
+          <div id="more-{{id}}" class="hidden">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <p class="text-gray-600 text-sm mb-1">Patient</p>
@@ -200,18 +204,23 @@
             </div>
           </div>
           {{/if}}
+          </div>
 
           <!-- Action Buttons -->
           <div class="flex space-x-3">
+            <button onclick="toggleCard({{id}}, this)"
+              class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 font-semibold hover:bg-gray-50 transition-all duration-200">
+              More
+            </button>
             <a href="/view-blood-request/{{id}}"
-              class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 transform hover:scale-105 text-center">
+              class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 text-center">
               View Details
             </a>
             {{#if (eq status 'active')}}
             <button
               class="px-4 py-2 border border-red-300 rounded-lg text-red-600 font-semibold hover:bg-red-50 transition-all duration-200"
               onclick="confirmCancel({{id}})">
-              Cancel Request
+              Cancel
             </button>
             {{/if}}
           </div>
@@ -238,39 +247,6 @@
           </a>
         </div>
         {{/if}}
-        <div>
-          <p class="text-gray-600 text-sm mb-1">Location</p>
-          <p class="font-semibold text-gray-800">Bongabong, Oriental Mindoro</p>
-        </div>
-        <div>
-          <p class="text-gray-600 text-sm mb-1">Fulfilled On</p>
-          <p class="font-semibold text-gray-800">January 11, 2024</p>
-        </div>
-      </div>
-
-      <!-- Success Message -->
-      <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-        <div class="flex items-center">
-          <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clip-rule="evenodd" />
-          </svg>
-          <span class="text-green-800 text-sm font-semibold">Successfully matched with donor Maria Santos</span>
-        </div>
-      </div>
-
-      <div class="flex space-x-3">
-        <button
-          class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200">
-          View Details
-        </button>
-        <button
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200">
-          Thank Donor
-        </button>
-      </div>
-    </div>
 
     <!-- No Results State -->
     <div id="noResults" class="hidden bg-white rounded-xl shadow-md p-12 text-center">
@@ -497,6 +473,13 @@
 
   // Cancel Request Functions
   let requestToCancel = null;
+
+  function toggleCard(id, btn) {
+    const more = document.getElementById('more-' + id);
+    if (!more) return;
+    const hidden = more.classList.toggle('hidden');
+    btn.textContent = hidden ? 'More' : 'Less';
+  }
 
   function confirmCancel(requestId) {
     requestToCancel = requestId;

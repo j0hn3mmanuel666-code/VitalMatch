@@ -7,6 +7,7 @@ Mindoro State University - Philippines
 
 import { DataTypes } from "sequelize";
 import { sequelize } from "./db.js";
+import { User } from "./userModel.js";
 
 export const Donor = sequelize.define("Donor", {
   fullName: { type: DataTypes.STRING, allowNull: false },
@@ -29,7 +30,16 @@ export const Donor = sequelize.define("Donor", {
   emergencyContactName: { type: DataTypes.STRING, allowNull: false },
   emergencyContactNumber: { type: DataTypes.STRING, allowNull: false },
   emergencyContactRelationship: { type: DataTypes.STRING, allowNull: false },
-  userId: { type: DataTypes.INTEGER, allowNull: false }
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    unique: true, // one donor profile per user (matches upsert flow)
+    references: { model: User, key: "id" },
+    onDelete: "CASCADE"
+  }
 });
+
+Donor.belongsTo(User, { foreignKey: "userId", onDelete: "CASCADE" });
+User.hasMany(Donor, { foreignKey: "userId", onDelete: "CASCADE" });
 
 export { sequelize };

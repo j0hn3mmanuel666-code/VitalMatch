@@ -31,6 +31,7 @@
     <!-- Form -->
     <div class="bg-white rounded-xl shadow-md p-8">
       <form action="/admin/new-blood-request" method="POST" id="adminBloodRequestForm">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
 
         <!-- Patient Information -->
         <div class="mb-8">
@@ -104,8 +105,30 @@
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">City *</label>
-              <input type="text" name="city" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+              <div data-city-wrap>
+                <select name="city" data-city-select required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition bg-white">
+                  <option value="">Select municipality</option>
+                  <option>Baco</option>
+                  <option>Bansud</option>
+                  <option>Bongabong</option>
+                  <option>Bulalacao</option>
+                  <option>Calapan City</option>
+                  <option>Gloria</option>
+                  <option>Mansalay</option>
+                  <option>Naujan</option>
+                  <option>Pinamalayan</option>
+                  <option>Pola</option>
+                  <option>Puerto Galera</option>
+                  <option>Roxas</option>
+                  <option>San Teodoro</option>
+                  <option>Socorro</option>
+                  <option>Victoria</option>
+                  <option value="__other">Others (specify)</option>
+                </select>
+                <input type="text" data-city-other placeholder="Specify municipality"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition mt-2 hidden">
+              </div>
             </div>
 
             <div>

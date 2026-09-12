@@ -47,7 +47,8 @@ import {
   sanitizeInput,
   requestLogger,
   errorHandler,
-  sessionSecurity
+  sessionSecurity,
+  csrfProtection
 } from "./middleware/security.js";
 import {
   compressionMiddleware,
@@ -115,6 +116,9 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 app.use(sessionSecurity);
 app.use(flash());
+// CSRF: issues a per-session token on GET (exposed as res.locals.csrfToken)
+// and rejects POST/PUT/DELETE without a matching _csrf body field or X-CSRF-Token header
+app.use(csrfProtection);
 
 // Template engine configuration
 app.engine("xian", async (filePath, options, callback) => {
@@ -138,6 +142,8 @@ app.engine("xian", async (filePath, options, callback) => {
   }
 });
 
+import { attachNavUser } from "./middleware/adminAuth.js";
+
 // Flash messages middleware
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
@@ -153,6 +159,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// Shared user-sidebar data (navUser/navDonor/unread counts) for all pages
+app.use(attachNavUser);
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "xian");

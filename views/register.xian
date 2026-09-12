@@ -105,6 +105,7 @@
         </h2>
 
         <form class="bg-white p-8 rounded-xl shadow-2xl max-h-[600px] overflow-y-auto" method="POST" action="/register">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
 
           {{#if error}}
           <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow-sm animate-fade-in"

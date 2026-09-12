@@ -20,17 +20,19 @@ export const Call = sequelize.define("Call", {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: User,
       key: 'id'
-    }
+    },
+    onDelete: 'CASCADE'
   },
   calleeId: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: User,
       key: 'id'
-    }
+    },
+    onDelete: 'CASCADE'
   },
   conversationId: {
     type: DataTypes.STRING(50),
@@ -81,7 +83,7 @@ export const Call = sequelize.define("Call", {
 });
 
 // Relationships
-Call.belongsTo(User, { as: 'caller', foreignKey: 'callerId' });
-Call.belongsTo(User, { as: 'callee', foreignKey: 'calleeId' });
+Call.belongsTo(User, { as: 'caller', foreignKey: 'callerId', onDelete: 'CASCADE' });
+Call.belongsTo(User, { as: 'callee', foreignKey: 'calleeId', onDelete: 'CASCADE' });
 
 export { sequelize };
