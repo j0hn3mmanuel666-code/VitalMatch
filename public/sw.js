@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vitalmatch-v4';
+const CACHE_NAME = 'vitalmatch-v5';
 const PRECACHE = [
   '/',
   '/offline.html',
@@ -35,9 +35,17 @@ self.addEventListener('fetch', event => {
   const isApiRequest = requestURL.pathname.startsWith('/api/');
 
   // Never cache account-specific pages or API responses.
+  // Navigation requests: always hit the server first; only show offline
+  // page if the server is truly unreachable (not just restarting).
   if (isNavigationRequest || isApiRequest) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('/offline.html'))
+      fetch(event.request).catch(() => {
+        // Double-check: only serve offline if server is really down
+        return fetch('/health').then(r => {
+          // Server is up but original request failed — retry once
+          return fetch(event.request);
+        }).catch(() => caches.match('/offline.html'));
+      })
     );
     return;
   }
