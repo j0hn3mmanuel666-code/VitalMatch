@@ -133,10 +133,10 @@ export const adminDashboardPage = async (req, res) => {
         successfulMatches,
         livesSaved: successfulMatches * 2 // Estimate
       },
-      monthlyRequests: JSON.stringify(monthlyRequests),
-      bloodTypeDistribution: JSON.stringify(bloodTypeDistribution),
-      monthlyDonors: JSON.stringify(monthlyDonors),
-      statusBreakdown: JSON.stringify(statusBreakdown),
+      monthlyRequests: JSON.stringify(monthlyRequests).replace(/</g, '\\u003c'),
+      bloodTypeDistribution: JSON.stringify(bloodTypeDistribution).replace(/</g, '\\u003c'),
+      monthlyDonors: JSON.stringify(monthlyDonors).replace(/</g, '\\u003c'),
+      statusBreakdown: JSON.stringify(statusBreakdown).replace(/</g, '\\u003c'),
       recentRequests,
       topHospitals,
       regionalDistribution

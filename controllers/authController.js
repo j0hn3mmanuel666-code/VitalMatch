@@ -30,7 +30,7 @@ import { BloodRequest } from "../models/bloodRequestModel.js";
 import { Donor } from "../models/donorModel.js";
 import { PasswordReset } from "../models/passwordResetModel.js";
 import { emailService } from "../services/emailService.js";
-import { validatePassword } from "../middleware/validation.js";
+import { validatePassword, getBcryptRounds, hashToken } from "../middleware/validation.js";
 import { Op } from "sequelize";
 await sequelize.sync();
 
@@ -186,13 +186,14 @@ const buildDashboardData = async (userId) => {
 
   // Monthly request volume (last 6 months) for the hospital mini chart
   let hospitalChart = [];
+  let ownBuckets = [];
   if (userProfile && userProfile.role === "hospital") {
     const ownRecent = await BloodRequest.findAll({
       where: { userId, createdAt: { [Op.gte]: sixMonthsAgo } },
       attributes: ["createdAt"],
       raw: true
     });
-    const ownBuckets = monthBuckets.map(b => ({ ...b, count: 0 }));
+    ownBuckets = monthBuckets.map(b => ({ ...b, count: 0 }));
     ownRecent.forEach(r => {
       const d = new Date(r.createdAt);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -221,7 +222,9 @@ const buildDashboardData = async (userId) => {
     donorStatus,
     nextEligible,
     donationChart,
-    hospitalChart
+    hospitalChart,
+    hasDonationActivity: monthBuckets.some(b => b.count > 0),
+    hasHospitalActivity: ownBuckets.some(b => b.count > 0)
   };
 };
 
@@ -247,7 +250,9 @@ export const dashboardPage = async (req, res) => {
       donorStatus: "Unavailable",
       nextEligible: "Ready",
       donationChart: [],
-      hospitalChart: []
+      hospitalChart: [],
+      hasDonationActivity: false,
+      hasHospitalActivity: false
     });
   }
 };
@@ -278,7 +283,9 @@ export const hospitalDashboardPage = async (req, res) => {
       donorStatus: "Unavailable",
       nextEligible: "Ready",
       donationChart: [],
-      hospitalChart: []
+      hospitalChart: [],
+      hasDonationActivity: false,
+      hasHospitalActivity: false
     });
   }
 };
@@ -331,10 +338,14 @@ export const loginUser = async (req, res) => {
   const { email, password } = req.body;
   console.log(`🔐 [Login Attempt] Email: ${email}`);
 
+  // Generic response for unknown email OR wrong password so attackers cannot
+  // enumerate registered addresses. Verification/active status is only revealed
+  // after a correct password.
   const user = await User.findOne({ where: { email } });
-  if (!user) {
-    console.log(`❌ [Login Failed] User not found: ${email}`);
-    return res.render("login", { error: "User not found with that email address." });
+  const match = user ? await bcrypt.compare(password, user.password) : false;
+  if (!user || !match) {
+    console.log(`❌ [Login Failed] Invalid credentials: ${email}`);
+    return res.render("login", { error: "Invalid email or password." });
   }
 
   // Check if email is verified
@@ -353,12 +364,6 @@ export const loginUser = async (req, res) => {
     return res.render("login", { error: "Your account has been deactivated. Please contact support." });
   }
 
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) {
-    console.log(`❌ [Login Failed] Incorrect password: ${email}`);
-    return res.render("login", { error: "Incorrect password." });
-  }
-
   // Replace the old session so a previous account cannot leak into this login.
   req.session.regenerate((regenerateError) => {
     if (regenerateError) {
@@ -369,9 +374,7 @@ export const loginUser = async (req, res) => {
     req.session.userId = user.id;
     req.session.userRole = user.role;
 
-    console.log(`✅ [Login Success] User ${user.id} (${email}) logged in`);
-    console.log(`🔍 [Session Set] userId: ${req.session.userId}, userRole: ${req.session.userRole}`);
-    console.log(`🔍 [Session ID]: ${req.sessionID}`);
+    console.log(`✅ [Login Success] User ${user.id} logged in`);
 
     // Force session save before redirect
     req.session.save((saveError) => {
@@ -405,10 +408,27 @@ export const registerUser = async (req, res) => {
     return res.render("register", { error: "Passwords do not match." });
   }
 
-  // Check if user already exists
+  // Never reveal whether the address is registered: show the same success page
+  // either way, refreshing the verification email when the account is unverified.
   const existingUser = await User.findOne({ where: { email } });
   if (existingUser) {
-    return res.render("register", { error: "That email address is already registered." });
+    if (!existingUser.emailVerified) {
+      try {
+        const retryToken = emailService.generateVerificationToken();
+        await existingUser.update({
+          emailVerificationToken: hashToken(retryToken),
+          emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        });
+        await emailService.sendVerificationEmail(email, existingUser.firstName, retryToken);
+      } catch (e) {
+        console.error("Resend on duplicate registration:", e.message);
+      }
+    }
+    return res.render("register-success", {
+      title: "Registration Successful",
+      email: email,
+      firstName: existingUser.firstName
+    });
   }
 
   try {
@@ -417,9 +437,11 @@ export const registerUser = async (req, res) => {
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Hash password and create user.
-    // Hospital accounts start inactive until an administrator verifies them.
-    const hashed = await bcrypt.hash(password, 10);
-    const userRole = role || "donor"; // Default to donor if not selected
+    // Public registration is always donor: hospital accounts are issued by an
+    // administrator. The submitted role is ignored (defense in depth alongside
+    // validation, in case the middleware is ever bypassed).
+    const hashed = await bcrypt.hash(password, getBcryptRounds());
+    const userRole = "donor";
     const user = await User.create({
       firstName,
       lastName,
@@ -430,9 +452,9 @@ export const registerUser = async (req, res) => {
       dateOfBirth,
       gender,
       role: userRole,
-      isActive: userRole.toLowerCase() !== "hospital",
+      isActive: true, // donor-only registration; hospitals are activated by admins
       emailVerified: false,
-      emailVerificationToken: verificationToken,
+      emailVerificationToken: hashToken(verificationToken),
       emailVerificationExpires: verificationExpires
     });
 
@@ -482,13 +504,23 @@ export const verifyEmail = async (req, res) => {
   }
 
   try {
-    // Find user with this token
-    const user = await User.findOne({
+    // Find user with this token (hashed lookup; legacy plaintext rows issued
+    // before hashing are upgraded on match so old emails keep working)
+    let user = await User.findOne({
       where: {
-        emailVerificationToken: token,
+        emailVerificationToken: hashToken(token),
         emailVerificationExpires: { [Op.gt]: new Date() } // Token not expired
       }
     });
+    if (!user) {
+      user = await User.findOne({
+        where: {
+          emailVerificationToken: token,
+          emailVerificationExpires: { [Op.gt]: new Date() }
+        }
+      });
+      if (user) await user.update({ emailVerificationToken: hashToken(token) });
+    }
 
     if (!user) {
       return res.render("verification-failed", {
@@ -525,12 +557,11 @@ export const resendVerification = async (req, res) => {
   try {
     const user = await User.findOne({ where: { email } });
 
-    if (!user) {
-      return res.json({ success: false, message: "User not found" });
-    }
-
-    if (user.emailVerified) {
-      return res.json({ success: false, message: "Email already verified" });
+    // Uniform response so attackers cannot probe which emails are registered
+    // or verified. The email is only sent when it is actually needed.
+    const uniformMessage = "If an account with that email exists and is unverified, a new verification link was sent.";
+    if (!user || user.emailVerified) {
+      return res.json({ success: true, message: uniformMessage });
     }
 
     // Generate new token
@@ -538,18 +569,17 @@ export const resendVerification = async (req, res) => {
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     await user.update({
-      emailVerificationToken: verificationToken,
+      emailVerificationToken: hashToken(verificationToken),
       emailVerificationExpires: verificationExpires
     });
 
     // Send verification email
     const result = await emailService.sendVerificationEmail(email, user.firstName, verificationToken);
-
-    if (result.success) {
-      res.json({ success: true, message: "Verification email sent successfully", previewUrl: result.previewUrl });
-    } else {
-      res.json({ success: false, message: "Failed to send verification email" });
+    if (!result.success) {
+      console.error("Resend verification email failed for:", email);
     }
+
+    res.json({ success: true, message: uniformMessage });
 
   } catch (error) {
     console.error("Resend verification error:", error);
@@ -574,7 +604,7 @@ export const requestPasswordReset = async (req, res) => {
 
       const token = emailService.generateVerificationToken();
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-      await PasswordReset.create({ email, token, expiresAt });
+      await PasswordReset.create({ email, token: hashToken(token), expiresAt });
 
       const result = await emailService.sendPasswordResetEmail(email, user.firstName, token);
       if (!result.success) {
@@ -597,7 +627,12 @@ export const requestPasswordReset = async (req, res) => {
 export const resetPasswordPage = async (req, res) => {
   try {
     const { token } = req.params;
-    const record = await PasswordReset.findOne({ where: { token, used: false } });
+    // Hashed lookup; legacy plaintext rows are upgraded on match.
+    let record = await PasswordReset.findOne({ where: { token: hashToken(token), used: false } });
+    if (!record) {
+      record = await PasswordReset.findOne({ where: { token, used: false } });
+      if (record) await record.update({ token: hashToken(token) });
+    }
 
     if (!record || record.expiresAt < new Date()) {
       return res.render("reset-password", {
@@ -624,7 +659,12 @@ export const resetPassword = async (req, res) => {
     const { token } = req.params;
     const { newPassword, confirmPassword } = req.body;
 
-    const record = await PasswordReset.findOne({ where: { token, used: false } });
+    // Hashed lookup; legacy plaintext rows are upgraded on match.
+    let record = await PasswordReset.findOne({ where: { token: hashToken(token), used: false } });
+    if (!record) {
+      record = await PasswordReset.findOne({ where: { token, used: false } });
+      if (record) await record.update({ token: hashToken(token) });
+    }
     if (!record || record.expiresAt < new Date()) {
       req.flash("error_msg", "This reset link is invalid or has expired");
       return res.redirect("/forgot-password");
@@ -651,7 +691,7 @@ export const resetPassword = async (req, res) => {
       return res.redirect("/forgot-password");
     }
 
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const hashed = await bcrypt.hash(newPassword, getBcryptRounds());
     await user.update({ password: hashed });
     await record.update({ used: true });
 

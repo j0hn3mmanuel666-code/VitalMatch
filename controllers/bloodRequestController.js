@@ -39,8 +39,6 @@ await sequelize.sync();
 // Display the blood request form (contact + hospital fields pre-filled from profile)
 export const requestBloodPage = async (req, res) => {
   console.log(`🩸 [Request Blood Page] Accessed by user ${req.session?.userId || 'anonymous'}`);
-  console.log(`🩸 [Session Check] sessionID: ${req.sessionID}`);
-  console.log(`🩸 [Session Data]:`, req.session);
 
   const profile = req.session?.userId
     ? await User.findByPk(req.session.userId)
@@ -91,7 +89,9 @@ export const viewBloodRequestPage = async (req, res) => {
         }
       });
 
-      // Hospitals reviewing a request that names their facility may view it
+      // Hospitals may view requests naming their facility - pending ones under
+      // review as well as ones they already approved/declined (otherwise the
+      // View link in /hospital/patients breaks right after a decision).
       let facilityReview = null;
       if (req.session.userRole === 'hospital') {
         const me = await User.findByPk(req.session.userId);
@@ -100,7 +100,6 @@ export const viewBloodRequestPage = async (req, res) => {
           facilityReview = await BloodRequest.findOne({
             where: {
               id: requestId,
-              hospitalStatus: "pending",
               [Op.and]: [sequelize.where(sequelize.fn("LOWER", sequelize.col("hospitalName")), facilityName)]
             }
           });
@@ -172,11 +171,22 @@ export const viewBloodRequestPage = async (req, res) => {
       }
     }
 
+    // Hospital reviewers get Approve/Decline buttons right on the detail page
+    // (previously they had to go back to /hospital/patients to decide).
+    let canReviewHospital = false;
+    if (req.session.userRole === 'hospital' && request && request.hospitalStatus === "pending") {
+      const me = await User.findByPk(req.session.userId);
+      const facilityName = (me?.hospitalName || "").trim().toLowerCase();
+      canReviewHospital = !!facilityName &&
+        (request.hospitalName || "").trim().toLowerCase() === facilityName;
+    }
+
     res.render("view-blood-request", {
       title: "Blood Request Details - VitalMatch",
       request,
       isAdmin: isAdminView,
       isOwner,
+      canReviewHospital,
       pledgeState,
       pledgeCount,
       pledges,
@@ -456,6 +466,9 @@ export const submitBloodRequest = async (req, res) => {
 
     // Facility review: if the typed hospital matches a verified hospital account
     // (and the submitter is not that facility), the facility must approve first.
+    // A name matching nothing is flagged to the submitter so typos don't
+    // silently skip review.
+    let unmatchedFacility = null;
     try {
       const facilities = await User.findAll({
         where: { role: "hospital", isActive: true },
@@ -479,6 +492,7 @@ export const submitBloodRequest = async (req, res) => {
           hospitalId: selfFacility ? match.id : null,
           hospitalStatus: "approved"
         });
+        unmatchedFacility = typed !== "" && !match ? hospitalName.trim() : null;
       }
     } catch (reviewError) {
       console.error("Facility review matching failed (non-fatal):", reviewError.message);
@@ -502,7 +516,7 @@ export const submitBloodRequest = async (req, res) => {
     const nearestDonors = await notifyNearestDonors(newRequest);
     console.log(`🔔 Notified ${nearestDonors.length} nearest matching donor(s)`);
 
-    req.flash("success_msg", "Blood request submitted successfully and recorded on blockchain! Qualified donors will be notified shortly.");
+    req.flash("success_msg", "Blood request submitted successfully and recorded on blockchain! Qualified donors will be notified shortly." + (unmatchedFacility ? ` Note: "${unmatchedFacility}" did not match a registered facility, so no facility review was requested - check the spelling.` : ""));
 
     res.redirect(`/view-blood-request/${newRequest.id}`);
 

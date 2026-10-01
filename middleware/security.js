@@ -8,6 +8,7 @@ Mindoro State University - Philippines
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cors from 'cors';
+import crypto from 'node:crypto';
 
 // Rate limiting configurations
 export const generalLimiter = rateLimit({
@@ -40,6 +41,31 @@ export const authLimiter = rateLimit({
   handler: (req, res) => {
     req.flash('error_msg', 'Too many login attempts. Please try again after 15 minutes.');
     res.redirect('/login');
+  }
+});
+
+// Throttle for state-changing (POST/PUT/DELETE) endpoints: generous enough for
+// normal use, tight enough to blunt abuse/credential-stuffing style floods.
+// Login/register/password routes keep the stricter authLimiter; uploads keep uploadLimiter.
+export const mutationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 60, // Limit each IP to 60 mutations per windowMs
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const acceptsHtml = (req.headers.accept || '').includes('text/html');
+    if (acceptsHtml && typeof req.flash === 'function') {
+      req.flash('error_msg', 'Too many requests. Please slow down and try again later.');
+      return res.redirect('back');
+    }
+    res.status(429).json({
+      error: 'Too many requests from this IP, please try again later.',
+      retryAfter: '15 minutes'
+    });
   }
 });
 
@@ -89,9 +115,11 @@ export const securityHeaders = helmet({
   } : false
 });
 
-// CORS configuration - simplified for development
+// CORS configuration - locked to the configured frontend in production so any
+// random website cannot make credentialed requests to the app.
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 export const corsOptions = {
-  origin: true, // Allow all origins in development
+  origin: process.env.NODE_ENV === 'production' ? FRONTEND_URL : true,
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -142,10 +170,16 @@ export const requestLogger = (req, res, next) => {
 
   res.send = function (data) {
     const duration = Date.now() - start;
+    // Redact single-use tokens from logged URLs (password-reset and
+    // schedule-confirm links carry the raw token in the path).
+    const safeUrl = (req.originalUrl || '')
+      .replace(/(\/reset-password\/)[^/?]+/, '$1[redacted]')
+      .replace(/(\/schedule-confirm\/)[^/?]+/, '$1[redacted]')
+      .replace(/([?&](token|_csrf)=)[^&]+/gi, '$1[redacted]');
     const logData = {
       timestamp: new Date().toISOString(),
       method: req.method,
-      url: req.originalUrl,
+      url: safeUrl,
       ip: req.ip || req.connection.remoteAddress,
       userAgent: req.get('User-Agent'),
       statusCode: res.statusCode,
@@ -195,6 +229,16 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // HTML page requests get the error page; API/fetch callers get JSON.
+  const acceptsHtml = (req.headers.accept || '').includes('text/html');
+  if (acceptsHtml && !req.path.startsWith('/api')) {
+    return res.status(500).render('error', {
+      title: 'Server Error - VitalMatch',
+      statusCode: 500,
+      message: isDevelopment && err.message ? err.message : 'Something went wrong. Please try again.'
+    });
+  }
+
   // Default error response
   const response = {
     error: 'Internal Server Error',
@@ -217,10 +261,11 @@ export const sessionSecurity = (req, res, next) => {
 
 // CSRF protection (simple implementation)
 export const csrfProtection = (req, res, next) => {
-  // Always ensure a token exists and expose it to views (POSTs may re-render forms)
+  // Always ensure a token exists and expose it to views (POSTs may re-render forms).
+  // Cryptographically random; rotated automatically whenever the session is
+  // regenerated (e.g. at login, which destroys the old session and its token).
   if (!req.session.csrfToken) {
-    req.session.csrfToken = Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
+    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
   }
   res.locals.csrfToken = req.session.csrfToken;
 

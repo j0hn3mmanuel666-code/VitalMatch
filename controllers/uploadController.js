@@ -6,6 +6,16 @@ Upload controller for admin image uploads
 
 import multer from "multer";
 import fs from "fs";
+import crypto from "node:crypto";
+
+// Only these image types may be uploaded; the saved file extension is derived
+// from this map (never from the uploader's filename).
+const EXT_BY_MIME = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif'
+};
 
 // Storage for public images
 const imageStorage = multer.diskStorage({
@@ -17,18 +27,20 @@ const imageStorage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const ext = file.originalname.split('.').pop();
-    const safe = `img_${Date.now()}_${Math.random().toString(36).substring(2,9)}.${ext}`;
-    cb(null, safe);
+    // Derive the extension from the validated mimetype, never from the
+    // client-supplied filename (blocks .svg/.html spoofing → stored XSS via
+    // static serving, and executable uploads).
+    const ext = EXT_BY_MIME[file.mimetype] || '.bin';
+    const rand = crypto.randomBytes(8).toString('hex');
+    cb(null, `img_${Date.now()}_${rand}${ext}`);
   }
 });
 
 export const imageUpload = multer({
   storage: imageStorage,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (allowed.includes(file.mimetype)) cb(null, true);
+    if (Object.prototype.hasOwnProperty.call(EXT_BY_MIME, file.mimetype)) cb(null, true);
     else cb(new Error('Invalid file type. Only images are allowed.'));
   }
 });

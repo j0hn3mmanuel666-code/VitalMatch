@@ -24,6 +24,18 @@ SOFTWARE.
 */
 
 import { PublicContent } from "../models/publicContentModel.js";
+import { sanitizeRichHtml } from "../middleware/validation.js";
+
+// CMS text is rendered unescaped ({{{...}}}) on public pages, so it must be
+// sanitized before storage - otherwise a compromised admin account means
+// stored XSS for every visitor.
+const sanitizeCmsFields = (fields) => {
+  const out = { ...fields };
+  for (const key of ["title", "subtitle", "description", "primaryButtonText", "secondaryButtonText"]) {
+    if (typeof out[key] === "string") out[key] = sanitizeRichHtml(out[key]);
+  }
+  return out;
+};
 
 // Get all public content sections
 export const getAllPublicContent = async (req, res) => {
@@ -101,12 +113,8 @@ export const createPublicContent = async (req, res) => {
 
     const content = await PublicContent.create({
       section,
-      title,
-      subtitle,
-      description,
-      primaryButtonText,
+      ...sanitizeCmsFields({ title, subtitle, description, primaryButtonText, secondaryButtonText }),
       primaryButtonLink,
-      secondaryButtonText,
       secondaryButtonLink,
       imageUrl,
       metadata,
@@ -154,13 +162,13 @@ export const updatePublicContent = async (req, res) => {
 
     // Use explicit undefined checks so empty strings from the form
     // are saved (instead of keeping the old value when falsy).
+    const clean = sanitizeCmsFields({ title, subtitle, description, primaryButtonText, secondaryButtonText });
     await content.update({
-      title: title !== undefined ? title : content.title,
-      subtitle: subtitle !== undefined ? subtitle : content.subtitle,
-      description: description !== undefined ? description : content.description,
-      primaryButtonText: primaryButtonText !== undefined ? primaryButtonText : content.primaryButtonText,
-      primaryButtonLink: primaryButtonLink !== undefined ? primaryButtonLink : content.primaryButtonLink,
-      secondaryButtonText: secondaryButtonText !== undefined ? secondaryButtonText : content.secondaryButtonText,
+      title: title !== undefined ? clean.title : content.title,
+      subtitle: subtitle !== undefined ? clean.subtitle : content.subtitle,
+      description: description !== undefined ? clean.description : content.description,
+      primaryButtonText: primaryButtonText !== undefined ? clean.primaryButtonText : content.primaryButtonText,
+      secondaryButtonText: secondaryButtonText !== undefined ? clean.secondaryButtonText : content.secondaryButtonText,
       secondaryButtonLink: secondaryButtonLink !== undefined ? secondaryButtonLink : content.secondaryButtonLink,
       imageUrl: imageUrl !== undefined ? imageUrl : content.imageUrl,
       isActive: isActive !== undefined ? isActive : content.isActive,
@@ -224,9 +232,10 @@ export const adminPublicContentPage = async (req, res) => {
     });
   } catch (error) {
     console.error("Error loading admin public content page:", error);
-    res.render("error", {
-      message: "Error loading CMS page",
-      error
+    res.status(500).render("error", {
+      title: "Server Error - VitalMatch",
+      statusCode: 500,
+      message: "Error loading CMS page. Please try again."
     });
   }
 };

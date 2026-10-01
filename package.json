@@ -7,6 +7,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "test": "node --test tests/smoke.test.js",
     "start": "node index.js",
     "xian-start": "node index.js",
     "xian": "nodemon index.js",
@@ -20,6 +21,7 @@
     "bcrypt": "^5.1.0",
     "compression": "^1.7.4",
     "connect-flash": "^0.1.1",
+    "connect-session-sequelize": "^8.0.6",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^4.19.2",

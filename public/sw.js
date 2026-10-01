@@ -1,6 +1,5 @@
-const CACHE_NAME = 'vitalmatch-v5';
+const CACHE_NAME = 'vitalmatch-v8';
 const PRECACHE = [
-  '/',
   '/offline.html',
   '/tailwind.css',
   '/js/pwa-register.js',
@@ -34,22 +33,15 @@ self.addEventListener('fetch', event => {
   const isNavigationRequest = event.request.mode === 'navigate';
   const isApiRequest = requestURL.pathname.startsWith('/api/');
 
-  // Never cache account-specific pages or API responses.
-  // Navigation requests: always hit the server first; only show offline
-  // page if the server is truly unreachable (not just restarting).
+  // Navigation and API requests: always go to network, never cache HTML
   if (isNavigationRequest || isApiRequest) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        // Double-check: only serve offline if server is really down
-        return fetch('/health').then(r => {
-          // Server is up but original request failed — retry once
-          return fetch(event.request);
-        }).catch(() => caches.match('/offline.html'));
-      })
+      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match('/offline.html'))
     );
     return;
   }
 
+  // Static assets: cache-first
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;

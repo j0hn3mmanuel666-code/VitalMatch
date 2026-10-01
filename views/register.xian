@@ -1,5 +1,7 @@
 {{> head }}
 
+{{> public-nav hideRegister=true }}
+
 <style>
   @keyframes float {
 
@@ -204,20 +206,13 @@
             </div>
           </div>
 
-          <!-- Account Type -->
+          <!-- Account Type (public registration is donor-only; hospital accounts
+               are created by an administrator from the admin panel) -->
           <div class="mb-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Account Type</h3>
             <div class="mb-4">
-              <label class="block text-gray-700 text-sm font-semibold mb-2" for="role">
-                Register as *
-              </label>
-              <select name="role" id="role"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
-                required>
-                <option value="donor">Individual / Blood Donor</option>
-                <option value="hospital">Hospital / Clinic Representative</option>
-              </select>
-              <p class="text-xs text-gray-500 mt-1">Hospitals/Clinics can post and track requests; Donors can manage profiles, see eligibility, and also request.</p>
+              <p class="text-sm text-gray-700 font-semibold">Individual / Blood Donor</p>
+              <p class="text-xs text-gray-500 mt-1">Everyone registers as a donor. Hospital / clinic accounts are issued by an administrator - please contact support if you represent one.</p>
             </div>
           </div>
 
@@ -230,9 +225,16 @@
                 Password *
               </label>
               <input type="password" name="password" id="password" placeholder="Create a strong password" minlength="8"
+                maxlength="72"
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
                 required />
-              <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+              <ul class="text-xs mt-2 space-y-1" id="passwordRequirements">
+                <li data-rule="length" class="text-gray-500">• At least 8 characters</li>
+                <li data-rule="upper" class="text-gray-500">• One uppercase letter (A–Z)</li>
+                <li data-rule="lower" class="text-gray-500">• One lowercase letter (a–z)</li>
+                <li data-rule="digit" class="text-gray-500">• One number (0–9)</li>
+                <li data-rule="max" class="text-gray-500">• No more than 72 characters</li>
+              </ul>
             </div>
 
             <div class="mb-4">
@@ -302,5 +304,28 @@
     </div>
   </div>
 </section>
+
+<script>
+  // Live password-requirements checklist (mirrors validatePassword server-side).
+  (function () {
+    var input = document.getElementById('password');
+    if (!input) return;
+    var rules = {
+      length: function (v) { return v.length >= 8; },
+      upper: function (v) { return /[A-Z]/.test(v); },
+      lower: function (v) { return /[a-z]/.test(v); },
+      digit: function (v) { return /\d/.test(v); },
+      max: function (v) { return v.length <= 72; }
+    };
+    input.addEventListener('input', function () {
+      var v = input.value;
+      document.querySelectorAll('#passwordRequirements [data-rule]').forEach(function (li) {
+        var ok = rules[li.getAttribute('data-rule')](v);
+        li.className = ok ? 'text-green-600 font-semibold' : 'text-gray-500';
+        li.textContent = (ok ? '✓ ' : '• ') + li.textContent.replace(/^[✓•] /, '');
+      });
+    });
+  })();
+</script>
 
 {{> footer }}

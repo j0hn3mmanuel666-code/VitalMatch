@@ -8,6 +8,7 @@ Mindoro State University - Philippines
 import { BloodRequest } from "../models/bloodRequestModel.js";
 import { Donor } from "../models/donorModel.js";
 import { ScheduleToken } from "../models/scheduleTokenModel.js";
+import { hashToken } from "../middleware/validation.js";
 import { Notification } from "../models/notificationModel.js";
 import { getUserSettings } from "../models/userSettingModel.js";
 
@@ -173,7 +174,12 @@ export const declineAppointment = async (req, res) => {
 };
 
 async function loadTokenRequest(token) {
-  const record = await ScheduleToken.findOne({ where: { token, used: false } });
+  // Hashed lookup; legacy plaintext rows are upgraded on match.
+  let record = await ScheduleToken.findOne({ where: { token: hashToken(token), used: false } });
+  if (!record) {
+    record = await ScheduleToken.findOne({ where: { token, used: false } });
+    if (record) await record.update({ token: hashToken(token) });
+  }
   if (!record || record.expiresAt < new Date()) return { error: "expired" };
   const request = await BloodRequest.findByPk(record.bloodRequestId);
   if (!request) return { error: "notfound" };
@@ -193,8 +199,9 @@ export const confirmByTokenPage = async (req, res) => {
     }
     res.render('schedule-confirmed', {
       ...confirmationState(request, record.role),
-      postUrl: `/schedule-confirm/${record.token}`,
-      token: record.token
+      // Re-emit the raw token from the URL: record.token is the stored hash.
+      postUrl: `/schedule-confirm/${req.params.token}`,
+      token: req.params.token
     });
   } catch (error) {
     console.error('Error loading token confirmation:', error);
@@ -224,8 +231,9 @@ export const confirmByTokenSubmit = async (req, res) => {
       ...confirmationState(request, record.role),
       title: 'Schedule Confirmed - VitalMatch',
       confirmed: true,
-      postUrl: `/schedule-confirm/${record.token}`,
-      token: record.token
+      // Re-emit the raw token from the URL: record.token is the stored hash.
+      postUrl: `/schedule-confirm/${req.params.token}`,
+      token: req.params.token
     });
   } catch (error) {
     console.error('Error confirming schedule by token:', error);

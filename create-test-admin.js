@@ -4,6 +4,7 @@
 
 import bcrypt from 'bcrypt';
 import { User, sequelize } from './models/userModel.js';
+import { getBcryptRounds } from './middleware/validation.js';
 
 async function createTestAdmin() {
   try {
@@ -24,7 +25,7 @@ async function createTestAdmin() {
     }
     
     // Hash password
-    const hashedPassword = await bcrypt.hash(testPassword, 10);
+    const hashedPassword = await bcrypt.hash(testPassword, getBcryptRounds());
     
     // Create admin user
     const admin = await User.create({

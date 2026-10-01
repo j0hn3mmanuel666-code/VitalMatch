@@ -6,16 +6,28 @@ Mindoro State University - Philippines
 */
 
 // Input validation middleware
+import crypto from "node:crypto";
+
+// One-way hash for single-use tokens (email verification, password reset,
+// schedule confirmation). Only the hash is stored, so a database read alone
+// cannot redeem pending tokens. Compare with hashToken(rawTokenFromUrl).
+export const hashToken = (token) => crypto.createHash("sha256").update(String(token)).digest("hex");
+
 export const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
 export const validatePassword = (password) => {
-  // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+  // At least 8 characters, 1 uppercase, 1 lowercase, 1 number; capped at 72
+  // characters because bcrypt silently truncates beyond that.
+  if (typeof password !== 'string' || password.length > 72) return false;
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
   return passwordRegex.test(password);
 };
+
+// Bcrypt cost factor, shared by every password hash in the app.
+export const getBcryptRounds = () => parseInt(process.env.BCRYPT_ROUNDS, 10) || 12;
 
 export const validatePhoneNumber = (phone) => {
   // Philippine phone number format
@@ -80,7 +92,9 @@ export const validateRegistration = (req, res, next) => {
     errors.push('Please provide your complete address');
   }
 
-  if (role && !['donor', 'hospital'].includes(role.toLowerCase())) {
+  // Public registration is donor-only: hospital accounts are issued by an admin.
+  // Reject forged role values instead of silently accepting them.
+  if (role && role.toLowerCase() !== 'donor') {
     errors.push('Invalid account type selected');
   }
 
@@ -321,6 +335,29 @@ export const validateApiParams = (requiredParams = [], optionalParams = []) => {
 
     next();
   };
+};
+
+// Sanitize rich HTML (e.g. CMS content): keeps basic formatting tags but strips
+// executable content - script/style/iframe/object/embed/form tags, event handler
+// attributes (onclick, ...), and javascript:/data:/vbscript: URLs.
+export const sanitizeRichHtml = (input) => {
+  if (typeof input !== 'string') return input;
+
+  let out = input;
+  // Remove dangerous elements including their content
+  out = out.replace(/<(script|style|iframe|object|embed|form|link|meta|base)[\s\S]*?<\/\1\s*>/gi, '');
+  out = out.replace(/<(script|style|iframe|object|embed|form|link|meta|base)[^>]*\/?>/gi, '');
+  // Remove event handler attributes (onload, onclick, ...)
+  out = out.replace(/\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  // Neutralize dangerous URL schemes in href/src/action attributes
+  out = out.replace(/\s(href|src|action|xlink:href)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi, (m, attr, _q, d1, d2, d3) => {
+    const url = (d1 ?? d2 ?? d3 ?? '').trim().toLowerCase();
+    if (url.startsWith('javascript:') || url.startsWith('vbscript:') || url.startsWith('data:text/html')) {
+      return ` ${attr}="#"`;
+    }
+    return m;
+  });
+  return out;
 };
 
 // Sanitize HTML input

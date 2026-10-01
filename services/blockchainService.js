@@ -43,7 +43,9 @@ class VitalMatchBlockchain {
     this.pendingTransactions = [];
     this.miningReward = 100;
     this.blockchainFile = 'blockchain.json';
+    this.pendingFile = 'blockchain-pending.json';
     this.loadBlockchain();
+    this.loadPending();
   }
 
   createGenesisBlock() {
@@ -74,6 +76,7 @@ class VitalMatchBlockchain {
     };
 
     this.pendingTransactions.push(transaction);
+    this.savePending();
     console.log('📝 Donation record added to pending transactions');
   }
 
@@ -84,7 +87,11 @@ class VitalMatchBlockchain {
       requestId: requestId,
       timestamp: Date.now(),
       data: {
-        patientId: requestData.patientId,
+        // Hashed, never raw: the ledger is append-only and patient IDs must
+        // not be recoverable from it. (Nothing reads this field back.)
+        patientIdHash: requestData.patientId
+          ? crypto.createHash('sha256').update(String(requestData.patientId)).digest('hex')
+          : null,
         bloodType: requestData.bloodType,
         units: requestData.unitsRequired,
         urgency: requestData.urgency,
@@ -94,6 +101,7 @@ class VitalMatchBlockchain {
     };
 
     this.pendingTransactions.push(transaction);
+    this.savePending();
     console.log('📝 Blood request added to pending transactions');
   }
 
@@ -112,6 +120,7 @@ class VitalMatchBlockchain {
     };
 
     this.pendingTransactions.push(transaction);
+    this.savePending();
     console.log('📝 Fulfillment record added to pending transactions');
   }
 
@@ -134,7 +143,8 @@ class VitalMatchBlockchain {
     console.log('✅ Block successfully mined!');
     this.chain.push(block);
     this.pendingTransactions = [];
-    
+    this.savePending();
+
     this.saveBlockchain();
     return true;
   }
@@ -228,10 +238,13 @@ class VitalMatchBlockchain {
       .digest('hex');
   }
 
-  // Persistence
+  // Persistence (atomic: write temp file + rename, so a crash mid-write can
+  // never leave a half-written ledger behind)
   saveBlockchain() {
     try {
-      fs.writeFileSync(this.blockchainFile, JSON.stringify(this.chain, null, 2));
+      const tmpFile = this.blockchainFile + '.tmp';
+      fs.writeFileSync(tmpFile, JSON.stringify(this.chain, null, 2));
+      fs.renameSync(tmpFile, this.blockchainFile);
       console.log('💾 Blockchain saved to file');
     } catch (error) {
       console.error('❌ Error saving blockchain:', error);
@@ -261,7 +274,43 @@ class VitalMatchBlockchain {
       }
     } catch (error) {
       console.error('❌ Error loading blockchain:', error);
+      // Preserve the corrupt file for forensics instead of letting the next
+      // save silently overwrite ledger history.
+      try {
+        if (fs.existsSync(this.blockchainFile)) {
+          const backup = `${this.blockchainFile}.corrupt-${Date.now()}`;
+          fs.renameSync(this.blockchainFile, backup);
+          console.log('💾 Corrupt blockchain preserved at', backup);
+        }
+      } catch (backupError) {
+        console.error('❌ Could not preserve corrupt blockchain file:', backupError.message);
+      }
       console.log('🔄 Starting with genesis block');
+    }
+  }
+
+  // Pending transactions are persisted so unmined records survive restarts
+  savePending() {
+    try {
+      const tmpFile = this.pendingFile + '.tmp';
+      fs.writeFileSync(tmpFile, JSON.stringify(this.pendingTransactions));
+      fs.renameSync(tmpFile, this.pendingFile);
+    } catch (error) {
+      console.error('❌ Error saving pending transactions:', error.message);
+    }
+  }
+
+  loadPending() {
+    try {
+      if (fs.existsSync(this.pendingFile)) {
+        const data = JSON.parse(fs.readFileSync(this.pendingFile, 'utf8'));
+        if (Array.isArray(data) && data.length > 0) {
+          this.pendingTransactions = data;
+          console.log(`📥 Restored ${data.length} pending transaction(s)`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading pending transactions:', error.message);
     }
   }
 

@@ -3,6 +3,7 @@ import { Donor } from "../models/donorModel.js";
 import { Pledge } from "../models/pledgeModel.js";
 import { User } from "../models/userModel.js";
 import { Notification } from "../models/notificationModel.js";
+import { AuditService } from "../services/auditService.js";
 import { sequelize } from "../models/db.js";
 import { Op } from "sequelize";
 
@@ -56,6 +57,9 @@ export const patientRecordsPage = async (req, res) => {
       const data = r.toJSON();
       data.pledgeCount = pledgeCounts[data.id] || 0;
       data.donorName = data.assignedDonorId ? (donorNames[data.assignedDonorId] || "Unknown donor") : null;
+      // Only the submitting account may cancel; facility-linked records that
+      // someone else submitted must not show a Cancel button that always fails.
+      data.isOwn = data.userId === userId;
       return data;
     });
 
@@ -93,6 +97,17 @@ export const approveRequest = async (req, res) => {
       return res.redirect("/hospital/patients");
     }
     await request.update({ hospitalId: account.id, hospitalStatus: "approved" });
+    // Tell the requester and leave an audit trail (decisions were silent before)
+    if (request.userId && request.userId !== account.id) {
+      await Notification.create({
+        userId: request.userId,
+        title: "Hospital confirmed your request",
+        message: `${account.hospitalName} confirmed blood request #${request.id} as their patient.`,
+        type: "success",
+        link: `/view-blood-request/${request.id}`
+      });
+    }
+    await AuditService.logAction(account.id, "hospital_approve_request", "BloodRequest", request.id, { hospitalStatus: "pending" }, { hospitalStatus: "approved", hospitalId: account.id }, {}).catch((e) => console.error("Audit log failed:", e.message));
     req.flash("success_msg", `Request #${request.id} confirmed as your patient`);
     res.redirect("/hospital/patients");
   } catch (error) {
@@ -114,7 +129,19 @@ export const declineRequest = async (req, res) => {
       req.flash("error_msg", "Request not available for review");
       return res.redirect("/hospital/patients");
     }
+    const declineReason = typeof req.body?.declineReason === "string" ? req.body.declineReason.trim().slice(0, 200) : "";
     await request.update({ hospitalStatus: "declined" });
+    // Tell the requester (with reason) and leave an audit trail
+    if (request.userId && request.userId !== account.id) {
+      await Notification.create({
+        userId: request.userId,
+        title: "Hospital declined your request",
+        message: `${account.hospitalName} marked blood request #${request.id} as not their patient.` + (declineReason ? ` Reason: ${declineReason}` : ""),
+        type: "alert",
+        link: `/view-blood-request/${request.id}`
+      });
+    }
+    await AuditService.logAction(account.id, "hospital_decline_request", "BloodRequest", request.id, { hospitalStatus: "pending" }, { hospitalStatus: "declined", declineReason: declineReason || null }, {}).catch((e) => console.error("Audit log failed:", e.message));
     req.flash("success_msg", `Request #${request.id} declined (not your patient)`);
     res.redirect("/hospital/patients");
   } catch (error) {

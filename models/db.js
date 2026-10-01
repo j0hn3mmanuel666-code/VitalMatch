@@ -26,6 +26,11 @@
     
 import { Sequelize } from "sequelize";
 
+// Refuse to boot in production with default/local database credentials.
+if (process.env.NODE_ENV === "production" && (!process.env.DB_PASSWORD || process.env.DB_USER === "root")) {
+  throw new Error("❌ Set DB_USER and DB_PASSWORD in your .env before running in production.");
+}
+
 export const sequelize = new Sequelize(
   process.env.DB_NAME || "VitalMatch",
   process.env.DB_USER || "root",

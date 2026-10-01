@@ -24,13 +24,18 @@
     SOFTWARE.
     */
     
+import 'dotenv/config';
 import { Sequelize } from "sequelize";
 import { sequelize } from "./models/db.js";
 import { User } from "./models/userModel.js";
 import inquirer from "inquirer";
 
-// Server-level connection (no database selected)
-const rootSequelize = new Sequelize("mysql://root:@localhost:3306/");
+// Server-level connection (no database selected) - built from env, no hardcoded credentials
+const dbUser = process.env.DB_USER || "root";
+const dbPassword = process.env.DB_PASSWORD || "";
+const dbHost = process.env.DB_HOST || "localhost";
+const dbPort = process.env.DB_PORT || 3306;
+const rootSequelize = new Sequelize(`mysql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/`);
 
 const { createDb } = await inquirer.prompt([
   {
@@ -44,6 +49,20 @@ const { createDb } = await inquirer.prompt([
 if (createDb) {
   await rootSequelize.query("CREATE DATABASE IF NOT EXISTS VitalMatch;");
   console.log("✅ Database created (if it did not exist)");
+}
+
+const { confirmWipe } = await inquirer.prompt([
+  {
+    type: "confirm",
+    name: "confirmWipe",
+    message: "⚠️  sync({ force: true }) will DROP all tables and DELETE all data. Continue?",
+    default: false,
+  },
+]);
+
+if (!confirmWipe) {
+  console.log("Aborted. No changes were made.");
+  process.exit(0);
 }
 
 try {

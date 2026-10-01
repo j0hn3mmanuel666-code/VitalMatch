@@ -4,7 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="description" content="VitalMatch Admin - Digital Blood Request Platform Management">
+  <meta name="csrf-token" content="{{csrfToken}}">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -43,3 +47,101 @@
 </head>
 
 <body>
+
+<!-- Generic Confirmation Modal -->
+<div id="confirmModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black bg-opacity-50">
+  <div class="bg-white dark:bg-[#27272a] rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+    <div id="confirmModalIcon" class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+      <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+    <h3 id="confirmModalTitle" class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Are you sure?</h3>
+    <p id="confirmModalMessage" class="text-gray-500 dark:text-gray-400 mb-6">This action cannot be undone.</p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition">Cancel</button>
+      <button id="confirmModalAction" class="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition">Confirm</button>
+    </div>
+  </div>
+</div>
+<script>
+  var _confirmModalForm = null;
+  var _confirmModalCancel = null; // pending confirmAction resolver, settled with false on cancel
+  function openConfirmModal(opts) {
+    var modal = document.getElementById("confirmModal");
+    document.getElementById("confirmModalTitle").textContent = opts.title || "Are you sure?";
+    document.getElementById("confirmModalMessage").textContent = opts.message || "This action cannot be undone.";
+    var btn = document.getElementById("confirmModalAction");
+    btn.textContent = opts.button || "Confirm";
+    btn.className = "flex-1 px-4 py-2.5 rounded-lg font-semibold transition text-white " + (opts.buttonClass || "bg-red-600 hover:bg-red-700");
+    var iconWrap = document.getElementById("confirmModalIcon");
+    if (opts.icon === "warning") {
+      iconWrap.className = "w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-5";
+      iconWrap.querySelector("svg").className.baseVal = "w-8 h-8 text-orange-600";
+    } else if (opts.icon === "danger") {
+      iconWrap.className = "w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-5";
+      iconWrap.querySelector("svg").className.baseVal = "w-8 h-8 text-red-600";
+    } else if (opts.icon === "success") {
+      iconWrap.className = "w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-5";
+      iconWrap.querySelector("svg").className.baseVal = "w-8 h-8 text-green-600";
+    } else {
+      iconWrap.className = "w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-5";
+      iconWrap.querySelector("svg").className.baseVal = "w-8 h-8 text-gray-600";
+    }
+    _confirmModalForm = opts.onSubmit || null;
+    btn.onclick = function () { var cb = _confirmModalForm; _confirmModalCancel = null; closeConfirmModal(); if (cb) cb(); };
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+  function closeConfirmModal() {
+    var modal = document.getElementById("confirmModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+    _confirmModalForm = null;
+    if (_confirmModalCancel) { var cancel = _confirmModalCancel; _confirmModalCancel = null; cancel(false); }
+  }
+  function confirmAction(opts) {
+    return new Promise(function (resolve) {
+      _confirmModalCancel = resolve;
+      openConfirmModal({
+        title: opts.title,
+        message: opts.message,
+        button: opts.button || "Confirm",
+        buttonClass: opts.buttonClass || "bg-red-600 hover:bg-red-700",
+        icon: opts.icon || "danger",
+        onSubmit: function () { resolve(true); }
+      });
+    });
+  }
+</script>
+<script>
+  // Centralized logout: every a[href="/logout"] shows the confirm modal, then
+  // POSTs (CSRF-protected) instead of navigating via GET (which is CSRF-able).
+  function getCsrfToken() {
+    var m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.getAttribute('content') : '';
+  }
+  function postLogout() {
+    fetch('/logout', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': getCsrfToken() },
+      credentials: 'same-origin'
+    }).then(function () { window.location.href = '/login'; })
+      .catch(function () { window.location.href = '/login'; });
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('a[href="/logout"]').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        openConfirmModal({
+          title: 'Logout?',
+          message: "You'll need to log in again to access your account.",
+          button: 'Logout',
+          buttonClass: 'bg-red-600 hover:bg-red-700',
+          icon: 'danger',
+          onSubmit: postLogout
+        });
+      });
+    });
+  });
+</script>

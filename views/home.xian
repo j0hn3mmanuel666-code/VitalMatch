@@ -243,7 +243,7 @@
       </div>
       {{#if about.imageUrl}}
       <div class="rounded-3xl overflow-hidden shadow-xl bg-white">
-        <img src="{{about.imageUrl}}" alt="About section image" class="w-full h-full object-cover" />
+        <img src="{{about.imageUrl}}" alt="About section image" class="w-full h-auto object-contain bg-gray-50" />
       </div>
       {{/if}}
     </div>
@@ -261,7 +261,7 @@
             {{!-- If no description, center and enlarge the image for clarity --}}
               {{#unless description}}
               <div class="text-center">
-                <div class="rounded-lg shadow-md mx-auto w-full md:w-4/5 h-56 md:h-80 bg-center bg-cover" style="background-image: url('{{imageUrl}}')"></div>
+                <img src="{{imageUrl}}" alt="{{title}}" class="rounded-lg shadow-md mx-auto w-full md:w-4/5 h-auto object-contain bg-gray-50" />
                 {{#if title}}<h2 class="text-3xl font-bold text-gray-900 mt-6 mb-4">{{title}}</h2>{{/if}}
                 {{#if subtitle}}<p class="text-lg text-gray-600 mb-4">{{subtitle}}</p>{{/if}}
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -282,11 +282,11 @@
                     </div>
                   </div>
                     <div class="order-1 md:order-2 flex justify-center">
-                    <img src="{{imageUrl}}" alt="{{title}}" class="rounded-lg shadow-md max-h-96 object-cover w-full" />
+                    <img src="{{imageUrl}}" alt="{{title}}" class="rounded-lg shadow-md w-full h-auto max-h-[32rem] object-contain bg-gray-50" />
                   </div>
                 {{else}}
                   <div class="order-1 md:order-1 flex justify-center">
-                    <img src="{{imageUrl}}" alt="{{title}}" class="rounded-lg shadow-md max-h-96 object-cover w-full" />
+                    <img src="{{imageUrl}}" alt="{{title}}" class="rounded-lg shadow-md w-full h-auto max-h-[32rem] object-contain bg-gray-50" />
                   </div>
                   <div class="order-2 md:order-2">
                     <h2 class="text-3xl font-bold text-gray-900 mb-4">{{title}}</h2>

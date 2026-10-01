@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { User } from "../models/userModel.js";
 import { Donor } from "../models/donorModel.js";
 import { getUserSettings, sequelize } from "../models/userSettingModel.js";
-import { validatePassword } from "../middleware/validation.js";
+import { validatePassword, getBcryptRounds } from "../middleware/validation.js";
 await sequelize.sync();
 
 // Display the user settings page
@@ -134,7 +134,7 @@ export const changePassword = async (req, res) => {
       req.flash("error_msg", "Password must be at least 8 characters with uppercase, lowercase, and a number");
       return res.redirect("/settings?tab=security");
     }
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const hashed = await bcrypt.hash(newPassword, getBcryptRounds());
     await user.update({ password: hashed });
     req.flash("success_msg", "Password changed successfully");
     res.redirect("/settings?tab=security");

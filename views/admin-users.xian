@@ -505,7 +505,13 @@ async function applyBulkAction() {
   if (action === 'activate') {
     updates = { isActive: true };
   } else if (action === 'deactivate') {
-    if (!confirm('Deactivate ' + ids.length + ' account(s)? They will be logged out immediately.')) return;
+    const ok = await confirmAction({
+      title: 'Deactivate Accounts?',
+      message: ids.length + ' account(s) will be deactivated and logged out immediately.',
+      button: 'Deactivate',
+      icon: 'warning'
+    });
+    if (!ok) return;
     updates = { isActive: false };
   } else if (action.startsWith('role:')) {
     updates = { role: action.slice(5) };

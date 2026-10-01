@@ -56,14 +56,23 @@ export const isAuthenticated = async (req, res, next) => {
   }
 
   try {
-    const account = await User.findByPk(req.session.userId, { attributes: ["id", "isActive"] });
+    const account = await User.findByPk(req.session.userId, { attributes: ["id", "isActive", "role"] });
     if (!account || account.isActive === false) {
       console.log(`❌ [Auth Failed] Account ${req.session.userId} deactivated, destroying session`);
       return req.session.destroy(() => res.redirect("/login"));
     }
+    // Apply admin role changes immediately: a demoted account loses its old
+    // privileges on the very next request instead of at next login.
+    if (account.role && account.role !== req.session.userRole) {
+      console.log(`🔄 [Auth] Role changed for user ${req.session.userId}: '${req.session.userRole}' -> '${account.role}'`);
+      req.session.userRole = account.role;
+    }
   } catch (e) {
     console.error("isAuthenticated account check:", e.message);
-    // Fail open on DB errors to avoid locking everyone out on a transient failure
+    // Fail closed on DB errors: a transient failure must never bypass the
+    // deactivation check.
+    req.flash("error_msg", "Session error. Please log in again.");
+    return res.redirect("/login");
   }
 
   console.log(`✅ [Auth Success] User ${req.session.userId} authenticated`);
@@ -71,11 +80,8 @@ export const isAuthenticated = async (req, res, next) => {
 };
 
 // Middleware to check if user is admin
-export const isAdmin = (req, res, next) => {
-  console.log(`🔍 [Admin Check] ${req.method} ${req.path}`);
-  console.log(`🔍 [Session] userId: ${req.session.userId}, userRole: ${req.session.userRole}, sessionID: ${req.sessionID}`);
-  console.log(`🔍 [Full Session Data]:`, JSON.stringify(req.session, null, 2));
-  console.log(`🔍 [Headers] Cookie: ${req.headers.cookie}`);
+export const isAdmin = async (req, res, next) => {
+  console.log(`🔍 [Admin Check] ${req.method} ${req.path} (userId: ${req.session.userId})`);
   
   if (!req.session) {
     console.log(`❌ [Admin Failed] No session object found`);
@@ -98,15 +104,22 @@ export const isAdmin = (req, res, next) => {
     req.flash("error_msg", "Access denied. Admin privileges required.");
     return res.redirect("/dashboard");
   }
-  
+
+  // Bounce deactivated admins so suspending an account takes effect immediately.
+  // Fail closed when the account cannot be verified.
+  const adminAccount = await User.findByPk(req.session.userId, { attributes: ["id", "isActive"] }).catch(() => null);
+  if (!adminAccount || adminAccount.isActive === false) {
+    console.log(`❌ [Admin Failed] Account ${req.session.userId} missing or deactivated, destroying session`);
+    return req.session.destroy(() => res.redirect("/login"));
+  }
+
   console.log(`✅ [Admin Success] User ${req.session.userId} has admin access`);
   next();
 };
 
 // Middleware to check if user is a hospital account
-export const isHospital = (req, res, next) => {
-  console.log(`🔍 [Hospital Check] ${req.method} ${req.path}`);
-  console.log(`🔍 [Session] userId: ${req.session.userId}, userRole: ${req.session.userRole}, sessionID: ${req.sessionID}`);
+export const isHospital = async (req, res, next) => {
+  console.log(`🔍 [Hospital Check] ${req.method} ${req.path} (userId: ${req.session.userId})`);
   
   if (!req.session) {
     console.log(`❌ [Hospital Failed] No session object found`);
@@ -126,7 +139,15 @@ export const isHospital = (req, res, next) => {
     req.flash("error_msg", "Access denied. Hospital privileges required.");
     return res.redirect("/dashboard");
   }
-  
+
+  // Bounce deactivated hospitals so suspending an account takes effect immediately.
+  // Fail closed when the account cannot be verified.
+  const hospitalAccount = await User.findByPk(req.session.userId, { attributes: ["id", "isActive"] }).catch(() => null);
+  if (!hospitalAccount || hospitalAccount.isActive === false) {
+    console.log(`❌ [Hospital Failed] Account ${req.session.userId} missing or deactivated, destroying session`);
+    return req.session.destroy(() => res.redirect("/login"));
+  }
+
   console.log(`✅ [Hospital Success] User ${req.session.userId} has hospital access`);
   next();
 };

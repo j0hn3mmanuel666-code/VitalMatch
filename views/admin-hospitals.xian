@@ -92,7 +92,11 @@
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{{email}}</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm">
                 {{#if isActive}}
+                {{#if emailVerified}}
                 <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">Verified</span>
+                {{else}}
+                <span class="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-semibold">Email unverified</span>
+                {{/if}}
                 {{else}}
                 <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
                 {{/if}}
@@ -122,9 +126,20 @@
 <script>
   async function setHospitalStatus(id, action) {
     const verb = action === 'verify' ? 'verify' : 'suspend';
-    if (!confirm('Are you sure you want to ' + verb + ' this hospital account?')) return;
+    const ok = await confirmAction({
+      title: verb.charAt(0).toUpperCase() + verb.slice(1) + ' Hospital?',
+      message: 'This hospital account will be ' + (action === 'verify' ? 'verified and granted full access.' : 'suspended and unable to log in.'),
+      button: verb.charAt(0).toUpperCase() + verb.slice(1),
+      buttonClass: action === 'verify' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700',
+      icon: action === 'verify' ? 'success' : 'warning'
+    });
+    if (!ok) return;
     try {
-      const response = await fetch('/admin/hospitals/' + id + '/' + action, { method: 'POST' });
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      const response = await fetch('/admin/hospitals/' + id + '/' + action, {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': meta ? meta.content : '' }
+      });
       const result = await response.json();
       if (result.success) {
         location.reload();

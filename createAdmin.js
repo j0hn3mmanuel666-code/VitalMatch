@@ -6,15 +6,22 @@ Mindoro State University - Philippines
 */
 
 import bcrypt from "bcrypt";
+import 'dotenv/config';
+import { getBcryptRounds } from "./middleware/validation.js";
 import { User, sequelize } from "./models/userModel.js";
 
 async function createAdminUser() {
   try {
     // Sync database
     await sequelize.sync({ alter: true });
-    
-    const adminEmail = "Vmadmin@gmail.com";
-    const adminPassword = "vmadmin123";
+
+    // Credentials must come from the environment - never hardcode them.
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminEmail || !adminPassword) {
+      console.error("❌ Set ADMIN_EMAIL and ADMIN_PASSWORD in your .env before running this script.");
+      process.exit(1);
+    }
     
     // Check if admin already exists
     const existingAdmin = await User.findOne({ where: { email: adminEmail } });
@@ -25,7 +32,7 @@ async function createAdminUser() {
     }
     
     // Hash password
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const hashedPassword = await bcrypt.hash(adminPassword, getBcryptRounds());
     
     // Create admin user
     await User.create({
@@ -36,8 +43,7 @@ async function createAdminUser() {
     });
     
     console.log("✅ Admin user created successfully!");
-    console.log("📧 Email: Vmadmin@gmail.com");
-    console.log("🔑 Password: vmadmin123");
+    console.log(`📧 Email: ${adminEmail}`);
     console.log("🔐 Role: admin");
     
     process.exit(0);

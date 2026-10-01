@@ -219,9 +219,13 @@
   }
 
   async function clearAllNotifications() {
-    if (!confirm('Are you sure you want to delete all notifications? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete All Notifications?',
+      message: 'This will permanently remove all your notifications. This cannot be undone.',
+      button: 'Delete All',
+      icon: 'danger'
+    });
+    if (!ok) return;
     
     try {
       const response = await fetch('/api/notifications/clear-all', { method: 'POST' });

@@ -207,6 +207,29 @@ export const sendMessage = async (req, res) => {
   }
 };
 
+// Contact admin - hospital opens a direct conversation with an administrator
+export const contactAdmin = async (req, res) => {
+  if (!req.session.userId) return res.redirect("/login");
+
+  try {
+    const admin = await User.findOne({
+      where: { role: "admin", isActive: true },
+      order: [["createdAt", "ASC"]]
+    });
+
+    if (!admin) {
+      req.flash("error_msg", "No administrator account is available right now. Please try again later.");
+      return res.redirect(req.get("Referer") || "/hospital/dashboard");
+    }
+
+    res.redirect(`/messages?userId=${admin.id}`);
+  } catch (error) {
+    console.error("Error contacting admin:", error);
+    req.flash("error_msg", "Could not open admin chat. Please try again.");
+    res.redirect(req.get("Referer") || "/hospital/dashboard");
+  }
+};
+
 // Contact donor - Admin initiates conversation with automatic message
 export const contactDonor = async (req, res) => {
   if (!req.session.userId) return res.redirect("/login");

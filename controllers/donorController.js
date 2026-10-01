@@ -41,7 +41,9 @@ export const donorProfilePage = async (req, res) => {
       const data = donor.toJSON();
       if (data.dateOfBirth) data.dateOfBirth = new Date(data.dateOfBirth).toISOString().slice(0, 10);
       if (data.lastDonationDate) data.lastDonationDate = new Date(data.lastDonationDate).toISOString().slice(0, 10);
-      donorJson = JSON.stringify(data);
+      // Escape < so a value containing </script> cannot break out of the
+      // <script> block this JSON is embedded in (stored XSS via profile fields).
+      donorJson = JSON.stringify(data).replace(/</g, '\\u003c');
     }
 
     res.render("donor-profile", {
@@ -62,8 +64,6 @@ export const donorProfilePage = async (req, res) => {
 // Display the donor profile view (read-only)
 export const viewDonorProfilePage = async (req, res) => {
   console.log(`👤 [View Donor Profile] Accessed by user ${req.session.userId}`);
-  console.log(`👤 [Session Check] sessionID: ${req.sessionID}`);
-  console.log(`👤 [Session Data]:`, req.session);
 
   try {
     // Check if user is logged in

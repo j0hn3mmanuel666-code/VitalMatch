@@ -243,45 +243,73 @@ export const performanceMonitor = (req, res, next) => {
 };
 
 // Graceful shutdown handler
-export const gracefulShutdown = (server) => {
+export const gracefulShutdown = (server, io, sequelize) => {
   const shutdown = (signal) => {
     console.log(`Received ${signal}. Starting graceful shutdown...`);
-    
-    server.close((err) => {
+
+    server.close(async (err) => {
       if (err) {
         console.error('Error during server shutdown:', err);
         process.exit(1);
       }
-      
+
       console.log('Server closed successfully');
-      
+
       // Clean up resources
       dataCache.clear();
       sessionCache.clear();
-      
+
+      try {
+        if (io) {
+          await io.close();
+          console.log('Socket.io closed');
+        }
+      } catch (e) {
+        console.error('Error closing Socket.io:', e.message);
+      }
+
+      try {
+        if (sequelize) {
+          await sequelize.close();
+          console.log('Database connection closed');
+        }
+      } catch (e) {
+        console.error('Error closing database:', e.message);
+      }
+
       process.exit(0);
     });
-    
+
     // Force shutdown after 30 seconds
     setTimeout(() => {
       console.error('Forced shutdown after timeout');
       process.exit(1);
     }, 30000);
   };
-  
+
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
 };
 
-// Health check endpoint
-export const healthCheck = (req, res) => {
+// Health check endpoint (verifies the database too - reports degraded instead
+// of healthy when MySQL is unreachable)
+export const healthCheck = async (req, res) => {
   const memUsage = process.memoryUsage();
   const uptime = process.uptime();
-  
+
+  let db = 'up';
+  try {
+    const { sequelize } = await import('../models/db.js');
+    await sequelize.authenticate();
+  } catch (e) {
+    db = 'down';
+  }
+
   const health = {
-    status: 'healthy',
+    status: db === 'up' ? 'healthy' : 'degraded',
     timestamp: new Date().toISOString(),
     uptime: `${Math.floor(uptime / 60)} minutes`,
+    db,
     memory: {
       used: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
       total: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
@@ -292,6 +320,6 @@ export const healthCheck = (req, res) => {
       sessionCache: sessionCache.size()
     }
   };
-  
-  res.json(health);
+
+  res.status(db === 'up' ? 200 : 503).json(health);
 };

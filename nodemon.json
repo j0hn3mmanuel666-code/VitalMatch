@@ -1,3 +1,4 @@
 {
-  "ignore": ["blockchain.json", "sessions/*", "logs/*"]
+  "ignore": ["blockchain.json", "blockchain.json.tmp", "blockchain.json.corrupt-*", "blockchain-pending.json", "blockchain-pending.json.tmp", "settings.json.tmp", "sessions/*", "logs/*", "*.log"],
+  "ext": "js,mjs,cjs,json,xian"
 }

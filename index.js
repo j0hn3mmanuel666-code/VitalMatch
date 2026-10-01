@@ -38,6 +38,8 @@ import { dirname } from "path";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { SignalingServer } from "./services/signalingServer.js";
+import { sequelize } from "./models/db.js";
+import SequelizeStoreFactory from "connect-session-sequelize";
 
 // Import security and performance middleware
 import {
@@ -75,7 +77,6 @@ const PORT = process.env.PORT || 3000;
 app.use(securityHeaders);
 app.use(cors(corsOptions));
 app.use(generalLimiter);
-app.use(sanitizeInput);
 
 // Performance middleware
 app.use(compressionMiddleware);
@@ -91,6 +92,10 @@ app.use(requestLogger);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Sanitization must run AFTER body parsing, otherwise req.body is still
+// undefined here and body sanitization silently does nothing.
+app.use(sanitizeInput);
+
 // Static files with enhanced caching
 app.use(express.static(path.join(process.cwd(), "public"), {
   maxAge: '1d', // 1 day cache for static assets
@@ -98,14 +103,31 @@ app.use(express.static(path.join(process.cwd(), "public"), {
   lastModified: true
 }));
 
+// Persistent session store (Sequelize/MySQL) - replaces default in-memory MemoryStore
+const SequelizeStore = SequelizeStoreFactory(session.Store);
+const sessionTable = new SequelizeStore({
+  db: sequelize,
+  tableName: "Sessions",
+  expiration: 24 * 60 * 60 * 1000, // 24 hours, matches cookie maxAge
+  checkExpirationInterval: 15 * 60 * 1000 // Clean up expired sessions every 15 minutes
+});
+await sessionTable.sync();
+
+// Fail fast when the session secret is missing - a hardcoded fallback would let
+// anyone forge session cookies.
+if (!process.env.SESSION_SECRET) {
+  throw new Error("❌ SESSION_SECRET is not set. Add it to your .env file before starting the server.");
+}
+
 // Session configuration with enhanced security
 const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || "xianfire-secret-key-change-in-production",
+  secret: process.env.SESSION_SECRET,
   resave: false, // Prevent race conditions on concurrent requests
   saveUninitialized: false, // Don't save empty sessions to prevent memory leaks
   name: 'vitalmatch.sid', // Custom session name
+  store: sessionTable, // Persist sessions in MySQL so logins survive restarts
   cookie: {
-    secure: false, // Always false for development
+    secure: process.env.NODE_ENV === 'production', // HTTPS-only cookies in production
     httpOnly: true, // Prevent XSS
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     sameSite: 'lax' // Changed from false to 'lax' for better compatibility
@@ -155,6 +177,12 @@ app.use((req, res, next) => {
   // Authenticated pages contain account-specific data and must not be restored from browser cache.
   if (req.session.userId) {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  }
+
+  // Service worker must always be fresh so clients pick up cache-version bumps.
+  if (req.path === '/sw.js') {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
   }
 
   next();
@@ -264,8 +292,19 @@ app.use(errorHandler);
 const signalingServer = new SignalingServer(io, sessionMiddleware);
 signalingServer.initialize();
 
-// Graceful shutdown handling
-gracefulShutdown(httpServer);
+// Graceful shutdown handling (closes HTTP, Socket.io, and DB connections)
+gracefulShutdown(httpServer, io, sequelize);
+
+// Stray async errors must never silently hang the process: log and exit so the
+// process manager (nodemon / service) restarts from a clean state.
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled promise rejection:', reason);
+  process.exit(1);
+});
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught exception:', error);
+  process.exit(1);
+});
 
 export default app;
 export { httpServer, io };

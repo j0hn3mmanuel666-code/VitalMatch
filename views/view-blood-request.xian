@@ -297,7 +297,7 @@
             </div>
           </div>
           {{#if canManageEmergency}}
-          <form method="POST" action="/requests/{{request.id}}/clear-emergency" onsubmit="return confirm('Stand down this emergency?');">
+          <form method="POST" action="/requests/{{request.id}}/clear-emergency" id="clearEmergencyForm">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
             <button type="submit" class="px-5 py-2 bg-white text-red-700 rounded-lg font-bold hover:bg-red-50 transition text-sm">Stand Down</button>
           </form>
@@ -315,7 +315,7 @@
             <p class="font-bold text-gray-800">Declare an emergency?</p>
             <p class="text-sm text-gray-600">Notifies every matching donor immediately. Expires in 6 hours. Audited.</p>
           </div>
-          <form method="POST" action="/requests/{{request.id}}/escalate" onsubmit="return confirm('Declare EMERGENCY for this request? Every matching donor will be notified at once.');">
+          <form method="POST" action="/requests/{{request.id}}/escalate" id="escalateEmergencyForm">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
             <button type="submit" class="px-5 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition text-sm">Declare Emergency</button>
           </form>
@@ -343,7 +343,7 @@
         {{else if (eq pledgeState 'pledged')}}
         <h3 class="text-lg font-bold text-green-700 mb-2">You have offered to donate</h3>
         <p class="text-sm text-gray-600 mb-4">The requester has been notified. They will schedule you if you are selected.</p>
-        <form method="POST" action="/requests/{{request.id}}/pledge/withdraw" onsubmit="return confirm('Withdraw your pledge for this request?');">
+        <form method="POST" action="/requests/{{request.id}}/pledge/withdraw" id="withdrawPledgeForm">
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
           <button type="submit" class="px-6 py-2 border border-gray-300 text-gray-600 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
             Withdraw Pledge
@@ -421,6 +421,7 @@
         {{#if request}}
         {{#unless (eq request.status 'fulfilled')}}
         <form action="/admin/fulfill-request/{{request.id}}" method="POST" class="inline">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
           <button type="submit"
             class="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition shadow-lg">
             Mark as Fulfilled
@@ -429,6 +430,24 @@
         {{/unless}}
         {{/if}}
         {{else}}
+        {{#if canReviewHospital}}
+        <form action="/hospital/requests/{{request.id}}/approve" method="POST" class="inline">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
+          <button type="submit"
+            class="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition shadow-lg">
+            Approve (Our Patient)
+          </button>
+        </form>
+        <form action="/hospital/requests/{{request.id}}/decline" method="POST" class="inline">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
+          <input type="text" name="declineReason" placeholder="Reason (optional)" maxlength="200"
+            class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
+          <button type="submit"
+            class="px-6 py-3 border border-red-600 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition shadow-lg">
+            Decline
+          </button>
+        </form>
+        {{/if}}
         <a href="/my-requests"
           class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg">
           View All My Requests
@@ -515,8 +534,53 @@
 
   // Load blockchain data when page loads
   document.addEventListener('DOMContentLoaded', function () {
-    { { #if request } }
+    {{#if request}}
     loadBlockchainData();
-    { {/if } }
+    {{/if}}
+
+    var escalateForm = document.getElementById('escalateEmergencyForm');
+    if (escalateForm) {
+      escalateForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        openConfirmModal({
+          title: 'Declare EMERGENCY?',
+          message: 'Every matching donor will be notified immediately. Expires in 6 hours. This action is audited.',
+          button: 'Declare Emergency',
+          buttonClass: 'bg-orange-600 hover:bg-orange-700',
+          icon: 'warning',
+          onSubmit: function () { escalateForm.submit(); }
+        });
+      });
+    }
+
+    var clearForm = document.getElementById('clearEmergencyForm');
+    if (clearForm) {
+      clearForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        openConfirmModal({
+          title: 'Stand Down Emergency?',
+          message: 'The emergency will be cleared and normal matching resumes.',
+          button: 'Stand Down',
+          buttonClass: 'bg-red-600 hover:bg-red-700',
+          icon: 'danger',
+          onSubmit: function () { clearForm.submit(); }
+        });
+      });
+    }
+
+    var withdrawForm = document.getElementById('withdrawPledgeForm');
+    if (withdrawForm) {
+      withdrawForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        openConfirmModal({
+          title: 'Withdraw Pledge?',
+          message: 'You will be removed from this request. The requester will be notified.',
+          button: 'Withdraw',
+          buttonClass: 'bg-red-600 hover:bg-red-700',
+          icon: 'danger',
+          onSubmit: function () { withdrawForm.submit(); }
+        });
+      });
+    }
   });
 </script>

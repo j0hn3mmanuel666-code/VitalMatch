@@ -29,7 +29,7 @@ import { homePage } from "../controllers/homeController.js";
 import { isAuthenticated, isAdmin, isHospital } from "../middleware/adminAuth.js";
 
 // Import security and validation middleware
-import { authLimiter, apiLimiter, uploadLimiter, csrfProtection } from "../middleware/security.js";
+import { authLimiter, apiLimiter, uploadLimiter, mutationLimiter, csrfProtection } from "../middleware/security.js";
 import { apiCache, dbOptimization } from "../middleware/performance.js";
 import { 
   validateRegistration, 
@@ -46,6 +46,52 @@ const router = express.Router();
 // Home page (public)
 router.get("/", homePage);
 
+// Throttle all state-changing endpoints (registered before the routes below so
+// it runs first; authLimiter/uploadLimiter still apply on top where attached).
+router.use([
+  "/logout",
+  "/requests/:id/pledge", "/requests/:id/pledge/withdraw",
+  "/requests/:id/escalate", "/requests/:id/clear-emergency",
+  "/simple-blood-request", "/new-blood-request", "/blood-request", "/request-blood",
+  "/confirm-schedule/:id/:role", "/schedule-confirm/:token",
+  "/appointments/:id/decline",
+  "/api/notifications/:id/read", "/api/notifications/read-all", "/api/notifications/clear-all",
+  "/donor-profile", "/cancel-request/:id",
+  "/settings/profile", "/settings/donor", "/settings/notifications", "/settings/password",
+  "/hospital/requests/:id/approve", "/hospital/requests/:id/decline",
+  "/admin/new-blood-request", "/admin/hospitals/:id/:action",
+  "/admin/fulfill-request/:id", "/admin/delete-request/:id",
+  "/admin/users", "/admin/users/:id", "/admin/users/bulk",
+  "/admin/settings/general", "/admin/settings/email", "/admin/settings/notifications",
+  "/admin/settings/security", "/admin/settings/test-email",
+  "/messages/send", "/api/calls/:callId/seen", "/api/blockchain/mine",
+  "/submit-call-for-donation", "/admin/calls/update-status",
+  "/api/admin/public-content", "/api/admin/public-content/:section"
+], mutationLimiter);
+
+// Static info pages (public) - previously linked from the footer/404 with no route
+const infoPages = {
+  "/about": {
+    heading: "About Us",
+    body: "VitalMatch is a digital blood request platform connecting hospitals with qualified donors in real-time.\n\nBuilt in partnership with the Philippine Red Cross - Mindoro Chapter, it helps hospitals post urgent blood requests, automatically matches qualified donors, and sends instant notifications - cutting coordination time across Oriental Mindoro.\n\nEvery donation through VitalMatch brings the community one step closer to a safer, faster emergency response."
+  },
+  "/privacy": {
+    heading: "Privacy Policy",
+    body: "VitalMatch collects only the information needed to operate the platform: your account details, donor profile, blood requests, and messages.\n\nYour data is used solely to match donors with requests and operate your account. It is never sold. Session cookies keep you logged in; you can log out at any time to invalidate them.\n\nTo request correction or deletion of your personal data, contact support@vitalmatch.ph."
+  },
+  "/terms": {
+    heading: "Terms of Service",
+    body: "By using VitalMatch you agree to provide accurate information, keep your login credentials confidential, and use the platform only for legitimate blood donation coordination.\n\nDonor eligibility is determined by medical professionals, not by the platform. VitalMatch does not guarantee request fulfillment times.\n\nAccounts that misuse the platform may be suspended. Continued use after changes to these terms constitutes acceptance."
+  },
+  "/contact": {
+    heading: "Contact Us",
+    body: "Philippine Red Cross - Mindoro Chapter\nCalapan City, Oriental Mindoro, Philippines 5200\n\nPhone: +63 43 123 4567\nEmail: support@vitalmatch.ph\n\nFor account issues (including data correction or deletion requests), reach us at the email above."
+  }
+};
+for (const [path, page] of Object.entries(infoPages)) {
+  router.get(path, (req, res) => res.render("info", { title: `${page.heading} - VitalMatch`, ...page }));
+}
+
 // Authentication routes
 import { loginPage, registerPage, forgotPasswordPage, dashboardPage, hospitalDashboardPage, loginUser, registerUser, logoutUser, verifyEmail, resendVerification, requestPasswordReset, resetPasswordPage, resetPassword, searchDashboard } from "../controllers/authController.js";
 
@@ -59,7 +105,7 @@ router.get("/reset-password/:token", resetPasswordPage);
 router.post("/reset-password/:token", authLimiter, resetPassword);
 router.get("/dashboard", isAuthenticated, dashboardPage);
 router.get("/api/search", isAuthenticated, searchDashboard);
-router.get("/logout", logoutUser);
+  router.post("/logout", logoutUser);
 
 // User History + Help pages
 import { historyPage, helpPage } from "../controllers/userPagesController.js";
@@ -79,33 +125,6 @@ router.post("/resend-verification", authLimiter, resendVerification);
 
 // Blood Request Routes (Protected)
 import { requestBloodPage, newRequestBloodPage, simpleRequestBloodPage, viewBloodRequestPage, submitBloodRequest, pledgeToDonate, withdrawPledge, escalateRequest, clearEmergency } from "../controllers/bloodRequestController.js";
-
-// Test route to debug routing issues
-router.get("/test-route", (req, res) => {
-  console.log("🧪 TEST ROUTE HIT!");
-  console.log("🔍 Session Data:", req.session);
-  res.json({
-    message: "Test route works!",
-    sessionUserId: req.session?.userId || 'none',
-    sessionUserRole: req.session?.userRole || 'none',
-    sessionId: req.sessionID,
-    isAuthenticated: !!req.session?.userId,
-    isAdmin: req.session?.userRole === 'admin'
-  });
-});
-
-// Admin session debug route
-router.get("/admin/debug-session", (req, res) => {
-  console.log("🔍 [Admin Debug] Session Data:", req.session);
-  res.json({
-    sessionData: req.session,
-    userId: req.session?.userId,
-    userRole: req.session?.userRole,
-    sessionId: req.sessionID,
-    isAuthenticated: !!req.session?.userId,
-    isAdmin: req.session?.userRole === 'admin'
-  });
-});
 
 router.get("/simple-blood-request", isAuthenticated, simpleRequestBloodPage);
 router.get("/new-blood-request", isAuthenticated, newRequestBloodPage);
@@ -144,7 +163,7 @@ router.post("/api/notifications/clear-all", isAuthenticated, clearAll);
 import { donorProfilePage, viewDonorProfilePage, updateDonorProfile, myRequestsPage, cancelRequest } from "../controllers/donorController.js";
 
 router.get("/donor-profile", isAuthenticated, donorProfilePage);
-router.get("/view-donor-profile", viewDonorProfilePage);
+router.get("/view-donor-profile", isAuthenticated, viewDonorProfilePage);
 router.post("/donor-profile", isAuthenticated, validateProfileUpdate, updateDonorProfile);
 router.get("/my-requests", isAuthenticated, myRequestsPage);
 router.post("/cancel-request/:id", isAuthenticated, cancelRequest);
@@ -205,9 +224,10 @@ router.post("/admin/settings/test-email", isAdmin, testEmailSettings);
 router.get("/api/admin/settings", isAdmin, getSettings);
 
 // Message Routes (Protected)
-import { messagesPage, sendMessage, contactDonor, uploadVoiceMessage, sendVoiceMessage } from "../controllers/messageController.js";
+import { messagesPage, sendMessage, contactDonor, contactAdmin, uploadVoiceMessage, sendVoiceMessage } from "../controllers/messageController.js";
 
 router.get("/messages", isAuthenticated, messagesPage);
+router.get("/messages/admin", isAuthenticated, isHospital, mutationLimiter, contactAdmin);
 router.post("/messages/send", isAuthenticated, validateApiParams(['recipientId', 'message']), sendMessage);
 router.post("/messages/send-voice", isAuthenticated, uploadLimiter, uploadVoiceMessage, validateFileUpload(['audio/wav', 'audio/mp3', 'audio/ogg'], 5 * 1024 * 1024), sendVoiceMessage);
 router.get("/contact-donor/:requestId/:donorUserId", isAdmin, contactDonor);
@@ -387,6 +407,6 @@ router.put("/api/admin/public-content/:section", isAdmin, validateApiParams([], 
 router.delete("/api/admin/public-content/:section", isAdmin, deletePublicContent);
 
 // Image upload endpoint for admin (saves to public/uploads/images)
-router.post('/api/admin/upload-image', isAdmin, uploadLimiter, imageUpload.single('image'), validateFileUpload(['image/jpeg','image/png','image/webp','image/gif'], 20 * 1024 * 1024), uploadImageHandler);
+router.post('/api/admin/upload-image', isAdmin, uploadLimiter, imageUpload.single('image'), validateFileUpload(['image/jpeg','image/png','image/webp','image/gif'], parseInt(process.env.MAX_FILE_SIZE, 10) || 5 * 1024 * 1024), uploadImageHandler);
 
 export default router;

@@ -30,6 +30,7 @@ import { AuditService } from "./auditService.js";
 import { sequelize } from "../models/db.js";
 import { Op } from "sequelize";
 import bcrypt from "bcrypt";
+import { getBcryptRounds } from "../middleware/validation.js";
 
 /**
  * User Service Layer
@@ -156,7 +157,7 @@ export class UserService {
    */
   static async createUser(userData, adminId, context = {}) {
     try {
-      const { firstName, lastName, email, phone, address, dateOfBirth, gender, role = 'user' } = userData;
+      const { firstName, lastName, email, phone, address, dateOfBirth, gender, role = 'user', hospitalName, isActive, emailVerified } = userData;
       
       // Validate required fields
       if (!firstName || !lastName || !email || !phone || !address || !dateOfBirth || !gender) {
@@ -171,9 +172,10 @@ export class UserService {
       
       // Generate secure temporary password
       const tempPassword = this.generateTemporaryPassword();
-      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+      const hashedPassword = await bcrypt.hash(tempPassword, getBcryptRounds());
       
-      // Create user
+      // Create user (hospitalName/isActive pass through so admin-created
+      // hospital accounts work immediately without a second update call)
       const newUser = await User.create({
         firstName,
         lastName,
@@ -184,6 +186,9 @@ export class UserService {
         dateOfBirth,
         gender,
         role,
+        hospitalName: hospitalName || null,
+        isActive: isActive !== undefined ? !!isActive : true,
+        emailVerified: emailVerified !== undefined ? !!emailVerified : true,
         createdBy: adminId
       });
       
@@ -362,7 +367,7 @@ export class UserService {
       }
       
       const tempPassword = this.generateTemporaryPassword();
-      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+      const hashedPassword = await bcrypt.hash(tempPassword, getBcryptRounds());
       
       await user.update({ 
         password: hashedPassword,

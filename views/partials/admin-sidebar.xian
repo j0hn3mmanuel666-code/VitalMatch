@@ -292,8 +292,8 @@
           </svg>
         </div>
         <span class="sidebar-text text-sm flex-1">Messages</span>
-        <span
-          class="sidebar-text inline-flex items-center justify-center px-2 py-0.5 ml-3 text-xs font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md">5</span>
+        <span id="adminMsgBadge"
+          class="sidebar-text inline-flex items-center justify-center px-2 py-0.5 ml-3 text-xs font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md"{{#unless navUnreadMsgs}} style="display:none;"{{/unless}}>{{navUnreadMsgs}}</span>
       </a>
 
       <!-- Users -->

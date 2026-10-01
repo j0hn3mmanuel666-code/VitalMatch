@@ -63,14 +63,17 @@ async function loadSettings() {
   }
 }
 
-// Save settings to file
+// Save settings to file (atomic: write temp file + rename, so concurrent
+// saves and crashes cannot corrupt the file)
 async function saveSettings(settings) {
   try {
     console.log('💾 Saving settings to:', SETTINGS_FILE);
     if (!SETTINGS_FILE) {
       throw new Error('SETTINGS_FILE path is undefined');
     }
-    await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+    const tmpFile = `${SETTINGS_FILE}.tmp`;
+    await fs.writeFile(tmpFile, JSON.stringify(settings, null, 2), 'utf-8');
+    await fs.rename(tmpFile, SETTINGS_FILE);
     console.log('✅ Settings saved successfully');
     return true;
   } catch (error) {
@@ -99,10 +102,10 @@ export const settingsPage = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error loading settings page:', error);
-    res.status(500).json({
-      error: 'Internal Server Error',
-      details: error.message,
-      message: error.message
+    res.status(500).render('error', {
+      title: 'Server Error - VitalMatch',
+      statusCode: 500,
+      message: 'Could not load settings. Please try again.'
     });
   }
 };

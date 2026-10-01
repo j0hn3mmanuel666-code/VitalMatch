@@ -93,9 +93,9 @@
             </div>
 
             <div class="p-4 border-t">
-              <button class="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-semibold">
+              <a href="/notifications" class="block w-full text-center text-sm text-blue-600 hover:text-blue-700 font-semibold">
                 View All Notifications
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -183,11 +183,11 @@
           <div class="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 text-center">
             <div class="flex items-center justify-center mb-1">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
               <span class="text-sm font-semibold">Hospital Mode</span>
             </div>
-            <p class="text-xs text-white/80">Request Coordinator</p>
+            <a href="/messages/admin" class="text-xs text-white font-semibold underline hover:text-red-100 transition-colors">Message Admin →</a>
           </div>
           {{else}}
           <div class="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 text-center">
@@ -328,7 +328,7 @@
  
       <!-- Emergency Alerts / Guidelines Card -->
       {{#if (eq user.role 'hospital')}}
-      <a href="/#how-it-works"
+      <a href="/help"
         class="group bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-orange-500 relative overflow-hidden">
         <div
           class="absolute inset-0 bg-gradient-to-br from-orange-50 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -457,6 +457,7 @@
         <!-- Mini Chart Placeholder -->
         <div class="bg-gray-50 rounded-lg p-4">
           <h3 class="text-sm font-semibold text-gray-700 mb-3">Blood Requests Volume (Last 6 Months)</h3>
+          {{#if hasHospitalActivity}}
           <div class="flex items-end justify-between h-24 space-x-2">
             {{#each hospitalChart}}
             <div class="bg-blue-500 rounded-t w-full" style="height: {{height}}%" title="{{label}}"></div>
@@ -467,10 +468,13 @@
             <span>{{label}}</span>
             {{/each}}
           </div>
+          {{else}}
+          <p class="text-sm text-gray-500 py-2">No requests in the last 6 months - new requests will appear here.</p>
+          {{/if}}
         </div>
       </div>
       {{else}}
-      <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
+      <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6 self-start">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-2xl font-bold text-gray-800">Your Impact Dashboard</h2>
           <div class="flex items-center space-x-2">
@@ -546,6 +550,7 @@
         <!-- Mini Chart Placeholder -->
         <div class="bg-gray-50 rounded-lg p-4">
           <h3 class="text-sm font-semibold text-gray-700 mb-3">Donation Activity (Last 6 Months)</h3>
+          {{#if hasDonationActivity}}
           <div class="flex items-end justify-between h-24 space-x-2">
             {{#each donationChart}}
             <div class="bg-red-500 rounded-t w-full" style="height: {{height}}%" title="{{label}}"></div>
@@ -556,7 +561,39 @@
             <span>{{label}}</span>
             {{/each}}
           </div>
+          {{else}}
+          <p class="text-sm text-gray-500 py-2">No donations yet - your activity will appear here after your first donation.</p>
+          {{/if}}
         </div>
+
+      <!-- Quick Actions -->
+      <div class="bg-gray-50 rounded-lg p-4 mt-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <a href="/new-blood-request" class="flex items-center space-x-3 p-3 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
+            <span class="w-9 h-9 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">+</span>
+            <span class="text-sm font-semibold text-gray-800">Request Blood</span>
+          </a>
+          <a href="/map" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
+            <svg class="w-9 h-9 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            <span class="text-sm font-semibold text-gray-800">Blood Map</span>
+          </a>
+          <a href="/my-requests" class="flex items-center space-x-3 p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+            <svg class="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span class="text-sm font-semibold text-gray-800">My Requests</span>
+          </a>
+          <a href="/messages" class="flex items-center space-x-3 p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors">
+            <svg class="w-9 h-9 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <span class="text-sm font-semibold text-gray-800">Messages</span>
+          </a>
+        </div>
+      </div>
       </div>
       {{/if}}
 
