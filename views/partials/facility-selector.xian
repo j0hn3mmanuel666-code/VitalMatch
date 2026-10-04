@@ -1,0 +1,9 @@
+<div class="form-group mb-4">
+  <label for="requestFacility">Receiving facility *</label>
+  <select id="requestFacility" name="facilityId" data-facility-select required>
+    <option value="">Select a verified facility</option>
+    {{#each facilities}}<option value="{{id}}" data-facility-name="{{hospitalName}}">{{hospitalName}}</option>{{/each}}
+    <option value="external">Other facility / coordinator review</option>
+  </select>
+  <p class="vm-muted text-sm mt-2">A verified facility reviews its own patient request before donor matching. Other facilities require chapter review. Selecting a name does not grant facility access.</p>
+</div>

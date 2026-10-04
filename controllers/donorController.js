@@ -1,3 +1,4 @@
+import { searchTerm, withTextSearch, recordPage } from '../services/recordSearch.js';
 /*
 MIT License
 
@@ -23,11 +24,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-import { Donor, sequelize } from "../models/donorModel.js";
+import { Donor } from "../models/donorModel.js";
 import { BloodRequest } from "../models/bloodRequestModel.js";
-import { vitalMatchBlockchain } from "../services/blockchainService.js";
-await sequelize.sync();
-
+import { User } from "../models/userModel.js";
+import { Fulfillment } from "../models/workflowEventModel.js";
+import { AuditService } from "../services/auditService.js";
+import { donationIntervalDays, isDonorReady, isDonorAgeEligible, parseBirthDate, unitsRemaining } from "../services/coordinationPolicy.js";
+import { cancelRequest as cancelRequestLifecycle, WorkflowError } from "../services/requestLifecycleService.js";
+import { Op, literal } from "sequelize";
+import { retryTransaction } from '../services/transactionService.js';
 // Display the donor profile form (pre-filled when the user already has one)
 export const donorProfilePage = async (req, res) => {
   try {
@@ -36,11 +41,19 @@ export const donorProfilePage = async (req, res) => {
       order: [["createdAt", "DESC"]]
     });
 
+    const formValues = req.session.donorFormValues;
+    delete req.session.donorFormValues;
+    let data = donor ? donor.toJSON() : null;
+    if (data) {
+      for (const field of ['dateOfBirth','lastDonationDate']) {
+        if (!data[field]) continue;
+        const date = new Date(data[field]);
+        data[field] = Number.isFinite(date.getTime()) ? date.toISOString().slice(0,10) : '';
+      }
+    }
+    if (formValues) data = { ...data, ...formValues };
     let donorJson = "null";
-    if (donor) {
-      const data = donor.toJSON();
-      if (data.dateOfBirth) data.dateOfBirth = new Date(data.dateOfBirth).toISOString().slice(0, 10);
-      if (data.lastDonationDate) data.lastDonationDate = new Date(data.lastDonationDate).toISOString().slice(0, 10);
+    if (data) {
       // Escape < so a value containing </script> cannot break out of the
       // <script> block this JSON is embedded in (stored XSS via profile fields).
       donorJson = JSON.stringify(data).replace(/</g, '\\u003c');
@@ -48,14 +61,17 @@ export const donorProfilePage = async (req, res) => {
 
     res.render("donor-profile", {
       title: "Donor Profile - VitalMatch",
-      donor: donor ? donor.toJSON() : null,
+      donor: data,
+      coordinationIntervalDays: donationIntervalDays(),
       donorJson
     });
   } catch (error) {
-    console.error("Error loading donor profile form:", error);
-    res.render("donor-profile", {
+    console.error("Donor profile form failed:", error.name);
+    res.status(503).render("donor-profile", {
       title: "Donor Profile - VitalMatch",
       donor: null,
+      coordinationIntervalDays: donationIntervalDays(),
+      error: 'Your profile could not be loaded. Please retry.',
       donorJson: "null"
     });
   }
@@ -63,44 +79,31 @@ export const donorProfilePage = async (req, res) => {
 
 // Display the donor profile view (read-only)
 export const viewDonorProfilePage = async (req, res) => {
-  console.log(`👤 [View Donor Profile] Accessed by user ${req.session.userId}`);
 
   try {
     // Check if user is logged in
     if (!req.session.userId) {
-      console.log("❌ [Donor Profile] No session userId found - user not logged in");
-      req.flash("error_msg", "Please log in to view your donor profile");
+            req.flash("error_msg", "Please log in to view your donor profile");
       return res.redirect("/login");
     }
 
-    console.log("✅ [Donor Profile] Viewing donor profile for userId:", req.session.userId);
 
     const donor = await Donor.findOne({
       where: { userId: req.session.userId },
       order: [['createdAt', 'DESC']]
     });
 
-    console.log("🔍 [Donor Profile] Donor found:", donor ? `Yes (ID: ${donor.id})` : "No");
 
-    // If no donor found, check if any donors exist in database
-    if (!donor) {
-      const allDonors = await Donor.findAll();
-      console.log(`📊 [Donor Profile] Total donors in database: ${allDonors.length}`);
-      if (allDonors.length > 0) {
-        console.log("📋 [Donor Profile] Sample donor userIds:", allDonors.map(d => d.userId).slice(0, 5));
-      }
-    }
-
-    console.log("🎯 [Donor Profile] Rendering view-donor-profile page");
     res.render("view-donor-profile", {
       title: "My Donor Profile - VitalMatch",
       donor
     });
   } catch (error) {
-    console.error("❌ [Donor Profile] Error fetching donor profile:", error);
-    res.render("view-donor-profile", {
+    console.error("Donor profile failed:", error.name);
+    res.status(503).render("view-donor-profile", {
       title: "My Donor Profile - VitalMatch",
-      donor: null
+      donor: null,
+      error: 'Your profile could not be loaded. Please retry.'
     });
   }
 };
@@ -108,189 +111,60 @@ export const viewDonorProfilePage = async (req, res) => {
 // Handle donor profile submission
 export const updateDonorProfile = async (req, res) => {
   try {
-    console.log("Session userId:", req.session.userId); // Debug log
-    console.log("Form data received:", req.body); // Debug log
-
-    const {
-      fullName,
-      dateOfBirth,
-      gender,
-      bloodType,
-      weight,
-      height,
-      mobileNumber,
-      email,
-      address,
-      city,
-      province,
-      zipCode,
-      lastDonationDate,
-      medicalConditions,
-      isAvailable,
-      emergencyContactName,
-      emergencyContactNumber,
-      emergencyContactRelationship,
-      latitude,
-      longitude
-    } = req.body;
-
-    // Validate required fields
-    if (!fullName || !dateOfBirth || !gender || !bloodType || !weight || !height ||
-      !mobileNumber || !email || !address || !city || !province || !zipCode ||
-      !emergencyContactName || !emergencyContactNumber || !emergencyContactRelationship) {
-      req.flash("error_msg", "Please fill in all required fields");
-      return res.redirect("/donor-profile");
-    }
-
-    // Validate weight (must be at least 50kg)
-    if (parseInt(weight) < 50) {
-      req.flash("error_msg", "Donors must weigh at least 50 kg to be eligible");
-      return res.redirect("/donor-profile");
-    }
-
-    const donorData = {
-      fullName,
-      dateOfBirth,
-      gender,
-      bloodType,
-      weight,
-      height,
-      mobileNumber,
-      email,
-      address,
-      city,
-      province,
-      zipCode,
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null,
-      lastDonationDate: lastDonationDate || null,
-      medicalConditions,
-      isAvailable: isAvailable === 'on',
-      emergencyContactName,
-      emergencyContactNumber,
-      emergencyContactRelationship
-    };
-
-    // Update the existing record instead of creating a duplicate
-    const existingDonor = await Donor.findOne({
-      where: { userId: req.session.userId },
-      order: [["createdAt", "DESC"]]
-    });
-
-    if (existingDonor) {
-      await existingDonor.update(donorData);
-      console.log("Donor profile updated:", existingDonor.id);
-      req.flash("success_msg", "Donor profile updated successfully!");
-      return res.redirect("/view-donor-profile");
-    }
-
-    // First-time registration: save to database
-    const newDonor = await Donor.create({
-      ...donorData,
-      userId: req.session.userId
-    });
-
-    // Add donor registration to blockchain
-    console.log('🔗 Adding donor registration to blockchain...');
-    vitalMatchBlockchain.addDonationRecord(req.session.userId, {
-      bloodType,
-      units: 0, // Initial registration, no donation yet
-      location: `${city}, ${province}`,
-      medicalChecks: {
-        weight: weight,
-        eligibility: parseInt(weight) >= 50,
-        registrationDate: new Date().toISOString()
+    await retryTransaction(async transaction => {
+      const account = await User.findByPk(req.session.userId, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!account?.isActive) throw new WorkflowError('Your account is inactive', 403);
+      const required = ['fullName','dateOfBirth','gender','bloodType','weight','height','mobileNumber','address','city','province','zipCode','emergencyContactName','emergencyContactNumber','emergencyContactRelationship'];
+      for (const field of required) {
+        if (typeof req.body[field] !== 'string' || !req.body[field].trim()) throw new WorkflowError('Please provide ' + field);
+        if (req.body[field].trim().length > 255) throw new WorkflowError(field + ' must be 255 characters or fewer');
       }
+      if (!['O-','O+','A-','A+','B-','B+','AB-','AB+'].includes(req.body.bloodType)) throw new WorkflowError('Select a valid blood type');
+      for (const field of ['mobileNumber','emergencyContactNumber']) if (!/^(?:\+63|0)9\d{9}$/.test(req.body[field].replace(/[\s-]/g,''))) throw new WorkflowError('Provide valid mobile contact numbers');
+      const weight = Number(req.body.weight), height = Number(req.body.height);
+      if (!Number.isInteger(weight) || weight < 50 || weight > 200 || !Number.isInteger(height) || height < 100 || height > 250) throw new WorkflowError('Enter valid profile weight and height');
+      const dateOfBirth = parseBirthDate(req.body.dateOfBirth);
+      if (!dateOfBirth) throw new WorkflowError('Provide a valid birth date in YYYY-MM-DD format');
+      if (!isDonorAgeEligible(dateOfBirth)) throw new WorkflowError('The coordination profile requires an age from 18 to 65 based on your birth date');
+      const lastDonationDate = req.body.lastDonationDate ? parseBirthDate(req.body.lastDonationDate) : null;
+      if (req.body.lastDonationDate && (!lastDonationDate || lastDonationDate > new Date())) throw new WorkflowError('Provide a valid previous donation date');
+      const latitude = req.body.latitude ? Number(req.body.latitude) : null, longitude = req.body.longitude ? Number(req.body.longitude) : null;
+      if ((latitude === null) !== (longitude === null) || latitude !== null && (!Number.isFinite(latitude) || Math.abs(latitude) > 90 || !Number.isFinite(longitude) || Math.abs(longitude) > 180)) throw new WorkflowError('Location coordinates are invalid');
+      const donor = await Donor.findOne({ where: { userId: account.id }, transaction, lock: transaction.LOCK.UPDATE });
+      const recordedDate = donor ? await Fulfillment.max('fulfilledAt', { where: { donorId: donor.id }, transaction }) : null;
+      const effectiveDate = recordedDate && (!lastDonationDate || new Date(recordedDate) > lastDonationDate) ? new Date(recordedDate) : lastDonationDate;
+      const data = Object.fromEntries(required.filter(key => !['weight','height','dateOfBirth'].includes(key)).map(key => [key, req.body[key].trim()]));
+      Object.assign(data, { dateOfBirth, weight, height, email: account.email, latitude, longitude, lastDonationDate: effectiveDate, medicalConditions: typeof req.body.medicalConditions === 'string' ? req.body.medicalConditions.trim().slice(0, 2000) : null, isAvailable: req.body.isAvailable === 'on' });
+      if (data.isAvailable && !isDonorReady(data)) data.isAvailable = false;
+      const saved = donor ? await donor.update(data, { transaction }) : await Donor.create({ ...data, userId: account.id }, { transaction });
+      await AuditService.logAction(account.id, donor ? 'donor_profile_updated' : 'donor_profile_created', 'Donor', saved.id, null, { isAvailable: saved.isAvailable, bloodType: saved.bloodType }, { ...AuditService.getRequestContext(req), transaction });
     });
-
-    // Mine the blockchain
-    vitalMatchBlockchain.minePendingTransactions();
-
-    console.log("Donor profile created:", newDonor.id); // Debug log
-    req.flash("success_msg", "Donor profile created successfully and registered on blockchain!");
-    res.redirect("/view-donor-profile");
-
+    delete req.session.donorFormValues;
+    req.flash('success_msg', 'Donor profile saved. Availability is subject to the coordination interval and staff screening.');
+    res.redirect('/view-donor-profile');
   } catch (error) {
-    console.error("Error updating donor profile:", error);
-    req.flash("error_msg", "An error occurred while updating your profile. Please try again.");
-    res.redirect("/donor-profile");
+    const fields = ['fullName','dateOfBirth','gender','bloodType','weight','height','mobileNumber','address','city','province','zipCode','emergencyContactName','emergencyContactNumber','emergencyContactRelationship','latitude','longitude','lastDonationDate','medicalConditions'];
+    req.session.donorFormValues = Object.fromEntries(fields.filter(field => typeof req.body[field] === 'string').map(field => [field, req.body[field].slice(0,2000)]));
+    req.session.donorFormValues.isAvailable = req.body.isAvailable === 'on';
+    req.flash('error_msg', error.status ? error.message : 'The profile could not be saved. Please retry.');
+    res.redirect('/donor-profile');
   }
 };
-
-// Display my requests page
 export const myRequestsPage = async (req, res) => {
   try {
-    const filter = req.query.filter; // Get filter from query params
-    const whereClause = { userId: req.session.userId };
-
-    // Apply filter if provided
-    if (filter && ['active', 'fulfilled', 'cancelled', 'pending'].includes(filter)) {
-      whereClause.status = filter;
-    }
-
-    const requests = await BloodRequest.findAll({
-      where: whereClause,
-      order: [['createdAt', 'DESC']]
-    });
-
-    res.render("my-requests", {
-      title: "My Requests - VitalMatch",
-      requests,
-      filter
-    });
-  } catch (error) {
-    console.error("Error fetching requests:", error);
-    res.render("my-requests", {
-      title: "My Requests - VitalMatch",
-      requests: [],
-      filter: null
-    });
-  }
+    const filter = String(req.query.filter || '');
+    const where = { userId: req.session.userId, archivedAt: null };
+    if (['active','pending','scheduled','fulfilled','cancelled'].includes(filter)) where.status = filter;
+    const search = searchTerm(req.query);
+    const searchedWhere = withTextSearch(where,search,['patientName','hospitalName','bloodType','city']);
+    const sort = ['newest','oldest','urgency','status'].includes(req.query.sort) ? req.query.sort : 'newest';
+    const order = sort === 'oldest' ? [['createdAt','ASC']] : sort === 'status' ? [['status','ASC'],['createdAt','DESC']] : sort === 'urgency' ? [[literal("CASE urgency WHEN 'critical' THEN 4 WHEN 'urgent' THEN 3 WHEN 'high' THEN 2 ELSE 1 END"),'DESC'],['createdAt','DESC']] : [['createdAt','DESC']];
+    const { rows, pagination } = await recordPage(BloodRequest,{where:searchedWhere,order},req.query,req.path);
+    res.render('my-requests', { title: 'My Requests - VitalMatch', requests: rows.map(r => ({ ...r.toJSON(), unitsRemaining: unitsRemaining(r) })), filter, search, sort, error: null, pagination });
+  } catch (error) { res.status(503).render('my-requests', { title: 'Requests unavailable', requests: [], filter: null, error: 'Your requests could not be loaded. Please retry.' }); }
 };
-
-// Cancel a blood request
 export const cancelRequest = async (req, res) => {
-  try {
-    const requestId = req.params.id;
-
-    // Find the request and verify it belongs to the user
-    const request = await BloodRequest.findOne({
-      where: {
-        id: requestId,
-        userId: req.session.userId
-      }
-    });
-
-    if (!request) {
-      req.flash("error_msg", "Request not found or you don't have permission to cancel it");
-      return res.redirect(req.get("Referer") || "/my-requests");
-    }
-
-    // Check if request is already cancelled or fulfilled
-    if (request.status === 'cancelled') {
-      req.flash("error_msg", "This request is already cancelled");
-      return res.redirect(req.get("Referer") || "/my-requests");
-    }
-
-    if (request.status === 'fulfilled') {
-      req.flash("error_msg", "Cannot cancel a fulfilled request");
-      return res.redirect(req.get("Referer") || "/my-requests");
-    }
-
-    // Update status to cancelled (clears any escalation)
-    await request.update({
-      status: 'cancelled',
-      isEmergency: false,
-      emergencyAt: null,
-      emergencyExpiresAt: null
-    });
-
-    req.flash("success_msg", "Blood request cancelled successfully");
-    res.redirect(req.get("Referer") || "/my-requests");
-
-  } catch (error) {
-    console.error("Error cancelling request:", error);
-    req.flash("error_msg", "An error occurred while cancelling the request");
-    res.redirect(req.get("Referer") || "/my-requests");
-  }
+  try { await cancelRequestLifecycle(req.params.id, req.session.userId, req.body.reason); req.flash('success_msg', 'Request cancelled. Affected donors and coordinators have been notified.'); }
+  catch (error) { req.flash('error_msg', error.status ? error.message : 'Could not cancel the request. Please retry.'); }
+  res.redirect(req.session.userRole === 'hospital' ? '/hospital/patients' : '/my-requests');
 };

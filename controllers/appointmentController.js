@@ -1,242 +1,80 @@
-/*
-MIT License
+import { searchTerm, withTextSearch, recordPage } from '../services/recordSearch.js';
+import crypto from 'node:crypto';
+import { Op } from 'sequelize';
+import { BloodRequest } from '../models/bloodRequestModel.js';
+import { Appointment } from '../models/appointmentModel.js';
+import { Donor } from '../models/donorModel.js';
+import { ScheduleToken } from '../models/scheduleTokenModel.js';
+import { unitsRemaining } from '../services/coordinationPolicy.js';
+import { confirmAppointment, changeAppointment, WorkflowError } from '../services/requestLifecycleService.js';
 
-Copyright (c) 2025 Christian I. Cabrera || XianFire Framework
-Mindoro State University - Philippines
-*/
-
-import { BloodRequest } from "../models/bloodRequestModel.js";
-import { Donor } from "../models/donorModel.js";
-import { ScheduleToken } from "../models/scheduleTokenModel.js";
-import { hashToken } from "../middleware/validation.js";
-import { Notification } from "../models/notificationModel.js";
-import { getUserSettings } from "../models/userSettingModel.js";
-
-// Verify the logged-in user owns this side of the appointment.
-// Returns { request } on success or { error, request? } otherwise.
-async function loadOwnedRequest(req, id, role) {
-  const request = await BloodRequest.findByPk(id);
-  if (!request) return { error: "notfound" };
-  if (role !== "donor" && role !== "requester") return { error: "role" };
-  if (!req.session?.userId) return { error: "login", request };
-
-  if (role === "donor") {
-    const donor = await Donor.findOne({ where: { userId: req.session.userId } });
-    if (!donor || request.assignedDonorId !== donor.id) {
-      return { error: "forbidden", request };
-    }
-  } else {
-    if (request.userId !== req.session.userId) {
-      return { error: "forbidden", request };
-    }
-  }
-  return { request };
+const state = (request, appointment, role, postUrl) => ({ title: 'Confirm Appointment - VitalMatch', role, request: { ...request.toJSON(), patientName: null, patientAge: null, indicationOfTransfusion: null, notes: null, fulfillmentNotes: null, email: null, contactPerson: null, contactNumber: null, scheduledDate: appointment.scheduledDate }, appointmentId: appointment.id, version: appointment.version, confirmed: false, alreadyConfirmed: role === 'donor' ? appointment.donorConfirmed : appointment.requesterConfirmed, postUrl, token: null });
+async function ownedAppointment(req) {
+  const request = await BloodRequest.findByPk(req.params.id);
+  const role = req.params.role;
+  if (!request || request.status !== 'scheduled' || request.archivedAt || !['donor', 'requester'].includes(role)) throw new WorkflowError('This appointment is no longer available', 410);
+  const where = { requestId: request.id, status: 'scheduled' };
+  const suppliedId = req.body?.appointmentId || req.query.appointment;
+  if (suppliedId) where.id = Number(suppliedId);
+  const appointment = await Appointment.findOne({ where });
+  if (!appointment) throw new WorkflowError('This appointment changed. Open its current confirmation link.', 410);
+  const donor = appointment.donorId && await Donor.findByPk(appointment.donorId);
+  if (role === 'donor' ? donor?.userId !== req.session.userId : request.userId !== req.session.userId) throw new WorkflowError('This appointment belongs to someone else', 403);
+  return { request, appointment, role };
 }
-
-function renderConfirmError(res, error) {
-  if (error === "login") {
-    return res.redirect("/login");
-  }
-  if (error === "forbidden") {
-    return res.status(403).render('404', {
-      title: 'Not Authorized',
-      message: 'This confirmation link belongs to someone else. Please log in with the correct account.'
-    });
-  }
-  return res.status(404).render('404', {
-    title: error === "role" ? 'Invalid Link' : 'Request Not Found',
-    message: error === "role"
-      ? 'The confirmation link is invalid.'
-      : 'The requested appointment could not be found.'
-  });
+function failure(res, error) {
+  return res.status(error.status || 500).render('schedule-confirmed', { title: 'Appointment unavailable', invalid: true, message: error.status ? error.message : 'Could not load this appointment. Please retry.' });
 }
-
-function confirmationState(request, role) {
-  const alreadyConfirmed = role === "donor" ? !!request.donorConfirmed : !!request.requesterConfirmed;
-  return {
-    title: 'Confirm Schedule - VitalMatch',
-    role,
-    request: request.toJSON(),
-    confirmed: false,
-    alreadyConfirmed,
-    postUrl: `/confirm-schedule/${request.id}/${role}`,
-    token: null
-  };
-}
-
-// GET /confirm-schedule/:id/:role — display only, never confirms (login + ownership required)
 export const confirmSchedulePage = async (req, res) => {
   try {
-    const { id, role } = req.params;
-    const { error, request } = await loadOwnedRequest(req, id, role);
-    if (error) return renderConfirmError(res, error);
-    res.render('schedule-confirmed', confirmationState(request, role));
-  } catch (error) {
-    console.error('Error loading schedule confirmation:', error);
-    res.status(500).send('An error occurred while loading the schedule.');
-  }
+    const { request, appointment, role } = await ownedAppointment(req);
+    if (req.query.version && Number(req.query.version) !== appointment.version) throw new WorkflowError('The appointment changed. Open the latest confirmation notice.', 410);
+    res.render('schedule-confirmed', state(request, appointment, role, '/confirm-schedule/' + request.id + '/' + role));
+  } catch (error) { failure(res, error); }
 };
-
-// POST /confirm-schedule/:id/:role — perform the confirmation
 export const confirmScheduleSubmit = async (req, res) => {
   try {
-    const { id, role } = req.params;
-    const { error, request } = await loadOwnedRequest(req, id, role);
-    if (error) return renderConfirmError(res, error);
-
-    if (role === "donor") {
-      await request.update({ donorConfirmed: true });
-    } else {
-      await request.update({ requesterConfirmed: true });
-    }
-
-    res.render('schedule-confirmed', {
-      ...confirmationState(request, role),
-      title: 'Schedule Confirmed - VitalMatch',
-      confirmed: true
-    });
-  } catch (error) {
-    console.error('Error confirming schedule:', error);
-    res.status(500).send('An error occurred while confirming the schedule.');
-  }
+    const { request, appointment, role } = await confirmAppointment({ requestId: Number(req.params.id), actorId: req.session.userId, role: req.params.role, appointmentId: Number(req.body.appointmentId), version: Number(req.body.version) });
+    res.render('schedule-confirmed', { ...state(request, appointment, role, '/confirm-schedule/' + request.id + '/' + role), confirmed: true });
+  } catch (error) { failure(res, error); }
 };
-
-// Donor's upcoming donation appointments
 export const donorAppointmentsPage = async (req, res) => {
   try {
-    const donor = await Donor.findOne({
-      where: { userId: req.session.userId },
-      order: [["createdAt", "DESC"]]
-    });
-    if (!donor) {
-      req.flash("error_msg", "Please register as a donor first");
-      return res.redirect("/donor-profile");
-    }
-    const appointments = await BloodRequest.findAll({
-      where: { assignedDonorId: donor.id, status: "scheduled" },
-      order: [["scheduledDate", "ASC"]]
-    });
-    res.render("my-appointments", {
-      title: "My Appointments - VitalMatch",
-      appointments,
-      donor: donor.toJSON()
-    });
-  } catch (error) {
-    console.error("Donor appointments page error:", error);
-    req.flash("error_msg", "Could not load appointments");
-    res.redirect("/dashboard");
-  }
+    const donor = await Donor.findOne({ where: { userId: req.session.userId } });
+    if (!donor) { req.flash('error_msg', 'Complete a donor profile to manage appointments.'); return res.redirect('/donor-profile'); }
+    const search = searchTerm(req.query);
+    const { rows, pagination } = await recordPage(Appointment, { where: withTextSearch({ donorId: donor.id, status: 'scheduled' },search,['$BloodRequest.hospitalName$','$BloodRequest.bloodType$','$BloodRequest.city$'], 'requestId'), include: [{ model: BloodRequest, required: true, where: { archivedAt: null } }], order: [['scheduledDate', 'ASC']] },req.query,req.path);
+    const appointments = rows.map(a => ({ ...a.BloodRequest.toJSON(), patientName: null, patientAge: null, indicationOfTransfusion: null, notes: null, fulfillmentNotes: null, email: null, contactPerson: null, contactNumber: null, reason: null, id: a.requestId, appointmentId: a.id, version: a.version, scheduledDate: a.scheduledDate, donorConfirmed: a.donorConfirmed, requesterConfirmed: a.requesterConfirmed, unitsRemaining: unitsRemaining(a.BloodRequest) }));
+    res.render('my-appointments', { title: 'My Appointments - VitalMatch', donor: donor.toJSON(), appointments, pagination, search, error: null });
+  } catch (error) { res.status(503).render('my-appointments', { title: 'Appointments unavailable', appointments: [], error: 'Appointments could not be loaded. Please retry.' }); }
 };
-
-// Donor declines an appointment: request returns to the matching pool
 export const declineAppointment = async (req, res) => {
   try {
-    const request = await BloodRequest.findByPk(req.params.id);
-    const donor = await Donor.findOne({ where: { userId: req.session.userId } });
-
-    if (!request || !donor || request.assignedDonorId !== donor.id || request.status !== "scheduled") {
-      req.flash("error_msg", "Appointment not found");
-      return res.redirect("/my-appointments");
-    }
-
-    await request.update({
-      status: "active",
-      assignedDonorId: null,
-      scheduledDate: null,
-      donorConfirmed: false,
-      requesterConfirmed: false,
-      fulfillmentNotes: null,
-      isEmergency: false,
-      emergencyAt: null,
-      emergencyExpiresAt: null
-    });
-
-    if (request.userId) {
-      const prefs = await getUserSettings(request.userId);
-      if (!prefs || prefs.notifyAppointments) {
-        await Notification.create({
-          userId: request.userId,
-          title: "Donor Declined Appointment",
-          message: `The scheduled donor for your blood request #${request.id} declined. The request is back in matching.`,
-          type: "warning",
-          link: `/view-blood-request/${request.id}`
-        });
-      }
-    }
-
-    req.flash("success_msg", "Appointment declined. The request is back in matching.");
-    res.redirect("/my-appointments");
-  } catch (error) {
-    console.error("Decline appointment error:", error);
-    req.flash("error_msg", "Could not decline the appointment");
-    res.redirect("/my-appointments");
-  }
+    const appointment = await Appointment.findOne({ where: { requestId: req.params.id, status: 'scheduled' } });
+    if (!appointment) throw new WorkflowError('Appointment not found', 404);
+    const result = await changeAppointment(appointment.id, req.session.userId, { ...req.body, reason: req.body.reason || 'Donor declined the appointment' }, 'decline');
+    req.flash('success_msg', 'Appointment declined. The coordinator has been notified and donor outreach is queued.');
+    res.redirect('/my-appointments');
+  } catch (error) { req.flash('error_msg', error.status ? error.message : 'Could not decline this appointment.'); res.redirect('/my-appointments'); }
 };
-
-async function loadTokenRequest(token) {
-  // Hashed lookup; legacy plaintext rows are upgraded on match.
-  let record = await ScheduleToken.findOne({ where: { token: hashToken(token), used: false } });
-  if (!record) {
-    record = await ScheduleToken.findOne({ where: { token, used: false } });
-    if (record) await record.update({ token: hashToken(token) });
-  }
-  if (!record || record.expiresAt < new Date()) return { error: "expired" };
+async function tokenAppointment(token) {
+  if (!/^[a-f0-9]{64}$/.test(token || '')) throw new WorkflowError('This link is invalid or expired', 410);
+  const record = await ScheduleToken.findOne({ where: { token: crypto.createHash('sha256').update(token).digest('hex'), used: false, expiresAt: { [Op.gt]: new Date() } } });
+  if (!record?.appointmentId || !record.recipientUserId) throw new WorkflowError('This confirmation link expired. Open the current appointment.', 410);
   const request = await BloodRequest.findByPk(record.bloodRequestId);
-  if (!request) return { error: "notfound" };
-  if (record.role !== "donor" && record.role !== "requester") return { error: "role" };
-  return { record, request };
+  const appointment = await Appointment.findByPk(record.appointmentId);
+  if (!request || request.archivedAt || request.status !== 'scheduled' || !appointment || appointment.status !== 'scheduled' || appointment.version !== record.appointmentVersion) throw new WorkflowError('This appointment changed or was cancelled', 410);
+  return { request, appointment, record };
 }
-
-// GET /schedule-confirm/:token — display only (single-use token link for email recipients)
 export const confirmByTokenPage = async (req, res) => {
   try {
-    const { error, record, request } = await loadTokenRequest(req.params.token);
-    if (error) {
-      return res.status(410).render('schedule-confirmed', {
-        title: 'Link Expired - VitalMatch',
-        invalid: true
-      });
-    }
-    res.render('schedule-confirmed', {
-      ...confirmationState(request, record.role),
-      // Re-emit the raw token from the URL: record.token is the stored hash.
-      postUrl: `/schedule-confirm/${req.params.token}`,
-      token: req.params.token
-    });
-  } catch (error) {
-    console.error('Error loading token confirmation:', error);
-    res.status(500).send('An error occurred while loading the schedule.');
-  }
+    const { request, appointment, record } = await tokenAppointment(req.params.token);
+    res.render('schedule-confirmed', { ...state(request, appointment, record.role, '/schedule-confirm/' + req.params.token), token: req.params.token });
+  } catch (error) { failure(res, error); }
 };
-
-// POST /schedule-confirm/:token — perform the confirmation and burn the token
 export const confirmByTokenSubmit = async (req, res) => {
   try {
-    const { error, record, request } = await loadTokenRequest(req.params.token);
-    if (error) {
-      return res.status(410).render('schedule-confirmed', {
-        title: 'Link Expired - VitalMatch',
-        invalid: true
-      });
-    }
-
-    if (record.role === "donor") {
-      await request.update({ donorConfirmed: true });
-    } else {
-      await request.update({ requesterConfirmed: true });
-    }
-    await record.update({ used: true });
-
-    res.render('schedule-confirmed', {
-      ...confirmationState(request, record.role),
-      title: 'Schedule Confirmed - VitalMatch',
-      confirmed: true,
-      // Re-emit the raw token from the URL: record.token is the stored hash.
-      postUrl: `/schedule-confirm/${req.params.token}`,
-      token: req.params.token
-    });
-  } catch (error) {
-    console.error('Error confirming schedule by token:', error);
-    res.status(500).send('An error occurred while confirming the schedule.');
-  }
+    const { request, appointment, role } = await confirmAppointment({ token: req.params.token });
+    res.render('schedule-confirmed', { ...state(request, appointment, role, '/schedule-confirm/' + req.params.token), confirmed: true, token: req.params.token });
+  } catch (error) { failure(res, error); }
 };

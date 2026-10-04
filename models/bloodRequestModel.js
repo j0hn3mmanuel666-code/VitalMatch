@@ -9,12 +9,20 @@ import { DataTypes } from "sequelize";
 import { sequelize } from "./db.js";
 import { User } from "./userModel.js";
 import { Donor } from "./donorModel.js";
+import { Facility } from './facilityModel.js';
 
 export const BloodRequest = sequelize.define("BloodRequest", {
   patientName: { type: DataTypes.STRING, allowNull: false },
   patientAge: { type: DataTypes.INTEGER, allowNull: false },
   bloodType: { type: DataTypes.STRING, allowNull: false },
   unitsRequired: { type: DataTypes.INTEGER, allowNull: false },
+  unitsFulfilled: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 }, // null = legacy completion quantity unknown
+  fulfilledAt: { type: DataTypes.DATE, allowNull: true },
+  archivedAt: { type: DataTypes.DATE, allowNull: true },
+  version: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  submissionKey: { type: DataTypes.STRING(80), allowNull: true, unique: true },
+  createdBy: { type: DataTypes.INTEGER, allowNull: true },
+  facilityId: { type: DataTypes.INTEGER, allowNull: true, references: { model: Facility, key: 'id' }, onDelete: 'RESTRICT' },
 
   // New fields for blood components and transfusion indication
   bloodComponents: { type: DataTypes.JSON, allowNull: true }, // Store array of selected components with volumes
@@ -37,13 +45,13 @@ export const BloodRequest = sequelize.define("BloodRequest", {
     type: DataTypes.INTEGER,
     allowNull: true, // Allow null for guest requests
     references: { model: User, key: "id" },
-    onDelete: "CASCADE"
+    onDelete: "RESTRICT"
   },
   assignedDonorId: {
     type: DataTypes.INTEGER,
     allowNull: true,
     references: { model: Donor, key: "id" },
-    onDelete: "SET NULL"
+    onDelete: "RESTRICT"
   },
   scheduledDate: { type: DataTypes.DATE, allowNull: true },
   fulfillmentNotes: { type: DataTypes.TEXT, allowNull: true },
@@ -60,8 +68,9 @@ export const BloodRequest = sequelize.define("BloodRequest", {
   hospitalStatus: { type: DataTypes.STRING, defaultValue: "approved" } // approved | pending | declined
 });
 
-BloodRequest.belongsTo(User, { foreignKey: "userId", onDelete: "CASCADE" });
-User.hasMany(BloodRequest, { foreignKey: "userId", onDelete: "CASCADE" });
-BloodRequest.belongsTo(Donor, { foreignKey: "assignedDonorId", onDelete: "SET NULL" });
+BloodRequest.belongsTo(User, { foreignKey: "userId", onDelete: "RESTRICT" });
+User.hasMany(BloodRequest, { foreignKey: "userId", onDelete: "RESTRICT" });
+BloodRequest.belongsTo(Donor, { foreignKey: "assignedDonorId", onDelete: "RESTRICT" });
+BloodRequest.belongsTo(Facility, { foreignKey: 'facilityId', onDelete: 'RESTRICT' });
 
 export { sequelize };

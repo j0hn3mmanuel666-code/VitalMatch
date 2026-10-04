@@ -93,253 +93,29 @@ class AuditService {
   /**
    * Initialize audit service and sync database
    */
-  static async initialize() {
-    try {
-      await AuditLog.sync({ alter: true });
-      console.log('Audit service initialized successfully');
-    } catch (error) {
-      console.error('Error initializing audit service:', error);
-      // Continue anyway - the table might already exist
-    }
+  static async initialize() { await sequelize.authenticate(); }
+  static redact(value) {
+    if (Array.isArray(value)) return value.map(v => this.redact(v));
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(Object.entries(value).map(([k,v]) => [k, /password|token|secret|cookie/i.test(k) ? '[redacted]' : this.redact(v)]));
   }
-  
-  /**
-   * Generic method to log an action
-   */
-  static async logAction(adminId, action, tableName, targetId, oldValues, newValues, context = {}) {
-    try {
-      await AuditLog.create({
-        userId: targetId ?? null,
-        adminId,
-        action,
-        tableName,
-        oldValues: oldValues,
-        newValues: newValues,
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          targetId: targetId,
-          source: 'admin_panel'
-        }
-      });
-    } catch (error) {
-      console.error('Error logging general action:', error);
-    }
+  static async logAction(actorId, action, tableName, targetId, oldValues, newValues, context = {}) {
+    return AuditLog.create({
+      userId: tableName === 'Users' ? targetId ?? null : null, adminId: actorId,
+      action, tableName, oldValues: this.redact(oldValues), newValues: this.redact(newValues),
+      ipAddress: context.ipAddress, userAgent: context.userAgent,
+      metadata: { timestamp: new Date().toISOString(), actorId, actorRole: context.actorRole || null,
+        subjectType: tableName, subjectId: targetId ?? null, source: context.source || 'application', ...context.metadata }
+    }, { transaction: context.transaction });
   }
-  
-  /**
-   * Log user creation
-   * @param {number} userId - ID of created user
-   * @param {number} adminId - ID of admin creating user
-   * @param {Object} userData - User data that was created
-   * @param {Object} context - Request context (IP, user agent, etc.)
-   */
-  static async logUserCreation(userId, adminId, userData, context = {}) {
-    try {
-      await AuditLog.create({
-        userId,
-        adminId,
-        action: 'USER_CREATE',
-        tableName: 'Users',
-        oldValues: null,
-        newValues: this.sanitizeUserData(userData),
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          source: 'admin_panel'
-        }
-      });
-    } catch (error) {
-      console.error('Error logging user creation:', error);
-    }
-  }
-  
-  /**
-   * Log user update
-   * @param {number} userId - ID of updated user
-   * @param {number} adminId - ID of admin updating user
-   * @param {Object} changes - Changes made to user
-   * @param {Object} context - Request context
-   */
-  static async logUserUpdate(userId, adminId, changes, context = {}) {
-    try {
-      await AuditLog.create({
-        userId,
-        adminId,
-        action: 'USER_UPDATE',
-        tableName: 'Users',
-        oldValues: this.sanitizeChanges(changes, 'old'),
-        newValues: this.sanitizeChanges(changes, 'new'),
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          fieldsChanged: Object.keys(changes),
-          source: 'admin_panel'
-        }
-      });
-    } catch (error) {
-      console.error('Error logging user update:', error);
-    }
-  }
-  
-  /**
-   * Log user deletion
-   * @param {number} userId - ID of deleted user
-   * @param {number} adminId - ID of admin deleting user
-   * @param {string} reason - Reason for deletion
-   * @param {Object} context - Request context
-   */
-  static async logUserDeletion(userId, adminId, reason, context = {}) {
-    try {
-      await AuditLog.create({
-        userId,
-        adminId,
-        action: 'USER_DELETE',
-        tableName: 'Users',
-        oldValues: null,
-        newValues: null,
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          reason: reason || 'No reason provided',
-          source: 'admin_panel'
-        }
-      });
-    } catch (error) {
-      console.error('Error logging user deletion:', error);
-    }
-  }
-  
-  /**
-   * Log role change
-   * @param {number} userId - ID of user whose role changed
-   * @param {number} adminId - ID of admin changing role
-   * @param {string} oldRole - Previous role
-   * @param {string} newRole - New role
-   * @param {Object} context - Request context
-   */
-  static async logRoleChange(userId, adminId, oldRole, newRole, context = {}) {
-    try {
-      await AuditLog.create({
-        userId,
-        adminId,
-        action: 'ROLE_CHANGE',
-        tableName: 'Users',
-        oldValues: { role: oldRole },
-        newValues: { role: newRole },
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          roleEscalation: this.isRoleEscalation(oldRole, newRole),
-          source: 'admin_panel'
-        }
-      });
-    } catch (error) {
-      console.error('Error logging role change:', error);
-    }
-  }
-  
-  /**
-   * Log status change
-   * @param {number} userId - ID of user whose status changed
-   * @param {number} adminId - ID of admin changing status
-   * @param {string} oldStatus - Previous status
-   * @param {string} newStatus - New status
-   * @param {Object} context - Request context
-   */
-  static async logStatusChange(userId, adminId, oldStatus, newStatus, context = {}) {
-    try {
-      await AuditLog.create({
-        userId,
-        adminId,
-        action: 'STATUS_CHANGE',
-        tableName: 'Users',
-        oldValues: { status: oldStatus },
-        newValues: { status: newStatus },
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          statusChange: `${oldStatus} -> ${newStatus}`,
-          source: 'admin_panel'
-        }
-      });
-    } catch (error) {
-      console.error('Error logging status change:', error);
-    }
-  }
-  
-  /**
-   * Log password reset
-   * @param {number} userId - ID of user whose password was reset
-   * @param {number} adminId - ID of admin resetting password
-   * @param {Object} context - Request context
-   */
-  static async logPasswordReset(userId, adminId, context = {}) {
-    try {
-      await AuditLog.create({
-        userId,
-        adminId,
-        action: 'PASSWORD_RESET',
-        tableName: 'Users',
-        oldValues: null,
-        newValues: null, // Never log password values
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          securityAction: true,
-          source: 'admin_panel'
-        }
-      });
-    } catch (error) {
-      console.error('Error logging password reset:', error);
-    }
-  }
-  
-  /**
-   * Log bulk operation
-   * @param {string} operation - Type of bulk operation
-   * @param {Array} userIds - IDs of affected users
-   * @param {number} adminId - ID of admin performing operation
-   * @param {Object} context - Request context
-   */
-  static async logBulkOperation(operation, userIds, adminId, context = {}) {
-    try {
-      await AuditLog.create({
-        userId: null, // Bulk operations affect multiple users
-        adminId,
-        action: `BULK_${operation.toUpperCase()}`,
-        tableName: 'Users',
-        oldValues: null,
-        newValues: null,
-        ipAddress: context.ipAddress,
-        userAgent: context.userAgent,
-        metadata: {
-          timestamp: new Date().toISOString(),
-          affectedUsers: userIds,
-          userCount: userIds.length,
-          bulkOperation: true,
-          source: 'admin_panel'
-        }
-      });
-    } catch (error) {
-      console.error('Error logging bulk operation:', error);
-    }
-  }
-  
-  /**
-   * Get audit trail for a specific user
-   * @param {number} userId - User ID
-   * @param {number} limit - Number of entries to return
-   * @returns {Promise<Array>} Audit entries
-   */
-  static async getAuditTrail(userId, limit = 50) {
+  static async logUserCreation(id, actor, data, context = {}) { return this.logAction(actor, 'USER_CREATE', 'Users', id, null, data, context); }
+  static async logUserUpdate(id, actor, changes, context = {}) { return this.logAction(actor, 'USER_UPDATE', 'Users', id, this.sanitizeChanges(changes, 'old'), this.sanitizeChanges(changes, 'new'), context); }
+  static async logUserDeletion(id, actor, reason, context = {}) { return this.logAction(actor, 'USER_ARCHIVE', 'Users', id, null, { reason }, context); }
+  static async logRoleChange(id, actor, old, role, context = {}) { return this.logAction(actor, 'ROLE_CHANGE', 'Users', id, { role: old }, { role }, context); }
+  static async logStatusChange(id, actor, old, status, context = {}) { return this.logAction(actor, 'STATUS_CHANGE', 'Users', id, { status: old }, { status }, context); }
+  static async logPasswordReset(id, actor, context = {}) { return this.logAction(actor, 'PASSWORD_RESET', 'Users', id, null, null, context); }
+  static async logBulkOperation(operation, userIds, actor, context = {}) { return this.logAction(actor, `BULK_${operation.toUpperCase()}`, 'Users', null, null, { affectedUsers: userIds }, context); }
+    static async getAuditTrail(userId, limit = 50) {
     try {
       const auditEntries = await AuditLog.findAll({
         where: { userId },
@@ -504,7 +280,7 @@ class AuditService {
    * @returns {boolean} True if escalation
    */
   static isRoleEscalation(oldRole, newRole) {
-    const roleHierarchy = { 'user': 1, 'hospital_admin': 2, 'admin': 3 };
+    const roleHierarchy = { 'user': 1, 'donor': 1, 'hospital': 2, 'hospital_admin': 2, 'admin': 3 };
     return (roleHierarchy[newRole] || 0) > (roleHierarchy[oldRole] || 0);
   }
   
@@ -515,8 +291,9 @@ class AuditService {
    */
   static getRequestContext(req) {
     return {
-      ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-      userAgent: req.get('User-Agent') || 'unknown'
+      ipAddress: req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown',
+      userAgent: req.get?.('User-Agent') || 'unknown',
+      actorRole: req.authAccount?.role || req.session?.userRole || null
     };
   }
 }

@@ -89,22 +89,44 @@ window.csrfToken = function () {
 (function () {
   var origFetch = window.fetch;
   window.fetch = function (url, opts) {
-    opts = opts || {};
-    var method = (opts.method || "GET").toUpperCase();
+    opts = Object.assign({}, opts || {});
+    var method = (opts.method || (url instanceof Request ? url.method : 'GET')).toUpperCase();
     if (method !== "GET" && method !== "HEAD") {
       var target = typeof url === "string" ? url : (url && url.url);
-      if (target && target.charAt(0) === "/") {
+      var sameOrigin = target && new URL(target, window.location.href).origin === window.location.origin;
+      if (sameOrigin) {
         var token = window.csrfToken();
         if (token) {
-          if (opts.headers instanceof Headers) {
-            opts.headers.set("X-CSRF-Token", token);
-          } else {
-            opts.headers = opts.headers || {};
-            opts.headers["X-CSRF-Token"] = token;
-          }
+          var headers = new Headers(opts.headers || (url instanceof Request ? url.headers : undefined));
+          headers.set('X-CSRF-Token', token);
+          opts.headers = headers;
         }
       }
     }
-    return origFetch(url, opts);
+    return origFetch.call(window, url, opts);
   };
 })();
+
+// Clear caches left by older service workers before leaving an authenticated
+// session. Other open tabs reload so they cannot keep showing the prior account.
+function clearVitalMatchCaches() {
+  if (navigator.serviceWorker?.controller) navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_PRIVATE_CACHE' });
+  if ('caches' in window) return caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('vitalmatch-')).map(key => caches.delete(key))));
+  return Promise.resolve();
+}
+var sessionChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('vitalmatch-session') : null;
+if (sessionChannel) sessionChannel.onmessage = function (event) {
+  if (event.data === 'logout' && window.csrfToken()) { clearVitalMatchCaches(); window.location.replace('/login'); }
+};
+document.addEventListener('submit', function (event) {
+  var form = event.target;
+  if (!(form instanceof HTMLFormElement) || new URL(form.action, location.href).pathname !== '/logout') return;
+  queueMicrotask(function () {
+    if (event.defaultPrevented) return;
+    clearVitalMatchCaches();
+    if (sessionChannel) sessionChannel.postMessage('logout');
+  });
+}, true);
+window.addEventListener('pageshow', function (event) {
+  if (event.persisted && document.querySelector('[data-internal-workspace], .vm-page')) window.location.reload();
+});

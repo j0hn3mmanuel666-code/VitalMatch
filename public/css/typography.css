@@ -1,0 +1,101 @@
+/* Shared typography for public, account, admin, and offline screens. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/InterVariable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/InterVariable-Italic.woff2') format('woff2');
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --vm-font: 'Inter', sans-serif;
+  --vm-weight-body: 400;
+  --vm-weight-control: 500;
+  --vm-weight-section: 600;
+  --vm-weight-heading: 700;
+}
+
+html {
+  font-family: var(--vm-font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html body {
+  font-family: var(--vm-font);
+  font-size: 1rem;
+  font-weight: var(--vm-weight-body);
+  line-height: 1.6;
+  letter-spacing: -0.011em;
+}
+
+body p {
+  line-height: 1.65;
+}
+
+/* Class selectors keep these rules above Tailwind's typography utilities. */
+body h1,
+body h1[class] {
+  font-weight: var(--vm-weight-heading);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+body :is(h2, h3, h4, h5, h6),
+body :is(h2, h3, h4, h5, h6)[class] {
+  font-weight: var(--vm-weight-section);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+body :is(button, input, select, textarea) {
+  font-family: var(--vm-font);
+}
+
+body :is(button, input, select, textarea, label, summary),
+body :is(button, input, select, textarea, label, summary)[class],
+body :is(nav, header, aside) a[class],
+body a[role='button'] {
+  font-weight: var(--vm-weight-control);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+body input::file-selector-button {
+  font-family: var(--vm-font);
+  font-weight: var(--vm-weight-section);
+}
+
+body th,
+body th[class],
+body .typography-meta {
+  font-weight: var(--vm-weight-section);
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+/* Third-party widgets and legacy Tailwind font utilities use the same face. */
+body :is(.leaflet-container, .font-sans, .font-serif, .font-mono) {
+  font-family: var(--vm-font);
+}
+
+body .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  /* Keep focused fields readable without automatic mobile browser zoom. */
+  body :is(input, select, textarea):not([type='hidden']),
+  body :is(input, select, textarea)[class] {
+    font-size: 1rem;
+  }
+}

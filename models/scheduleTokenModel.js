@@ -13,6 +13,9 @@ export const ScheduleToken = sequelize.define("ScheduleToken", {
     onDelete: "CASCADE"
   },
   role: { type: DataTypes.STRING, allowNull: false },
+  appointmentId: { type: DataTypes.INTEGER, allowNull: true },
+  appointmentVersion: { type: DataTypes.INTEGER, allowNull: true },
+  recipientUserId: { type: DataTypes.INTEGER, allowNull: true },
   expiresAt: { type: DataTypes.DATE, allowNull: false },
   used: { type: DataTypes.BOOLEAN, defaultValue: false }
 });
@@ -23,18 +26,23 @@ ScheduleToken.belongsTo(BloodRequest, { foreignKey: "bloodRequestId", onDelete: 
 // Only the hash is stored; the raw token is returned transiently on `.token`
 // for outbound email links. Never save the instance afterwards (it would
 // overwrite the hash with the raw token); use record.update({ used: true }).
-export async function createScheduleToken(bloodRequestId, role, hoursValid = 168) {
+export async function createScheduleToken(bloodRequestId, role, hoursValid = 168, options = {}) {
+  const { transaction, appointmentId, appointmentVersion, recipientUserId } = options;
+  if (!appointmentId || !appointmentVersion || !recipientUserId) throw new Error('Schedule confirmation must be bound to an appointment and recipient');
   await ScheduleToken.update(
     { used: true },
-    { where: { bloodRequestId, role, used: false } }
+    { where: { bloodRequestId, role, used: false }, transaction }
   );
   const rawToken = crypto.randomBytes(32).toString("hex");
   const record = await ScheduleToken.create({
     token: hashToken(rawToken),
     bloodRequestId,
     role,
+    appointmentId,
+    appointmentVersion,
+    recipientUserId,
     expiresAt: new Date(Date.now() + hoursValid * 3600000)
-  });
+  }, { transaction });
   record.token = rawToken;
   return record;
 }

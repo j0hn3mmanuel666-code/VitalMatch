@@ -101,11 +101,12 @@ describe("tokens and passwords", () => {
   });
 
   it("validatePassword enforces composition and the 72-char bcrypt cap", () => {
-    assert.equal(validatePassword("Abcdef12"), true);
-    assert.equal(validatePassword("abcdef12"), false); // no uppercase
-    assert.equal(validatePassword("Abcdefgh"), false); // no digit
-    assert.equal(validatePassword("Ab1"), false); // too short
-    assert.equal(validatePassword(`Ab1${"x".repeat(70)}`), false); // over 72
+    const policy = { minPasswordLength: 8, requireSpecialChars: false };
+    assert.equal(validatePassword("Abcdef12", policy), true);
+    assert.equal(validatePassword("abcdef12", policy), false); // no uppercase
+    assert.equal(validatePassword("Abcdefgh", policy), false); // no digit
+    assert.equal(validatePassword("Ab1", policy), false); // too short
+    assert.equal(validatePassword(`Ab1${"x".repeat(70)}`, policy), false); // over 72
   });
 
   it("getBcryptRounds honors BCRYPT_ROUNDS with a safe default", () => {

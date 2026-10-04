@@ -1,44 +1,62 @@
 {
   "name": "VitalMatch",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "main": "index.js",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "scripts": {
-    "test": "node --test tests/smoke.test.js",
+    "test": "node --test tests/*.test.js",
+    "check:project": "node scripts/verify-project.js",
+    "test:integration": "node scripts/run-integration-tests.js",
+    "test:browser": "node scripts/run-integration-tests.js --browser",
+    "backup:db": "node scripts/backup-database.js",
+    "seed:demo": "node scripts/seed-demo-accounts.js",
     "start": "node index.js",
-    "xian-start": "node index.js",
-    "xian": "nodemon index.js",
+    "xian-start": "node --watch index.js",
+    "xian": "node --watch index.js",
     "migrate": "node migrate.js",
     "migrate:public-cms": "node migratePublicContent.js",
     "migrate:nearest-donor": "node migrateNearestDonor.js",
     "create:model": "node create.js model",
-    "create:controller": "node create.js controller"
+    "create:controller": "node create.js controller",
+    "build:ui": "tailwindcss -c tailwind.config.cjs -i public/css/internal-utilities.source.css -o public/css/internal-utilities.css --minify"
   },
   "dependencies": {
-    "bcrypt": "^5.1.0",
+    "bcrypt": "^6.0.0",
     "compression": "^1.7.4",
     "connect-flash": "^0.1.1",
     "connect-session-sequelize": "^8.0.6",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^4.19.2",
-    "express-rate-limit": "^7.1.5",
+    "express-rate-limit": "^8.7.0",
     "express-session": "^1.17.3",
     "hbs": "^4.2.0",
     "helmet": "^7.1.0",
-    "inquirer": "^9.2.15",
     "multer": "^2.1.1",
     "mysql2": "^3.9.2",
-    "node-fetch": "^3.3.2",
-    "nodemailer": "^8.0.3",
+    "nodemailer": "^10.0.13",
+    "sanitize-html": "^2.18.0",
     "sequelize": "^6.37.3",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3"
+    "socket.io": "^4.8.3"
+  },
+  "overrides": {
+    "qs": "6.16.0",
+    "sequelize": {
+      "uuid": "11.1.1"
+    },
+    "@tailwindcss/cli": {
+      "@parcel/watcher": "2.6.0"
+    }
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/cli": "^4.3.3",
+    "inquirer": "^9.3.8",
+    "linkedom": "^0.18.13",
+    "socket.io-client": "^4.8.4",
+    "tailwindcss": "^4.3.3"
   }
 }

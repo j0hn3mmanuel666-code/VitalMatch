@@ -1,0 +1,13 @@
+<form method="GET" class="vm-record-search" data-record-search role="search" aria-label="{{label}}">
+  <label class="vm-record-search__label" for="{{#if inputId}}{{inputId}}{{else}}recordSearch{{/if}}">{{label}}</label>
+  <div class="vm-record-search__controls">
+    <div class="vm-record-search__field">
+      <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+      <input id="{{#if inputId}}{{inputId}}{{else}}recordSearch{{/if}}" type="search" name="{{#if searchName}}{{searchName}}{{else}}search{{/if}}" value="{{search}}" maxlength="100" placeholder="{{placeholder}}">
+    </div>
+    {{#if filter}}<input type="hidden" name="filter" value="{{filter}}">{{/if}}
+    {{#if bloodType}}<input type="hidden" name="bloodType" value="{{bloodType}}">{{/if}}
+    <button type="submit" class="vm-button vm-button--primary">Search</button>
+    <button type="button" class="vm-button" data-search-clear>Clear</button>
+  </div>
+</form>

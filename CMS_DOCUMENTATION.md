@@ -71,20 +71,11 @@ DELETE /api/admin/public-content/:section  - Delete section
 - `views/admin-public-cms.xian` - Admin management interface
 - Updated `views/home.xian` - To use dynamic content
 
-## Setup & Migration
+## Setup and migration
 
-### Step 1: Run Migration
-```bash
-node migratePublicContent.js
-```
+Use the versioned migration procedure in [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md). `node migratePublicContent.js` performs a read-only schema inspection by default; it does not seed or overwrite existing content. Apply the shared migration explicitly after a verified backup. Existing approved landing content remains intact.
 
-This will:
-- Create the `public_content` table
-- Seed default sections (hero, callForDonation, about)
-- Initialize the database structure
-
-### Step 2: Access Admin Panel
-Navigate to: `http://localhost:3000/admin/cms`
+The CMS is available at `/admin/cms` to current active administrators. Text uses parser-based HTML sanitization; button and image links accept safe local or HTTPS URLs. The primary button link is updated with the rest of the section. Create, update and deactivate operations require CSRF and commit with a mandatory audit event in the same database transaction. Deactivation preserves the section record.
 
 ## Usage
 

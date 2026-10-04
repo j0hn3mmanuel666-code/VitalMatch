@@ -1,17 +1,17 @@
 <!-- Settings Content -->
-<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
-  <div class="container mx-auto px-4 max-w-4xl">
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="vm-page-container max-w-4xl">
     
     <!-- Header -->
-    <div class="mb-8">
+    <div class="vm-page-heading mb-8">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Settings</h1>
       <p class="text-gray-600 dark:text-gray-400">Manage system configuration and preferences</p>
     </div>
 
     <!-- Settings Tabs -->
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none overflow-hidden">
       <div class="border-b border-gray-200 dark:border-gray-800">
-        <div class="flex flex-wrap">
+        <div class="vm-tabs flex flex-wrap">
           <button class="settings-tab px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-300 border-b-2 border-transparent hover:text-gray-900 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-700 active" data-tab="general">
             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -49,26 +49,26 @@
           <form id="generalSettingsForm" class="space-y-6">
             <!-- Application Name -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Application Name</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="appName">Application Name</label>
               <input type="text" id="appName" name="appName" value="VitalMatch" 
                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Name of your application</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Name shown in workspace navigation</p>
             </div>
 
             <!-- System Status -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">System Status</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="systemStatus">System Status</label>
               <select id="systemStatus" name="systemStatus" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
                 <option value="online">Online</option>
                 <option value="maintenance">Maintenance Mode</option>
                 <option value="offline">Offline</option>
               </select>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Current system status</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Controls access for non-admin users; administrators retain access to restore service.</p>
             </div>
 
             <!-- Time Zone -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Zone</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="timeZone">Time Zone</label>
               <select id="timeZone" name="timeZone" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
                 <option value="UTC">UTC</option>
                 <option value="Asia/Manila" selected>Asia/Manila (Philippines)</option>
@@ -76,25 +76,10 @@
                 <option value="America/New_York">America/New_York</option>
                 <option value="Europe/London">Europe/London</option>
               </select>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Select your time zone</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Controls dates and times shown in the workspace.</p>
             </div>
 
-            <!-- Database Status -->
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-3">Database Status</h3>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Status</p>
-                  <p class="text-lg font-semibold text-green-600 dark:text-green-400">Connected</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">Database</p>
-                  <p class="text-sm text-gray-700 dark:text-gray-300">MySQL</p>
-                </div>
-              </div>
-            </div>
-
-            <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <button type="submit" class="vm-button vm-button--primary px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
               Save Changes
             </button>
           </form>
@@ -103,11 +88,13 @@
         <!-- Email Settings Tab -->
         <div id="email-tab" class="settings-content hidden">
           <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Email Configuration</h2>
+          <div class="vm-panel mb-4 p-4"><p id="emailStatus" aria-live="polite">Checking SMTP status...</p><p id="emailOutbox" class="vm-muted text-sm mt-2"></p><p class="vm-muted text-sm mt-2">Accepted by SMTP means the mail server accepted the message; recipient delivery is not guaranteed.</p><button type="button" id="retryEmailBtn" class="vm-button vm-button--small mt-3 vm-button--warning">Retry failed email jobs</button></div>
+          <div class="vm-panel mb-4 p-4"><h3>Donor outreach dispatch</h3><p id="coordinationJobs" class="vm-muted text-sm mt-2" aria-live="polite">Checking coordination jobs...</p><p class="vm-muted text-sm mt-2">Completed dispatch means invitations were queued. Donor responses and actual donations are recorded separately.</p><button type="button" id="retryCoordinationBtn" class="vm-button vm-button--small mt-3 vm-button--warning">Retry failed outreach jobs</button></div>
           
           <form id="emailSettingsForm" class="space-y-6">
             <!-- SMTP Server -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SMTP Server</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="smtpServer">SMTP Server</label>
               <input type="text" id="smtpServer" name="smtpServer" placeholder="smtp.gmail.com" 
                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">SMTP server address for sending emails</p>
@@ -116,23 +103,23 @@
             <!-- SMTP Port -->
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SMTP Port</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="smtpPort">SMTP Port</label>
                 <input type="number" id="smtpPort" name="smtpPort" placeholder="587" 
                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Encryption</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="emailEncryption">Encryption</label>
                 <select id="emailEncryption" name="emailEncryption" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
                   <option value="tls">TLS</option>
                   <option value="ssl">SSL</option>
-                  <option value="none">None</option>
+
                 </select>
               </div>
             </div>
 
             <!-- Email Address -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From Email Address</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="fromEmail">From Email Address</label>
               <input type="email" id="fromEmail" name="fromEmail" placeholder="noreply@vitalmatch.com" 
                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Email address used for sending notifications</p>
@@ -140,28 +127,28 @@
 
             <!-- Email Username -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Username</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="emailUsername">Email Username</label>
               <input type="text" id="emailUsername" name="emailUsername" placeholder="your-email@gmail.com" 
                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
             </div>
 
             <!-- Email Password -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Password</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="emailPassword">Email Password</label>
               <input type="password" id="emailPassword" name="emailPassword" placeholder="••••••••" 
                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Use app password for Gmail accounts</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Use an app password when required. Leave this blank to keep the saved credential; it is never shown here.</p>
             </div>
 
             <!-- Test Email -->
             <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <p class="text-sm text-blue-700 dark:text-blue-300 mb-3">Test your email configuration</p>
-              <button type="button" id="testEmailBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                Send Test Email
+              <p class="text-sm text-blue-700 dark:text-blue-300 mb-3">Verify SMTP connection and authentication without sending a message</p>
+              <button type="button" id="testEmailBtn" class="vm-button vm-button--primary px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Verify SMTP connection
               </button>
             </div>
 
-            <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <button type="submit" class="vm-button vm-button--primary px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
               Save Email Settings
             </button>
           </form>
@@ -177,10 +164,10 @@
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <h3 class="font-medium text-gray-900 dark:text-gray-100">Email Notifications</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Receive notifications via email</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Enable all outgoing email, including verification and password reset messages. Requires a configured SMTP provider.</p>
                 </div>
                 <input type="checkbox" id="emailNotificationsEnabled" name="emailNotificationsEnabled" checked 
-                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500" aria-label="Email notifications">
               </div>
             </div>
 
@@ -189,10 +176,10 @@
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <h3 class="font-medium text-gray-900 dark:text-gray-100">Blood Request Alerts</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Notify admin on new blood requests</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Email matching invitations, appointment notices and request updates to participants who opted in.</p>
                 </div>
                 <input type="checkbox" id="bloodRequestNotifications" name="bloodRequestNotifications" checked 
-                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500" aria-label="Blood request notifications">
               </div>
             </div>
 
@@ -200,11 +187,11 @@
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
               <div class="flex items-center justify-between mb-3">
                 <div>
-                  <h3 class="font-medium text-gray-900 dark:text-gray-100">User Registration Alerts</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Notify admin on new user registrations</p>
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">Account Welcome Emails</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Send a welcome email when an account is activated. Verification and password reset emails are required for account access.</p>
                 </div>
                 <input type="checkbox" id="registrationNotifications" name="registrationNotifications" checked 
-                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500" aria-label="Account welcome emails">
               </div>
             </div>
 
@@ -213,14 +200,14 @@
               <div class="flex items-center justify-between mb-3">
                 <div>
                   <h3 class="font-medium text-gray-900 dark:text-gray-100">System Alerts</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Notify admin on system issues</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Allow system email alerts. Audit records remain mandatory regardless of this setting.</p>
                 </div>
                 <input type="checkbox" id="systemAlertNotifications" name="systemAlertNotifications" checked 
-                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500" aria-label="System alert notifications">
               </div>
             </div>
 
-            <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <button type="submit" class="vm-button vm-button--primary px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
               Save Notification Settings
             </button>
           </form>
@@ -233,7 +220,7 @@
           <form id="securitySettingsForm" class="space-y-6">
             <!-- Session Timeout -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Session Timeout (minutes)</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="sessionTimeout">Session Timeout (minutes)</label>
               <input type="number" id="sessionTimeout" name="sessionTimeout" value="30" min="5" max="480"
                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Auto-logout duration for inactive users</p>
@@ -241,8 +228,8 @@
 
             <!-- Password Policy -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Minimum Password Length</label>
-              <input type="number" id="minPasswordLength" name="minPasswordLength" value="8" min="6" max="20"
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="minPasswordLength">Minimum Password Length</label>
+              <input type="number" id="minPasswordLength" name="minPasswordLength" value="8" min="8" max="64"
                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100">
             </div>
 
@@ -254,43 +241,13 @@
                   <p class="text-sm text-gray-500 dark:text-gray-400">Enforce stronger password requirements</p>
                 </div>
                 <input type="checkbox" id="requireSpecialChars" name="requireSpecialChars" checked 
-                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500" aria-label="Require special characters in passwords">
               </div>
             </div>
 
-            <!-- Two-Factor Authentication -->
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="font-medium text-gray-900 dark:text-gray-100">Two-Factor Authentication (2FA)</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Require 2FA for admin accounts</p>
-                </div>
-                <input type="checkbox" id="twoFactorAuth" name="twoFactorAuth" 
-                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
-              </div>
-            </div>
+            <div class="vm-alert"><p>Administrative audit records are always enabled. Multi-factor authentication and IP allowlists are not implemented; this screen does not claim or enable those protections.</p></div>
 
-            <!-- IP Whitelist -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">IP Whitelist (comma-separated)</label>
-              <textarea id="ipWhitelist" name="ipWhitelist" placeholder="192.168.1.1, 10.0.0.0/8" rows="3"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"></textarea>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Leave empty to allow all IPs</p>
-            </div>
-
-            <!-- Audit Logging -->
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="font-medium text-gray-900 dark:text-gray-100">Enable Audit Logging</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Log all admin activities</p>
-                </div>
-                <input type="checkbox" id="auditLogging" name="auditLogging" checked 
-                       class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
-              </div>
-            </div>
-
-            <button type="submit" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <button type="submit" class="vm-button vm-button--primary px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
               Save Security Settings
             </button>
           </form>
@@ -300,17 +257,21 @@
     </div>
 
   </div>
-</div>
+</main>
 
 <!-- Toast Notification -->
 <div id="toast" class="fixed bottom-4 right-4 hidden">
-  <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+  <div class="bg-green-500 text-white px-6 py-3 rounded-lg">
     <p id="toastMessage">Settings saved successfully!</p>
   </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', async function() {
+  let settingsLoaded = false, savingSettings = false;
+  const saveButtons = [...document.querySelectorAll('form button[type="submit"]')];
+  const setSaveState = () => saveButtons.forEach(button => { button.disabled = !settingsLoaded || savingSettings; });
+  setSaveState();
   // Load current settings
   await loadSettings();
 
@@ -337,12 +298,23 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Load settings from API
   async function loadSettings() {
+    settingsLoaded = false; setSaveState();
     try {
       const response = await fetch('/api/admin/settings');
+      if (!response.ok) throw new Error('Settings status is unavailable');
       const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Settings status is unavailable');
       
       if (data.success) {
         const settings = data.settings;
+        const status = data.emailStatus || {};
+        document.getElementById('emailStatus').textContent = status.configured ? 'SMTP configuration present. Connection ' + (status.verified ? 'verified' : 'not yet verified') + '. Mode: ' + (status.mode || 'unknown') : 'SMTP is not configured. In-app notifications remain available.';
+        const counts = data.outboxStats || {};
+        document.getElementById('emailOutbox').textContent = 'Outbox: ' + (counts.pending || 0) + ' pending, ' + (counts.processing || 0) + ' processing, ' + (counts.sent || 0) + ' accepted by SMTP, ' + (counts.failed || 0) + ' failed, ' + (counts.suppressed || 0) + ' suppressed, ' + (counts.superseded || 0) + ' superseded.';
+        document.getElementById('retryEmailBtn').disabled = !counts.failed;
+        const jobs = data.coordinationStats || {};
+        document.getElementById('coordinationJobs').textContent = 'Outreach dispatch: ' + (jobs.pending || 0) + ' pending, ' + (jobs.processing || 0) + ' processing, ' + (jobs.completed || 0) + ' completed, ' + (jobs.failed || 0) + ' failed.';
+        document.getElementById('retryCoordinationBtn').disabled = !jobs.failed;
         
         // Populate General Settings
         if (settings.general) {
@@ -374,13 +346,16 @@ document.addEventListener('DOMContentLoaded', async function() {
           document.getElementById('sessionTimeout').value = settings.security.sessionTimeout || '30';
           document.getElementById('minPasswordLength').value = settings.security.minPasswordLength || '8';
           document.getElementById('requireSpecialChars').checked = settings.security.requireSpecialChars;
-          document.getElementById('twoFactorAuth').checked = settings.security.twoFactorAuth;
-          document.getElementById('ipWhitelist').value = settings.security.ipWhitelist || '';
-          document.getElementById('auditLogging').checked = settings.security.auditLogging;
         }
+        settingsLoaded = true; setSaveState();
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+      document.getElementById('emailStatus').textContent = 'Settings could not be loaded. Reload this page to retry before saving.';
+      document.getElementById('emailOutbox').textContent = 'Email job counts are unavailable.';
+      document.getElementById('coordinationJobs').textContent = 'Outreach job counts are unavailable. Reload this page to retry.';
+      document.getElementById('retryEmailBtn').disabled = true;
+      document.getElementById('retryCoordinationBtn').disabled = true;
       showToast('Error loading settings', 'error');
     }
   }
@@ -422,66 +397,83 @@ document.addEventListener('DOMContentLoaded', async function() {
     await submitForm('/admin/settings/security', {
       sessionTimeout: document.getElementById('sessionTimeout').value,
       minPasswordLength: document.getElementById('minPasswordLength').value,
-      requireSpecialChars: document.getElementById('requireSpecialChars').checked,
-      twoFactorAuth: document.getElementById('twoFactorAuth').checked,
-      ipWhitelist: document.getElementById('ipWhitelist').value,
-      auditLogging: document.getElementById('auditLogging').checked
+      requireSpecialChars: document.getElementById('requireSpecialChars').checked
     }, 'Security settings saved successfully!');
   });
 
   // Test Email Button
+  document.getElementById('retryCoordinationBtn').addEventListener('click', async function () {
+    this.disabled = true;
+    try {
+      const response = await fetch('/admin/settings/retry-coordination', { method: 'POST', headers: { 'X-CSRF-Token': window.getCsrfToken() } });
+      const data = await response.json(); if (!response.ok || !data.success) throw new Error(data.message || data.error || 'Retry could not be queued');
+      showToast(data.message || 'Failed outreach jobs queued for retry', 'success'); await loadSettings();
+    } catch (error) { showToast(error.message, 'error'); this.disabled = false; }
+  });
+  document.getElementById('retryEmailBtn').addEventListener('click', async function () {
+    this.disabled = true;
+    try {
+      const response = await fetch('/admin/settings/retry-email', { method: 'POST', headers: { 'X-CSRF-Token': window.getCsrfToken() } });
+      const data = await response.json(); if (!response.ok || !data.success) throw new Error(data.message || 'Retry could not be queued');
+      showToast(data.message || 'Failed jobs queued for retry', 'success'); await loadSettings();
+    } catch (error) { showToast(error.message, 'error'); this.disabled = false; }
+  });
   document.getElementById('testEmailBtn').addEventListener('click', async function() {
     const btn = this;
     btn.disabled = true;
-    btn.textContent = 'Sending...';
+    btn.textContent = 'Verifying SMTP...';
     
     try {
       const response = await fetch('/admin/settings/test-email', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json', 'X-CSRF-Token': window.getCsrfToken()
         },
         body: JSON.stringify({})
       });
       
       const data = await response.json();
       
-      if (data.success) {
+      if (response.ok && data.success) {
         showToast(data.message, 'success');
       } else {
-        showToast(data.error || 'Failed to send test email', 'error');
+        showToast(data.message || data.error || 'SMTP verification failed', 'error');
       }
     } catch (error) {
       console.error('Error sending test email:', error);
-      showToast('Error sending test email', 'error');
+      showToast('SMTP verification could not be completed', 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Send Test Email';
+      btn.textContent = 'Verify SMTP connection';
+      loadSettings();
     }
   });
 
   // Submit form data
   async function submitForm(url, data, successMessage) {
+    if (!settingsLoaded || savingSettings) { showToast('Wait for the current settings to load before saving.', 'error'); return; }
+    savingSettings = true; setSaveState();
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json', 'X-CSRF-Token': window.getCsrfToken()
         },
         body: JSON.stringify(data)
       });
       
       const result = await response.json();
       
-      if (result.success) {
+      if (response.ok && result.success) {
         showToast(successMessage || result.message, 'success');
+        await loadSettings();
       } else {
-        showToast(result.error || 'Error saving settings', 'error');
+        showToast(result.message || result.error || 'Error saving settings', 'error');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       showToast('Error saving settings', 'error');
-    }
+    } finally { savingSettings = false; setSaveState(); }
   }
 
   // Toast notification
@@ -494,9 +486,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Set color based on type
     if (type === 'error') {
-      toastDiv.className = 'bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg';
+      toastDiv.className = 'vm-alert bg-red-500 text-white px-6 py-3 rounded-lg ';
     } else {
-      toastDiv.className = 'bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg';
+      toastDiv.className = 'vm-alert bg-green-500 text-white px-6 py-3 rounded-lg ';
     }
     
     toast.classList.remove('hidden');

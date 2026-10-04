@@ -21,6 +21,9 @@ class SignalingClient {
     this.onIceCandidate = null;
     this.onAnswer = null;
     this.onError = null;
+    this.onCallCreated = null;
+    this.onAnsweredElsewhere = null;
+    this.onConnectionChange = null;
   }
   
   // Connect to Socket.io server
@@ -28,23 +31,24 @@ class SignalingClient {
     return new Promise((resolve, reject) => {
       try {
         this.socket = io();
+        this.setupEventListeners();
         
         this.socket.on('connect', () => {
-          console.log('✅ Connected to signaling server');
           this.connected = true;
-          this.setupEventListeners();
+          if (this.onConnectionChange) this.onConnectionChange(true);
           resolve();
         });
         
         this.socket.on('connect_error', (error) => {
           console.error('❌ Connection error:', error);
           this.connected = false;
+          if (this.onConnectionChange) this.onConnectionChange(false);
           reject(error);
         });
         
         this.socket.on('disconnect', () => {
-          console.log('❌ Disconnected from signaling server');
           this.connected = false;
+          if (this.onConnectionChange) this.onConnectionChange(false);
         });
         
       } catch (error) {
@@ -55,9 +59,10 @@ class SignalingClient {
   
   // Set up event listeners
   setupEventListeners() {
+    this.socket.on('call:created', data => { if (this.onCallCreated) this.onCallCreated(data); });
+    this.socket.on('call:answered-elsewhere', data => { if (this.onAnsweredElsewhere) this.onAnsweredElsewhere(data); });
     // Incoming call
     this.socket.on('call:incoming', (data) => {
-      console.log('📞 Incoming call:', data);
       if (this.onIncomingCall) {
         this.onIncomingCall(data);
       }
@@ -65,7 +70,6 @@ class SignalingClient {
     
     // Call accepted
     this.socket.on('call:accepted', (data) => {
-      console.log('✅ Call accepted:', data);
       if (this.onCallAccepted) {
         this.onCallAccepted(data);
       }
@@ -73,7 +77,6 @@ class SignalingClient {
     
     // Call declined
     this.socket.on('call:declined', (data) => {
-      console.log('❌ Call declined:', data);
       if (this.onCallDeclined) {
         this.onCallDeclined(data);
       }
@@ -81,7 +84,6 @@ class SignalingClient {
     
     // Call ended
     this.socket.on('call:ended', (data) => {
-      console.log('📴 Call ended:', data);
       if (this.onCallEnded) {
         this.onCallEnded(data);
       }

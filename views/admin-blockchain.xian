@@ -1,156 +1,18 @@
 <!-- Admin Blockchain Content -->
-<style>
-  .blockchain-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-  }
-  
-  .stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    text-align: center;
-    transition: all 0.3s ease;
-    border: 1px solid #f1f5f9;
-  }
-  
-  .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-  }
-  
-  .stat-number {
-    font-size: 2.5rem;
-    font-weight: 800;
-    color: #4f46e5;
-    margin-bottom: 0.5rem;
-  }
-  
-  @media (max-width: 768px) {
-    .stat-number {
-      font-size: 2rem;
-    }
-  }
-  
-  .block-item {
-    background: white;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.5rem;
-    border-left: 4px solid #10b981;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-  
-  .transaction-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-right: 0.5rem;
-  }
-  
-  .badge-donation { background: #dcfce7; color: #166534; }
-  .badge-request { background: #fef3c7; color: #92400e; }
-  .badge-fulfillment { background: #dbeafe; color: #1e40af; }
-  
-  .hash-display {
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-    color: #6b7280;
-    word-break: break-all;
-  }
-  
-  .status-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-  
-  .status-valid { background: #10b981; }
-  .status-invalid { background: #ef4444; }
-  
-  .action-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  
-  @media (max-width: 768px) {
-    .action-buttons {
-      flex-direction: column;
-    }
-  }
-  
-  .btn-blockchain {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.9rem;
-    font-weight: 500;
-    min-width: 180px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .btn-blockchain:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  }
-  
-  .btn-blockchain:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  .btn-blockchain:active {
-    transform: translateY(0);
-  }
-  
-  @media (max-width: 768px) {
-    .btn-blockchain {
-      min-width: 100%;
-      padding: 1rem;
-    }
-  }
-  
-  .btn-blockchain:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  }
-</style>
-
-<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
-  <div class="container mx-auto px-4">
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="vm-page-container container mx-auto px-4">
 
     <!-- Header -->
-    <div class="mb-6 lg:mb-8">
-      <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Blockchain Dashboard</h1>
-      <p class="text-gray-600 dark:text-gray-400 text-sm lg:text-base">Monitor VitalMatch blockchain activity and integrity</p>
+    <div class="vm-page-heading mb-6 lg:mb-8">
+      <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Local integrity log</h1>
+      <p class="text-gray-600 dark:text-gray-400 text-sm lg:text-base">Check hashes in the local integrity log. This is not independent clinical verification or proof that records cannot be changed.</p>
     </div>
 
-    <!-- Blockchain Status Card -->
+    <!-- Local log status Card -->
     <div class="blockchain-card mb-6 lg:mb-8">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 class="text-lg lg:text-xl font-semibold mb-2">Blockchain Status</h2>
+          <h2 class="text-lg lg:text-xl font-semibold mb-2">Local log status</h2>
           <div class="status-indicator">
             <div class="status-dot" id="statusDot"></div>
             <span id="statusText" class="text-sm lg:text-base">Checking...</span>
@@ -195,20 +57,20 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons mb-8 flex-wrap">
-      <button class="btn-blockchain mb-2" id="mineBtn" onclick="mineBlock(event)">
+      <button class="vm-button vm-button--primary btn-blockchain mb-2" id="mineBtn" onclick="mineBlock(event)">
         Mine Pending Transactions
       </button>
-      <button class="btn-blockchain mb-2" id="verifyBtn" onclick="verifyBlockchain(event)">
-        Verify Blockchain
+      <button class="vm-button btn-blockchain mb-2" id="verifyBtn" onclick="verifyBlockchain(event)">
+        Check local log hashes
       </button>
-      <button class="btn-blockchain mb-2" id="refreshBtn" onclick="refreshData(event)">
+      <button class="vm-button btn-blockchain mb-2" id="refreshBtn" onclick="refreshData(event)">
         Refresh Data
       </button>
     </div>
 
     <!-- Recent Blocks -->
-    <div class="bg-white dark:bg-[#18181b] rounded-lg shadow-sm dark:shadow-none p-4 lg:p-6">
-      <h3 class="text-base lg:text-lg font-semibold mb-4">Recent Blockchain Activity</h3>
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-lg shadow-sm dark:shadow-none p-4 lg:p-6">
+      <h3 class="text-base lg:text-lg font-semibold mb-4">Recent integrity log activity</h3>
       <div id="recentBlocks">
         <div class="text-center text-gray-500 dark:text-gray-400 py-8">
           Loading blockchain data...
@@ -217,7 +79,7 @@
     </div>
 
   </div>
-</div>
+</main>
 
 <script>
     let blockchainData = null;
@@ -243,7 +105,7 @@
                 <div class="text-center text-red-500 py-8">
                     <p>Error loading blockchain data</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">${error.message}</p>
-                    <button onclick="refreshData()" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Try Again</button>
+                    <button onclick="refreshData()" class="vm-button mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">Try Again</button>
                 </div>`;
         }
     }
@@ -313,10 +175,10 @@
         const statusText = document.getElementById('statusText');
         if (blockchainData.isValid) {
             statusDot.className = 'status-dot status-valid';
-            statusText.textContent = 'Blockchain Integrity: Valid';
+            statusText.textContent = 'Local log hashes match';
         } else {
             statusDot.className = 'status-dot status-invalid';
-            statusText.textContent = 'Blockchain Integrity: Compromised';
+            statusText.textContent = 'Local log hashes do not match';
         }
         animateCounter('totalBlocks', blockchainData.totalBlocks);
         animateCounter('donationCount', blockchainData.donations);
@@ -376,14 +238,14 @@
 
     async function verifyBlockchain(event) {
         const button = event ? event.currentTarget : document.getElementById('verifyBtn');
-        const originalText = button ? button.innerHTML : 'Verify Blockchain';
+        const originalText = button ? button.innerHTML : 'Check local log hashes';
         if (button) { button.innerHTML = 'Verifying...'; button.disabled = true; }
         try {
             const response = await fetch('/api/blockchain/verify');
             const result = await response.json();
             if (result.success) {
-                if (result.isValid) { button.innerHTML = 'Valid!'; alert('Blockchain integrity verified - All blocks are valid'); }
-                else { button.innerHTML = 'Invalid!'; alert('Blockchain integrity compromised - Invalid blocks detected'); }
+                if (result.isValid) { button.innerHTML = 'Valid!'; alert('Local log hashes match. This check does not independently certify a donation or facility review.'); }
+                else { button.innerHTML = 'Invalid!'; alert('Local log hash mismatch detected. Review audit history and backups.'); }
                 setTimeout(() => { button.innerHTML = originalText; button.disabled = false; }, 2000);
                 refreshData();
             } else { throw new Error(result.error || 'Verification failed'); }

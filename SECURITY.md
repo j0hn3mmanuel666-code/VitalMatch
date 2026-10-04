@@ -1,226 +1,53 @@
-# VitalMatch Security & Performance Guide
+﻿# VitalMatch security and operating controls
 
-## Overview
+This document describes implemented behavior and its limits. It is not a clinical eligibility decision, regulatory certification, penetration-test certificate, or assurance about live hosting. Report suspected issues privately to the project operator with the affected route, actor, observed behavior and a redacted reproduction. Do not include patient records, passwords, cookies, one-time tokens, or SMTP/TURN secrets in an issue or log.
 
-VitalMatch implements comprehensive security and performance enhancements to ensure a safe, fast, and reliable blood donation platform. This document outlines the security measures, performance optimizations, and best practices implemented in the system.
+## Accounts, sessions, and permissions
 
-## Security Features
+Passwords use bcrypt (default cost 12). New passwords follow the saved administrator policy: at least eight characters, upper/lowercase letters and a digit, optional required special characters, and a 72-byte limit. Administrative creation generates a cryptographically random temporary password. Existing hashes still verify after the bcrypt update.
 
-### 1. Authentication & Authorization
+Password reset links are hashed and single-use. Issuance and consumption lock the current account and recheck email, active/archive state and token identity. Email/security changes, administrator or self-service password changes, and archive invalidate outstanding reset links in the same audited transaction. Email or explicit verification-state changes clear obsolete verification links. An old link cannot reset a different account that later receives a previous email address, and a reset never reactivates an archived account.
 
-- **Session Management**: Secure session handling with HTTP-only cookies, CSRF protection, and session regeneration
-- **Password Security**: Bcrypt hashing with configurable rounds (default: 12)
-- **Role-Based Access Control**: Admin, user, and hospital roles with proper middleware protection
-- **Email Verification**: Required email verification for new user registrations
+Registration, reset and account password forms receive only the public minimum-length and required-symbol rules. Their checklist, native/client validation and server rejection messages follow that active policy and explain the allowed characters and 72-byte cap. Existing login/current-password checks continue to verify unchanged hashes without requiring an old password to meet a newly increased creation policy.
 
-### 2. Input Validation & Sanitization
+HTTP and Socket.IO authentication load current account state from the database. Active status, email verification, account ID, authVersion and idle expiry must match. A stale session role cannot authorize an administrator action. Password reset/change and administrator security changes increment authVersion; missing versions reject sessions created before the migration. Logout destroys the current session and disconnects its socket room; password changes disconnect all rooms for the account. Socket events recheck authorization, and idle sockets recheck every 30 seconds. Polling GET APIs do not count as user activity. Saved session timeout is enforced, bounded to 5–480 minutes.
 
-- **Comprehensive Validation**: Server-side validation for all user inputs
-- **XSS Prevention**: HTML sanitization and input filtering
-- **SQL Injection Protection**: Parameterized queries and input sanitization
-- **File Upload Security**: Type validation, size limits, and secure file handling
+Login regenerates the session ID. Cookies are HTTP-only, same-site lax, and HTTPS-only in production. Production requires a session secret of at least 32 characters and an HTTPS BASE_URL. TRUST_PROXY is disabled by default; configure explicit trusted proxy addresses/CIDRs. CORS and socket origins follow FRONTEND_URL, or BASE_URL if unset. General, API, mutation and upload limits use current authenticated account IDs; anonymous traffic uses the trusted effective client IP with IPv6 subnet normalization. Authenticated general traffic permits 300 requests per 15 minutes, API polling has a separate 600-request budget, mutations permit 60 per 15 minutes, and uploads permit 10 per hour. Anonymous general traffic permits 100 requests per 15 minutes; failed authentication retains its separate IP limit. Limits and call state use local process memory; multiple instances need shared stores.
 
-### 3. Rate Limiting
+Hospital access uses an administrator-managed facilityId. A self-edited display name does not grant facility access. Requests are restricted to administrators, owners, the stable facility, and current explicit coordination invitations. Invitations survive clearing notifications and expire. Donor request DTOs omit patient identity and clinical/contact detail. Global urgent summaries show request numbers, blood needs and facility/location. Raw historical ledger request/recent data is administrator-only; donors can read their own historical ledger records.
 
-- **General Rate Limiting**: 100 requests per 15 minutes per IP
-- **Authentication Rate Limiting**: 5 login attempts per 15 minutes per IP
-- **API Rate Limiting**: 200 requests per 15 minutes for API endpoints
-- **Upload Rate Limiting**: 10 file uploads per hour per IP
+## Requests and private communication
 
-### 4. Security Headers
+Lifecycle actions use relational transactions, row/version checks, actor authorization, transition rules and audit records. Appointment tokens are hashed, expiring, bound to the appointment version and actor, and invalidated by lifecycle changes. Scheduling and completion are distinct; recorded fulfillment units drive totals. The coordination interval is an administrative rule; staff retain clinical screening responsibility.
 
-- **Helmet.js Integration**: Comprehensive security headers
-- **Content Security Policy**: Strict CSP to prevent XSS attacks
-- **HSTS**: HTTP Strict Transport Security for HTTPS enforcement
-- **CORS Configuration**: Proper cross-origin resource sharing setup
+Call answer/ICE/decline/end operations require participation; answering requires the recipient. Multiple tabs remain registered, accepting one clears other incoming dialogs, and closing one tab does not remove another. Duration is server-measured. Signaling payloads/rates, concurrent calls and ringing time are bounded. /api/calls/config returns STUN and optional short-lived coturn credentials from TURN_URLS and TURN_SECRET, without returning the shared secret. Cross-network media still needs a working relay, browser permission and deployment verification.
 
-### 5. Error Handling
+Voice recordings are outside the public directory and served through /messages/voice/:id after current account and sender/recipient checks. Uploads require permitted types, size limits and matching container signatures; this is not full codec validation or malware scanning. Legacy files are preserved while their old public URLs return 404. Downloads use no-store and nosniff.
 
-- **Secure Error Messages**: No sensitive information leaked in production
-- **Centralized Error Handling**: Consistent error responses
-- **Request Logging**: Comprehensive request/response logging for security monitoring
+## Browser, input, and errors
 
-## Performance Optimizations
+Mutation routes use session CSRF tokens. Fetch injection handles same-origin URLs and Request objects without sending tokens elsewhere. Contact-donor navigation opens a conversation; sending the initial message requires POST. Authentication throttles count failed attempts, including unauthenticated failures returned with HTTP 200. Successful logins that establish a session do not consume the failure budget; registration, reset and resend requests remain counted. Static assets do not consume the general request budget.
 
-### 1. Compression & Caching
+Server schemas and bounded shape checks reject malformed types, nested fields, oversized inputs, invalid IDs and unsupported uploads. Database access uses ORM/bound values; stripping SQL keywords is not a security control. CMS rich HTML uses sanitize-html with a limited tag/attribute/scheme allowlist. Encoded active URLs, event handlers, scripts, SVG, protocol-relative URLs and inline styles are removed. CMS button/image URLs are separately validated.
 
-- **Gzip Compression**: Response compression for faster data transfer
-- **Static Asset Caching**: Long-term caching for CSS, JS, and images
-- **API Response Caching**: In-memory caching for frequently accessed data
-- **ETag Support**: Conditional requests for unchanged resources
+Helmet sets same-origin defaults, no objects/frames, form/base origin restrictions, production HSTS and per-response nonces for template script blocks. Eval and arbitrary remote script origins are prohibited. Existing inline event attributes/styles retain explicit compatibility allowances, and jsDelivr remains allowed for the map library; this is a remaining CSP constraint, not a fully strict policy. Convert the remaining handlers/styles and self-host the library to tighten it further.
 
-### 2. Database Optimization
+Express 4 handlers catch async rejections. Malformed bodies/uploads return controlled errors. Production responses hide exception detail; logs omit payloads, query strings and raw token path segments. Mandatory workflow/admin and self-account audit writes use the same transaction as the change. Profile/contact changes record changed field names rather than private values; password change/reset records session revocation without credential material. Public registration and single-use link actions explicitly record unauthenticated authorization sources. Audit failure rolls back the account mutation. Audit retention, restricted log access, monitoring and incident procedures are deployment responsibilities.
 
-- **Query Optimization**: Efficient database queries with proper indexing
-- **Connection Pooling**: Optimized database connection management
-- **Result Caching**: Cached query results for improved performance
-- **Pagination**: Proper pagination for large datasets
+Private pages/APIs and recordings are not response-cached. The service worker caches only known same-origin public asset directories. Uploads, private routes and other origins are network-only; offline API/media requests fail explicitly, while navigation can show the public offline page. Activation removes old VitalMatch caches; logout clears app caches and broadcasts to other tabs; restored workspace pages reload. Content already downloaded/exported cannot be revoked from a recipient device.
 
-### 3. Memory Management
+Worker version13 revalidates public scripts/styles/HTML/manifest through the network and uses its current public cache only after an actual fetch failure. Fonts/images retain public cache preference. Cache Storage errors cannot replace a fresh successful response with stale bytes; online errors and private/no-store responses remain the network response and evict any earlier cached entry.
 
-- **Memory Monitoring**: Real-time memory usage tracking
-- **Cache Management**: Automatic cleanup of expired cache entries
-- **Graceful Shutdown**: Proper resource cleanup on application shutdown
-- **Memory Leak Prevention**: Proactive memory management
+## Startup, settings, and maintenance
 
-### 4. Response Time Optimization
+Startup performs a read-only schema version check and refuses an outdated database. Schema changes use the explicit migration process in MIGRATION_GUIDE.md after a verified backup. Startup never synchronizes or silently alters tables. Historical records, messages and ledger files are preserved; removal archives accounts/requests instead of hard deletion.
 
-- **Response Time Tracking**: Monitoring and logging of request durations
-- **Slow Query Detection**: Identification and logging of slow operations
-- **Performance Metrics**: Comprehensive performance monitoring
+Runtime settings use private serialized atomic writes. Saved timeout/password policy, operating status and time zone have real consumers. Maintenance/offline status restricts both HTTP workspace access and new or continuing non-admin socket calls; the administrator exception requires a current database role. Socket event and 30-second heartbeat checks enforce status. Unimplemented MFA/IP/audit-disable controls are not offered as working settings. SMTP uses the configured transport without fake success or fallback. Durable database email/coordination jobs retry with backoff and expose failures. SMTP acceptance is not proof of mailbox delivery. EMAIL_OUTBOX_ENABLED=false and the coordination worker's documented switch disable background jobs for isolated tests.
 
-## Security Configuration
+Use Node.js 22 or newer. npm run xian uses native watch mode. npm run build:ui uses Tailwind 4 with explicit sources and compatibility values. Patched dependencies and narrow overrides are locked; rerun npm audit as advisories change. Zero reported advisories describes that dependency snapshot only.
 
-### Environment Variables
+## Verification and release evidence
 
-```env
-# Security Settings
-SESSION_SECRET=your-super-secure-session-secret
-BCRYPT_ROUNDS=12
-JWT_SECRET=your-jwt-secret-key
-CSRF_SECRET=your-csrf-secret-key
+Run npm test, npm run build:ui and npm audit. Security tests cover current authorization/revocation, malformed inputs, password policy, CMS attacks, CSRF byte comparisons, HTTP throttling/async survival, call participation/multiple tabs, private voice authorization, TURN generation, service-worker privacy and same-origin fetch headers. Database/HTTP/browser tests use synthetic accounts and isolated databases. Mocks alone do not prove database locking, provider delivery, browser media, production cookies, proxy topology or relay reachability.
 
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-AUTH_RATE_LIMIT_MAX=5
-
-# File Upload Security
-MAX_FILE_SIZE=5242880
-ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,audio/wav,audio/mp3,audio/ogg
-```
-
-### Production Security Checklist
-
-- [ ] Change all default secrets and passwords
-- [ ] Enable HTTPS with valid SSL certificates
-- [ ] Configure proper CORS origins
-- [ ] Set up proper database user permissions
-- [ ] Enable security headers in production
-- [ ] Configure proper session settings
-- [ ] Set up monitoring and alerting
-- [ ] Regular security updates and patches
-
-## API Security
-
-### Authentication Required Endpoints
-
-All API endpoints require proper authentication except:
-- `/` (Home page)
-- `/login` (Login page)
-- `/register` (Registration page)
-- `/health` (Health check)
-- `/api/status` (System status)
-
-### Rate Limited Endpoints
-
-- **Authentication endpoints**: 5 requests per 15 minutes
-- **API endpoints**: 200 requests per 15 minutes
-- **File upload endpoints**: 10 uploads per hour
-- **General endpoints**: 100 requests per 15 minutes
-
-### Input Validation
-
-All endpoints implement comprehensive input validation:
-- Email format validation
-- Password strength requirements
-- Phone number format validation
-- Blood type validation
-- File type and size validation
-
-## Performance Monitoring
-
-### Health Check Endpoint
-
-```
-GET /health
-```
-
-Returns system health information including:
-- Memory usage
-- Uptime
-- Cache statistics
-- System status
-
-### Performance Metrics
-
-The system tracks:
-- Request duration
-- Memory usage
-- Cache hit/miss rates
-- Error rates
-- Response times
-
-## Security Best Practices
-
-### For Developers
-
-1. **Always validate input**: Never trust user input
-2. **Use parameterized queries**: Prevent SQL injection
-3. **Sanitize output**: Prevent XSS attacks
-4. **Implement proper error handling**: Don't leak sensitive information
-5. **Use HTTPS in production**: Encrypt data in transit
-6. **Regular security updates**: Keep dependencies updated
-7. **Follow principle of least privilege**: Grant minimal necessary permissions
-
-### For Administrators
-
-1. **Regular backups**: Implement automated backup procedures
-2. **Monitor logs**: Set up log monitoring and alerting
-3. **Update regularly**: Keep system and dependencies updated
-4. **Access control**: Implement proper user access management
-5. **Network security**: Use firewalls and network segmentation
-6. **Incident response**: Have a security incident response plan
-
-## Compliance & Standards
-
-### Data Protection
-
-- **Personal Data Encryption**: Sensitive data encrypted at rest and in transit
-- **Data Minimization**: Only collect necessary personal information
-- **Access Logging**: All data access is logged and monitored
-- **Data Retention**: Proper data retention and deletion policies
-
-### Medical Data Security
-
-- **HIPAA Considerations**: Following healthcare data protection best practices
-- **Audit Trails**: Comprehensive logging of all medical data access
-- **Access Controls**: Strict role-based access to medical information
-- **Data Anonymization**: Personal identifiers removed where possible
-
-## Incident Response
-
-### Security Incident Procedure
-
-1. **Immediate Response**: Isolate affected systems
-2. **Assessment**: Determine scope and impact
-3. **Containment**: Prevent further damage
-4. **Investigation**: Analyze the incident
-5. **Recovery**: Restore normal operations
-6. **Documentation**: Document lessons learned
-
-### Contact Information
-
-For security issues or vulnerabilities:
-- Email: security@vitalmatch.ph
-- Emergency: +63 43 123 4567
-
-## Updates & Maintenance
-
-### Regular Security Tasks
-
-- Weekly security patch reviews
-- Monthly vulnerability assessments
-- Quarterly security audits
-- Annual penetration testing
-
-### Performance Optimization Tasks
-
-- Daily performance monitoring
-- Weekly cache optimization
-- Monthly database optimization
-- Quarterly performance reviews
-
-## Conclusion
-
-VitalMatch implements industry-standard security and performance practices to ensure a safe, fast, and reliable platform for blood donation coordination. Regular monitoring, updates, and adherence to security best practices are essential for maintaining system integrity and user trust.
+Complete the current remediation report's environment gates before release: verified backup/restore and migration, actual browser role/workflow checks, SMTP provider acceptance and mailbox delivery, cross-network TURN/audio/video, TLS/proxy/session configuration, restricted storage/backups, and operating audit/incident procedures. Use no real patient data in tests.

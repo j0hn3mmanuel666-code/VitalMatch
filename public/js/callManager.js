@@ -28,6 +28,13 @@ class CallManager {
   }
   
   setupSignalingCallbacks() {
+    this.pendingLocalCandidates = [];
+    this.signalingClient.onCallCreated = (data) => {
+      if (this.callState !== 'calling') return;
+      this.currentCallId = data.callId;
+      this.pendingLocalCandidates.splice(0).forEach(candidate => this.signalingClient.sendIceCandidate(this.currentCallId, candidate));
+    };
+    this.signalingClient.onAnsweredElsewhere = (data) => { if (this.currentCallId === data.callId) this.endCall(false); };
     this.signalingClient.onIncomingCall = (data) => this.handleIncomingCall(data);
     this.signalingClient.onCallAccepted = (data) => this.handleCallAccepted(data);
     this.signalingClient.onCallDeclined = (data) => this.handleCallDeclined(data);
@@ -48,14 +55,13 @@ class CallManager {
     this.webrtcManager.onIceCandidate = (candidate) => {
       if (this.currentCallId) {
         this.signalingClient.sendIceCandidate(this.currentCallId, candidate);
-      }
+      } else this.pendingLocalCandidates.push(candidate);
     };
     
     this.webrtcManager.onConnectionStateChange = (state) => {
-      console.log('Connection state:', state);
       if (state === 'connected') {
         this.callState = 'active';
-        this.callStartTime = Date.now();
+        if (!this.callStartTime) this.callStartTime = Date.now();
         this.callUI.showConnectedIndicator();
       } else if (state === 'failed' || state === 'disconnected') {
         this.callUI.showReconnectingIndicator();
@@ -65,6 +71,7 @@ class CallManager {
   
   // Initiate call
   async initiateCall(recipientId, callType) {
+    if (!this.signalingClient.isConnected()) { this.callUI.showError('Calling is unavailable. Retry the connection or use messages.'); return; }
     if (this.callState !== 'idle') {
       console.error('Already in a call');
       return;
@@ -77,10 +84,12 @@ class CallManager {
       this.currentCallType = callType;
       
       // Request media permissions
-      await this.webrtcManager.getLocalStream(true, callType === 'video');
+      const localStream = await this.webrtcManager.getLocalStream(true, callType === 'video');
+      if (this.callState !== 'calling') { this.webrtcManager.releaseLocalStream(); return; }
       
       // Show calling UI
       this.callUI.showCallInterface(callType, true);
+      this.callUI.attachLocalStream(localStream);
       this.callUI.showCallingIndicator();
       
       // Create offer
@@ -141,10 +150,12 @@ class CallManager {
       this.callUI.hideIncomingCallNotification();
       
       // Request media permissions
-      await this.webrtcManager.getLocalStream(true, this.currentCallType === 'video');
+      const localStream = await this.webrtcManager.getLocalStream(true, this.currentCallType === 'video');
+      if (this.callState !== 'ringing' || this.currentCallId !== callId) { this.webrtcManager.releaseLocalStream(); return; }
       
       // Show call interface
       this.callUI.showCallInterface(this.currentCallType, false);
+      this.callUI.attachLocalStream(localStream);
       
       // Create answer
       const answer = await this.webrtcManager.createAnswer(this.pendingOffer, this.currentCallType);
@@ -152,8 +163,7 @@ class CallManager {
       // Send answer
       this.signalingClient.sendCallAnswer(callId, answer);
       
-      this.callState = 'active';
-      this.callStartTime = Date.now();
+      // Duration begins when the media connection succeeds.
       
     } catch (error) {
       console.error('Error accepting call:', error);
@@ -171,11 +181,7 @@ class CallManager {
     
     this.callUI.hideIncomingCallNotification();
     this.signalingClient.sendCallDecline(callId);
-    
-    this.callState = 'idle';
-    this.currentCallId = null;
-    this.currentCallType = null;
-    this.otherUserId = null;
+    this.endCall(false);
   }
   
   // Handle call accepted
@@ -198,13 +204,14 @@ class CallManager {
   
   // Handle call declined
   handleCallDeclined(data) {
+    if (data.callId !== this.currentCallId) return;
     this.callUI.showError('Call declined by the other user');
-    this.endCall();
+    this.endCall(false);
   }
   
   // Handle call ended
   handleCallEnded(data) {
-    this.endCall();
+    if (data.callId === this.currentCallId) this.endCall(false);
   }
   
   // Handle ICE candidate
@@ -221,16 +228,17 @@ class CallManager {
   }
   
   // End call
-  endCall() {
+  endCall(notify = true) {
     const duration = this.callStartTime ? Math.floor((Date.now() - this.callStartTime) / 1000) : 0;
     
-    if (this.currentCallId && this.callState === 'active') {
+    if (notify && this.currentCallId && this.callState !== 'idle') {
       this.signalingClient.sendCallEnd(this.currentCallId, duration);
     }
     
     // Clean up
     this.webrtcManager.closeConnection();
     this.callUI.hideCallInterface();
+    this.callUI.hideIncomingCallNotification();
     this.callUI.detachStreams();
     
     if (this.autoDeclineTimeout) {
@@ -245,6 +253,8 @@ class CallManager {
     this.isInitiator = false;
     this.otherUserId = null;
     this.callStartTime = null;
+    this.pendingLocalCandidates = [];
+    this.pendingOffer = null;
   }
   
   // Toggle mute

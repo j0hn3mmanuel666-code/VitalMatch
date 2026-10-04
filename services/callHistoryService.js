@@ -28,7 +28,7 @@ export class CallHistoryService {
       
       return call.id;
     } catch (error) {
-      console.error("Error creating call record:", error);
+      console.error("Error creating call record:");
       throw error;
     }
   }
@@ -45,7 +45,7 @@ export class CallHistoryService {
         { where: { id: callId } }
       );
     } catch (error) {
-      console.error("Error updating call outcome:", error);
+      console.error("Error updating call outcome:");
       throw error;
     }
   }
@@ -89,13 +89,13 @@ export class CallHistoryService {
         };
       });
     } catch (error) {
-      console.error("Error getting call history:", error);
+      console.error("Error getting call history:");
       throw error;
     }
   }
   
   // Get call history for a specific conversation
-  async getCallHistoryForConversation(userId1, userId2, limit = 20) {
+  async getCallHistoryForConversation(userId1, userId2, limit = 20, viewerId = userId1) {
     try {
       const ids = [userId1, userId2].sort((a, b) => a - b);
       const conversationId = `${ids[0]}-${ids[1]}`;
@@ -111,11 +111,11 @@ export class CallHistoryService {
         callType: call.callType,
         outcome: call.outcome,
         duration: call.duration,
-        isIncoming: call.calleeId === userId1,
+        isIncoming: Number(call.calleeId) === Number(viewerId),
         initiatedAt: call.initiatedAt
       }));
     } catch (error) {
-      console.error("Error getting conversation call history:", error);
+      console.error("Error getting conversation call history:");
       throw error;
     }
   }
@@ -169,7 +169,7 @@ export class CallHistoryService {
         peakHours
       };
     } catch (error) {
-      console.error("Error getting call analytics:", error);
+      console.error("Error getting call analytics:");
       throw error;
     }
   }
@@ -178,15 +178,16 @@ export class CallHistoryService {
   async markCallAsSeen(callId, userId) {
     try {
       const call = await Call.findByPk(callId);
-      if (!call) return;
+      if (!call) return false;
       
       if (call.callerId === userId) {
         await call.update({ seenByCaller: true });
       } else if (call.calleeId === userId) {
         await call.update({ seenByCallee: true });
-      }
+      } else return false;
+      return true;
     } catch (error) {
-      console.error("Error marking call as seen:", error);
+      console.error("Error marking call as seen:");
       throw error;
     }
   }

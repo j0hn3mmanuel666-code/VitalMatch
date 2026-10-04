@@ -1,0 +1,21 @@
+<header class="vm-header">
+  <div class="vm-header__inner">
+    <button type="button" class="vm-icon-button vm-header__menu" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false" aria-controls="workspace-navigation">Menu</button>
+    <a class="vm-header__brand" href="{{#if isAdmin}}/admin/dashboard{{else}}{{#if (eq navUser.role 'hospital')}}/hospital/dashboard{{else}}/dashboard{{/if}}{{/if}}">{{> brand-mark}}<span>{{#if appName}}{{appName}}{{else}}VitalMatch{{/if}}</span></a>
+    <span class="vm-header__context">{{#if isAdmin}}Coordination workspace{{else}}{{#if (eq navUser.role 'hospital')}}Hospital workspace{{else}}{{#if (eq navUser.role 'donor')}}Donor workspace{{else}}Account workspace{{/if}}{{/if}}{{/if}}</span>
+    {{#if dashboard}}
+    <div class="vm-header__search"><input id="dashboardSearch" type="search" aria-label="Search requests, donors, and messages" placeholder="Search your workspace" onkeyup="handleDashboardSearch(event)"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg><div id="dashboardSearchResults" class="vm-dropdown hidden absolute top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto z-50" role="region" aria-label="Search results" aria-live="polite"></div></div>
+    {{/if}}
+    <div class="vm-header__actions">
+      {{#if dashboard}}<button type="button" class="vm-icon-button vm-mobile-search-button" onclick="toggleDashboardMobileSearch()" aria-label="Search workspace" aria-controls="dashboardMobileSearch" aria-expanded="false"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg></button>{{/if}}
+      <div class="vm-header__notification relative">
+        <button type="button" id="notificationBtn" class="vm-icon-button relative" aria-label="Notifications" aria-controls="notificationDropdown" aria-expanded="false"><svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8 12h4"/></svg><span id="notificationBadge" class="vm-nav-count absolute top-0 right-0"{{#unless navUnread}} style="display:none"{{/unless}}>{{navUnread}}</span></button>
+        <div id="notificationDropdown" class="vm-dropdown hidden absolute top-full mt-2 z-50" role="region" aria-label="Recent notifications"><div class="flex justify-between items-center p-4 border-b"><h2>Notifications</h2><button type="button" class="vm-text-link text-xs" onclick="markAllNotificationsRead()">Mark all read</button></div><div id="notificationList" class="max-h-80 overflow-y-auto" aria-live="polite"><p class="vm-empty-state">Loading notifications…</p></div><div class="p-4 border-t"><a href="/notifications" class="vm-text-link text-sm">View all notifications</a></div></div>
+      </div>
+      <button type="button" id="theme-toggle" class="vm-icon-button vm-theme-toggle" aria-label="Switch appearance" title="Switch appearance"><svg class="vm-theme-icon vm-theme-icon--sun" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg><svg class="vm-theme-icon vm-theme-icon--moon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/></svg></button>
+      <span class="vm-header__profile">{{navUser.firstName}} {{navUser.lastName}}</span>
+      <a href="/logout" class="vm-button vm-button--small">Sign out</a>
+    </div>
+  </div>
+  {{#if dashboard}}<div id="dashboardMobileSearch" class="vm-mobile-search hidden"><input id="dashboardMobileSearchInput" type="search" aria-label="Search your workspace" placeholder="Search requests, donors, messages" onkeyup="handleDashboardSearch(event, true)"><div id="dashboardMobileSearchResults" class="vm-dropdown hidden max-h-64 overflow-y-auto" role="region" aria-label="Search results" aria-live="polite"></div></div><script src="/js/workspace-search.js?v=1" defer></script>{{/if}}
+</header>

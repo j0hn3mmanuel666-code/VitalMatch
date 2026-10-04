@@ -3,6 +3,7 @@ import { sequelize } from "./db.js";
 import { User } from "./userModel.js";
 
 export const Notification = sequelize.define("Notification", {
+  deliveryKey: { type: DataTypes.STRING(160), allowNull: true, unique: true },
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,

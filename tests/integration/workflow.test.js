@@ -1,0 +1,325 @@
+import test, { after } from 'node:test';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { Op } from 'sequelize';
+import { sequelize } from '../../models/db.js';
+import { User } from '../../models/userModel.js';
+import { Donor } from '../../models/donorModel.js';
+import { Facility } from '../../models/facilityModel.js';
+import { BloodRequest } from '../../models/bloodRequestModel.js';
+import { Appointment } from '../../models/appointmentModel.js';
+import { Fulfillment, WorkflowEvent } from '../../models/workflowEventModel.js';
+import { ScheduleToken } from '../../models/scheduleTokenModel.js';
+import { EmailOutbox } from '../../models/emailOutboxModel.js';
+import { CoordinationJob } from '../../models/coordinationJobModel.js';
+import { Notification } from '../../models/notificationModel.js';
+import { RequestAccess } from '../../models/requestAccessModel.js';
+import { createRequest, correctRequest, scheduleRequest, fulfillRequest, confirmAppointment, changeAppointment, cancelRequest, reviewRequest, canViewRequest, pledgeRequest } from '../../services/requestLifecycleService.js';
+import { notifyNearestDonors, findNearestDonors } from '../../services/matchingService.js';
+import { normalizeRequestInput } from '../../services/requestInputService.js';
+import { donorAge, donorAgeBounds, isDonorReady, parseBirthDate } from '../../services/coordinationPolicy.js';
+import { viewBloodRequestPage } from '../../controllers/bloodRequestController.js';
+import { updateDonorProfile } from '../../controllers/donorController.js';
+import { donorAppointmentsPage, confirmSchedulePage } from '../../controllers/appointmentController.js';
+import { assertCurrentSchema } from '../../scripts/migrate-schema.js';
+import { DEMO_ACCOUNT_DEFINITIONS, DEMO_FACILITY_NAME } from '../../services/demoAccountPolicy.js';
+import { inspectKnownDemoFacility, repairKnownDemoFacility } from '../../services/demoFacilityService.js';
+import { AuditLog } from '../../services/auditService.js';
+
+if (process.env.NODE_ENV !== 'test' || !/^vitalmatch_audit_test_[a-zA-Z0-9_]+$/.test(process.env.DB_NAME || '') || process.env.EMAIL_OUTBOX_ENABLED !== 'false' || process.env.COORDINATION_JOBS_ENABLED !== 'false') throw new Error('Workflow tests require a guarded disposable database and disabled delivery workers');
+const key = () => crypto.randomUUID();
+async function account(role = 'donor', facilityId = null) {
+  return User.create({ firstName: 'Test', lastName: 'Coordinator', email: key() + '@example.invalid', password: 'integration-only-placeholder', phone: '09123456789', address: 'Synthetic Calapan test address', dateOfBirth: '1990-01-01', gender: 'unspecified', role, isActive: true, emailVerified: true, facilityId });
+}
+async function donorProfile(user, bloodType = 'O+') {
+  return Donor.create({ fullName: 'Synthetic Donor', dateOfBirth: '1990-01-01', gender: 'unspecified', bloodType, weight: 60, height: 170, mobileNumber: '09123456789', email: user.email, address: 'Synthetic test address', city: 'Calapan', province: 'Oriental Mindoro', zipCode: '5200', isAvailable: true, emergencyContactName: 'Test Contact', emergencyContactNumber: '09123456789', emergencyContactRelationship: 'relative', userId: user.id });
+}
+const input = (facilityId, units = 5, bloodType = 'A+') => ({ patientName: 'Synthetic Patient', patientAge: '25', bloodType, unitsRequired: String(units), bloodComponents: ['packedRBC'], packedRBCVolume: units + ' units', indicationOfTransfusion: 'Synthetic test record', hospitalName: 'Synthetic facility', hospitalAddress: 'Synthetic hospital address', city: 'Calapan', province: 'Oriental Mindoro', contactPerson: 'Synthetic Contact', contactNumber: '09123456789', email: 'coordination@example.invalid', urgency: 'urgent', requiredByDate: new Date(Date.now() + 86400000).toISOString().slice(0,10), facilityId });
+async function fixture(units = 5) {
+  const admin = await account('admin');
+  const facility = await Facility.create({ hospitalName: 'Synthetic ' + key(), verifiedAt: new Date(), verifiedBy: admin.id });
+  const hospital = await account('hospital', facility.id);
+  const owner = await account();
+  const volunteer = await account();
+  const donor = await donorProfile(volunteer);
+  const result = await createRequest(normalizeRequestInput(input(facility.id, units)), owner.id, key());
+  return { admin, facility, hospital, owner, volunteer, donor, request: result.request };
+}
+test('facility review gates outreach and name changes cannot grant facility access', async () => {
+  const f = await fixture();
+  assert.equal(f.request.status, 'pending');
+  assert.equal((await findNearestDonors(f.request)).length, 0);
+  assert.equal(await canViewRequest(f.request, f.hospital), true);
+  const outsider = await account('hospital');
+  await outsider.update({ hospitalName: f.facility.hospitalName });
+  assert.equal(await canViewRequest(f.request, outsider), false);
+  await assert.rejects(reviewRequest(f.request.id, outsider.id, true), /not assigned/);
+  await reviewRequest(f.request.id, f.hospital.id, false, 'Patient record needs correction');
+  assert.equal((await f.request.reload()).hospitalStatus, 'declined');
+  assert.equal(f.request.status, 'pending');
+  const corrected = normalizeRequestInput({ ...input(f.facility.id), contactPerson: 'Corrected Synthetic Contact' });
+  await assert.rejects(correctRequest(f.request.id, outsider.id, corrected, f.request.version), /Only the requester/);
+  await assert.rejects(correctRequest(f.request.id, f.owner.id, corrected, 0), /changed/);
+  await correctRequest(f.request.id, f.owner.id, corrected, f.request.version);
+  assert.equal((await f.request.reload()).hospitalStatus, 'pending');
+  assert.equal(f.request.contactPerson, 'Corrected Synthetic Contact');
+  assert.equal(await WorkflowEvent.count({ where: { requestId: f.request.id, action: 'request_corrected' } }), 1);
+  await reviewRequest(f.request.id, f.admin.id, true, 'Staff verified corrected details');
+  assert.equal((await f.request.reload()).status, 'active');
+  assert.equal(await CoordinationJob.count({ where: { requestId: f.request.id } }), 1);
+});
+test('submission idempotency creates one request and one initial workflow event', async () => {
+  const f = await fixture(); const submission = key(); const data = normalizeRequestInput(input(f.facility.id));
+  const [first, again] = await Promise.all([createRequest(data, f.owner.id, submission), createRequest(data, f.owner.id, submission)]);
+  assert.equal(again.request.id, first.request.id); assert.equal([first,again].filter(result => result.duplicate).length, 1);
+  assert.equal(await WorkflowEvent.count({ where: { requestId: first.request.id, action: 'request_created' } }), 1);
+});
+test('partial completion preserves remaining demand and repeated/concurrent keys do not double count', async () => {
+  const f = await fixture(); await reviewRequest(f.request.id, f.admin.id, true);
+  const data = { unitsProvided: '1', notes: 'Verified synthetic walk-in unit', idempotencyKey: key() };
+  const [a, b] = await Promise.all([fulfillRequest(f.request.id, f.admin.id, data), fulfillRequest(f.request.id, f.admin.id, data)]);
+  assert.equal(a.request.unitsFulfilled, 1); assert.equal(b.request.unitsFulfilled, 1);
+  assert.equal((await f.request.reload()).status, 'active');
+  assert.equal(await Fulfillment.count({ where: { requestId: f.request.id } }), 1);
+  await assert.rejects(fulfillRequest(f.request.id, f.admin.id, { ...data, unitsProvided: '5', idempotencyKey: key() }), /exceed/);
+  await assert.rejects(fulfillRequest(f.request.id, f.owner.id, { ...data, idempotencyKey: key() }), /Only coordinators/);
+  await fulfillRequest(f.request.id, f.admin.id, { ...data, unitsProvided: '4', idempotencyKey: key() });
+  assert.equal((await f.request.reload()).status, 'fulfilled'); assert.equal(f.request.unitsFulfilled, 5); assert.ok(f.request.fulfilledAt);
+  await assert.rejects(fulfillRequest(f.request.id, f.admin.id, { ...data, idempotencyKey: key() }), /not open/);
+});
+test('scheduled appointments have bound tokens and rescheduling invalidates old consent', async () => {
+  const f = await fixture(); await reviewRequest(f.request.id, f.admin.id, true);
+  const future = new Date(Date.now() + 2 * 86400000);
+  const scheduled = await scheduleRequest(f.request.id, f.admin.id, { donorId: f.donor.id, scheduledDate: future, idempotencyKey: key() });
+  assert.equal(await Fulfillment.count({ where: { requestId: f.request.id } }), 0);
+  const outbox = await EmailOutbox.findOne({ where: { dedupeKey: 'schedule:' + scheduled.appointment.id + ':1:donor' } });
+  const rawToken = outbox.payload.confirmUrl.split('/').pop();
+  const tokenRow = await ScheduleToken.findOne({ where: { appointmentId: scheduled.appointment.id, role: 'donor' } });
+  assert.notEqual(tokenRow.token, rawToken); assert.equal(tokenRow.recipientUserId, f.volunteer.id);
+  await confirmAppointment({ token: rawToken });
+  await assert.rejects(confirmAppointment({ token: rawToken }), /expired/);
+  await confirmAppointment({ requestId: f.request.id, actorId: f.owner.id, role: 'requester', appointmentId: scheduled.appointment.id, version: 1 });
+  await changeAppointment(scheduled.appointment.id, f.admin.id, { version: 1, reason: 'Both parties requested another date', scheduledDate: new Date(Date.now() + 3 * 86400000), idempotencyKey: key() }, 'reschedule');
+  const latest = await Appointment.findByPk(scheduled.appointment.id); assert.equal(latest.version, 2); assert.equal(latest.donorConfirmed, false); assert.equal(latest.requesterConfirmed, false);
+  await assert.rejects(confirmAppointment({ requestId: f.request.id, actorId: f.owner.id, role: 'requester', appointmentId: latest.id, version: 1 }), /changed/);
+  await cancelRequest(f.request.id, f.owner.id, 'Need has ended');
+  assert.equal(await ScheduleToken.count({ where: { bloodRequestId: f.request.id, used: false } }), 0);
+  await assert.rejects(fulfillRequest(f.request.id, f.admin.id, { unitsProvided: 1, notes: 'Must not close cancelled request', idempotencyKey: key() }), /not open/);
+});
+test('successful scheduled completion updates verified donor history and coordination interval', async () => {
+  const f = await fixture(1); await reviewRequest(f.request.id, f.admin.id, true);
+  const { appointment } = await scheduleRequest(f.request.id, f.admin.id, { donorId: f.donor.id, scheduledDate: new Date(Date.now() + 86400000), idempotencyKey: key() });
+  for (const [actorId, role] of [[f.owner.id,'requester'],[f.volunteer.id,'donor']]) await confirmAppointment({ requestId: f.request.id, actorId, role, appointmentId: appointment.id, version: 1 });
+  // Simulate an appointment that occurred; no wall-clock delay or external provider.
+  await appointment.update({ scheduledDate: new Date(Date.now() - 60000) });
+  await fulfillRequest(f.request.id, f.admin.id, { appointmentId: appointment.id, version: 1, unitsProvided: 1, notes: 'Staff verified synthetic donation', idempotencyKey: key() });
+  assert.equal((await f.donor.reload()).isAvailable, false); assert.ok(f.donor.lastDonationDate);
+  const donation = await Fulfillment.findOne({ where: { requestId: f.request.id } });
+  assert.equal(donation.donorId, f.donor.id); assert.equal(donation.unitsProvided, 1); assert.ok(donation.donorName);
+  await f.owner.update({ isActive: false, archivedAt: new Date(), authVersion: 1 });
+  assert.equal(await BloodRequest.count({ where: { id: f.request.id } }), 1); assert.equal(await Fulfillment.count({ where: { requestId: f.request.id } }), 1);
+});
+test('one donor cannot acquire concurrent appointments and cancel/completion races retain one coherent transition', async () => {
+  const f = await fixture(1); await reviewRequest(f.request.id, f.admin.id, true);
+  const other = await createRequest(normalizeRequestInput(input(f.facility.id, 1)), f.owner.id, key());
+  await reviewRequest(other.request.id, f.admin.id, true);
+  const date = new Date(Date.now() + 86400000);
+  const results = await Promise.allSettled([scheduleRequest(f.request.id, f.admin.id, { donorId: f.donor.id, scheduledDate: date, idempotencyKey: key() }), scheduleRequest(other.request.id, f.admin.id, { donorId: f.donor.id, scheduledDate: date, idempotencyKey: key() })]);
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+  assert.equal(await Appointment.count({ where: { donorId: f.donor.id, status: 'scheduled' } }), 1);
+  const raceRequest = await createRequest(normalizeRequestInput(input(f.facility.id, 1)), f.admin.id, key());
+  const raced = await Promise.allSettled([cancelRequest(raceRequest.request.id, f.admin.id, 'No longer required'), fulfillRequest(raceRequest.request.id, f.admin.id, { unitsProvided: 1, notes: 'Recorded synthetic completed unit', idempotencyKey: key() })]);
+  assert.equal(raced.filter(result => result.status === 'fulfilled').length, 1);
+  const saved = await raceRequest.request.reload();
+  assert.ok(['cancelled', 'fulfilled'].includes(saved.status));
+  assert.equal(await Fulfillment.count({ where: { requestId: saved.id } }), saved.status === 'fulfilled' ? 1 : 0);
+});
+test('compatible invitations survive inbox clearing; suspended donors are excluded; pledges deduplicate', async () => {
+  const f = await fixture(); await reviewRequest(f.request.id, f.admin.id, true);
+  const suspended = await account(); const paused = await donorProfile(suspended); await suspended.update({ isActive: false });
+  const nearest = await findNearestDonors(await f.request.reload(), 1000);
+  assert.ok(nearest.some(m => m.donor.id === f.donor.id)); assert.ok(!nearest.some(m => m.donor.id === paused.id));
+  assert.equal(await canViewRequest(f.request,suspended),false);
+  await notifyNearestDonors(f.request); await notifyNearestDonors(f.request);
+  assert.ok(await RequestAccess.findOne({ where: { requestId: f.request.id, userId: f.volunteer.id } }));
+  const invitationKey = 'match:' + f.request.id + ':' + f.request.version + ':' + f.donor.id + ':normal';
+  assert.equal(await Notification.count({ where: { deliveryKey: invitationKey } }), 1);
+  const nearbyEmail = await EmailOutbox.findOne({ where: { dedupeKey: invitationKey } });
+  assert.equal(nearbyEmail.payload.request.unitsRequired, 5); assert.equal(nearbyEmail.payload.request.unitsRemaining, 5);
+  assert.equal(nearbyEmail.payload.request.version,f.request.version);
+  await Notification.destroy({ where: { userId: f.volunteer.id } });
+  assert.equal(await canViewRequest(f.request, f.volunteer), true);
+  await pledgeRequest(f.request.id, f.volunteer.id); await pledgeRequest(f.request.id, f.volunteer.id);
+  assert.equal(await WorkflowEvent.count({ where: { requestId: f.request.id, action: 'pledge_created' } }), 1);
+  await pledgeRequest(f.request.id, f.volunteer.id, true);
+  assert.equal(await WorkflowEvent.count({ where: { requestId: f.request.id, action: 'pledge_withdrawn' } }), 1);
+  await fulfillRequest(f.request.id, f.admin.id, { unitsProvided:1, notes:'Synthetic partial walk-in recorded', idempotencyKey:key() });
+  await f.request.reload(); await notifyNearestDonors(f.request);
+  const remainingEmail = await EmailOutbox.findOne({ where: { kind:'nearby-request', dedupeKey:'match:'+f.request.id+':'+f.request.version+':'+f.donor.id+':normal' } });
+  assert.equal(remainingEmail.payload.request.unitsRequired,5); assert.equal(remainingEmail.payload.request.unitsRemaining,4);
+});
+test('legacy hospital roles require stable facility identity for review, own creation and detail access', async () => {
+  const f = await fixture(); await f.hospital.update({ role: 'hospital_admin' });
+  assert.equal(await canViewRequest(f.request, f.hospital), true);
+  await reviewRequest(f.request.id, f.hospital.id, true);
+  const own = await createRequest(normalizeRequestInput(input(f.facility.id)), f.hospital.id, key());
+  assert.equal(own.request.status, 'active'); assert.equal(own.request.facilityId, f.facility.id);
+  const unassigned = await account('hospital_admin'); await unassigned.update({ hospitalName: f.facility.hospitalName });
+  assert.equal(await canViewRequest(f.request, unassigned), false);
+  await assert.rejects(createRequest(normalizeRequestInput(input(f.facility.id)), unassigned.id, key()), /assign your verified facility/);
+});
+test('invited and directly assigned donors see coordination history without free-text patient information', async () => {
+  const f = await fixture(2), secret = 'SYNTHETIC PRIVATE clinical details';
+  await reviewRequest(f.request.id, f.hospital.id, false, secret);
+  await reviewRequest(f.request.id, f.hospital.id, true);
+  await f.request.reload();
+  await RequestAccess.create({ requestId: f.request.id, userId: f.volunteer.id, expiresAt: new Date(Date.now() + 86400000) });
+  await WorkflowEvent.create({ requestId: f.request.id, actorId: f.admin.id, action: 'request_partially_fulfilled', reason: secret, details: { unitsProvided: 1 } });
+  await f.request.update({ fulfillmentNotes: secret });
+  const capture = async user => {
+    let rendered;
+    await viewBloodRequestPage({ session: { userId: user.id }, params: { id: f.request.id } }, { status(code) { assert.equal(code,200); return this; }, render(view, data) { assert.equal(view,'view-blood-request'); rendered = data; } });
+    return rendered;
+  };
+  const invited = await capture(f.volunteer);
+  assert.equal(invited.request.fulfillmentNotes, null); assert.equal(invited.hospitalDeclineReason, null);
+  assert.ok(!JSON.stringify(invited).includes(secret)); assert.ok(invited.history.some(row => row.description === '1 unit(s) recorded'));
+  const privateFacility = await capture(f.hospital); assert.equal(privateFacility.hospitalDeclineReason, secret);
+  await RequestAccess.destroy({ where: { requestId: f.request.id, userId: f.volunteer.id } });
+  assert.equal(await canViewRequest(f.request, f.volunteer), false);
+  await scheduleRequest(f.request.id, f.admin.id, { donorId: f.donor.id, scheduledDate: new Date(Date.now() + 86400000), idempotencyKey: key() });
+  assert.equal(await canViewRequest(await f.request.reload(), f.volunteer), true);
+  await capture(f.volunteer);
+  const walkin = await donorProfile(await account());
+  const actual = await createRequest(normalizeRequestInput(input(f.facility.id,1)), f.admin.id, key());
+  await fulfillRequest(actual.request.id, f.admin.id, { donorId: walkin.id, unitsProvided: 1, notes: secret, idempotencyKey: key() });
+  assert.equal(await canViewRequest(await actual.request.reload(), await User.findByPk(walkin.userId)), true);
+  assert.equal(await RequestAccess.count({ where: { requestId: actual.request.id, userId: walkin.userId } }), 0);
+});
+test('profile submission enforces real birth dates and exact age; matching preserves but excludes ages outside 18–65', async () => {
+  assert.equal(parseBirthDate('2008-02-30'), null);
+  assert.equal(donorAge('2008-10-04',new Date('2026-10-03T12:00:00Z')),17);
+  assert.equal(donorAge('1960-10-03',new Date('2026-10-03T12:00:00Z')),66);
+  const leapDate = new Date('2028-02-29T12:00:00Z'), leapBounds = donorAgeBounds(leapDate);
+  assert.equal(leapBounds.through.toISOString().slice(0,10),'2010-02-28');
+  assert.equal(leapBounds.after.toISOString().slice(0,10),'1962-02-28');
+  assert.equal(donorAge('2010-03-01',leapDate),17);
+  assert.ok(new Date('2010-03-01T00:00:00Z') > leapBounds.through);
+  assert.ok(new Date('1962-03-01T00:00:00Z') > leapBounds.after);
+  const f = await fixture(), ages = donorAgeBounds(), younger = new Date(ages.through); younger.setUTCDate(younger.getUTCDate()+1);
+  const candidate = await account();
+  const body = { ...f.donor.toJSON(), dateOfBirth: younger.toISOString().slice(0,10), weight:'60',height:'170',isAvailable:'on' };
+  const flashes = [], req = { session: { userId: candidate.id }, body, flash(type,message) { flashes.push(message); }, get() { return 'Synthetic workflow integration'; }, headers:{}, connection:{ remoteAddress:'127.0.0.1' } };
+  let destination;
+  const res = { redirect(path) { destination = path; } };
+  await updateDonorProfile(req,res);
+  assert.equal(destination,'/donor-profile'); assert.ok(flashes.some(message => message.includes('18 to 65')));
+  assert.equal(await Donor.count({ where:{userId:candidate.id} }),0); assert.equal(req.session.donorFormValues.dateOfBirth,body.dateOfBirth);
+  req.body.dateOfBirth = ages.through.toISOString().slice(0,10);
+  await updateDonorProfile(req,res); assert.equal(destination,'/view-donor-profile');
+  const eligible = await Donor.findOne({where:{userId:candidate.id}}); assert.equal(isDonorReady(eligible),true);
+  const tooYoung = await donorProfile(await account()), tooOld = await donorProfile(await account());
+  await tooYoung.update({dateOfBirth:younger}); await tooOld.update({dateOfBirth:ages.after});
+  await reviewRequest(f.request.id,f.admin.id,true);
+  const matches = await findNearestDonors(await f.request.reload(),1000);
+  assert.ok(matches.some(match => match.donor.id===eligible.id)); assert.ok(!matches.some(match=>[tooYoung.id,tooOld.id].includes(match.donor.id)));
+  assert.equal(await Donor.count({where:{id:[tooYoung.id,tooOld.id]}}),2);
+  assert.equal(isDonorReady({...f.donor.toJSON(),dateOfBirth:null}),false);
+});
+test('donor schedule, cancellation and appointment screens exclude patient names, contacts and staff free-text notes', async () => {
+  const f = await fixture(), privateNote = 'SYNTHETIC PRIVATE clinical appointment reason';
+  await reviewRequest(f.request.id,f.admin.id,true);
+  const { appointment } = await scheduleRequest(f.request.id,f.admin.id,{donorId:f.donor.id,scheduledDate:new Date(Date.now()+86400000),notes:privateNote,idempotencyKey:key()});
+  const assertRedacted = data => {
+    const serialized = JSON.stringify(data);
+    for (const text of [privateNote,f.request.patientName,f.request.contactPerson,f.request.contactNumber]) assert.ok(!serialized.includes(text),'Donor data must exclude '+text);
+  };
+  const donorSchedule = await EmailOutbox.findOne({where:{dedupeKey:'schedule:'+appointment.id+':1:donor'}});
+  assertRedacted(donorSchedule.payload); assert.equal(donorSchedule.payload.notes,'');
+  const ownerSchedule = await EmailOutbox.findOne({where:{dedupeKey:'schedule:'+appointment.id+':1:requester'}});
+  assert.equal(ownerSchedule.payload.notes,privateNote); assert.equal(ownerSchedule.payload.request.contactPerson,f.request.contactPerson);
+  let appointmentsDto, confirmationDto;
+  await donorAppointmentsPage({session:{userId:f.volunteer.id},query:{}},{render(view,data){assert.equal(view,'my-appointments');appointmentsDto=data.appointments;},status(code){assert.equal(code,200);return this;}});
+  assert.equal(appointmentsDto.length,1); assertRedacted(appointmentsDto);
+  await confirmSchedulePage({session:{userId:f.volunteer.id},params:{id:f.request.id,role:'donor'},query:{appointment:appointment.id,version:1}},{render(view,data){assert.equal(view,'schedule-confirmed');confirmationDto=data;},status(code){assert.equal(code,200);return this;}});
+  assertRedacted(confirmationDto);
+  await changeAppointment(appointment.id,f.admin.id,{version:1,reason:privateNote,scheduledDate:new Date(Date.now()+2*86400000),idempotencyKey:key()},'reschedule');
+  await changeAppointment(appointment.id,f.admin.id,{version:2,reason:privateNote,idempotencyKey:key()},'cancel');
+  assert.equal(await canViewRequest(await f.request.reload(),f.volunteer),false);
+  const cancelledAppointmentNotice = await Notification.findOne({where:{userId:f.volunteer.id,title:'Appointment cancelled'}});
+  assert.equal(cancelledAppointmentNotice.link,'/my-appointments');
+  const ownerCancellation = await Notification.findOne({where:{userId:f.owner.id,title:'Appointment cancelled'}});
+  assert.equal(ownerCancellation.link,`/view-blood-request/${f.request.id}`);
+  const ownerUpdate = await EmailOutbox.findOne({where:{recipient:f.owner.email,kind:'request-update'}});
+  assert.equal(ownerUpdate.payload.request.actionPath,`/view-blood-request/${f.request.id}`);
+  await scheduleRequest(f.request.id,f.admin.id,{donorId:f.donor.id,scheduledDate:new Date(Date.now()+86400000),notes:privateNote,idempotencyKey:key()});
+  await cancelRequest(f.request.id,f.owner.id,privateNote);
+  assert.equal(await canViewRequest(await f.request.reload(),f.volunteer),false);
+  const cancelledRequestNotice = await Notification.findOne({where:{userId:f.volunteer.id,title:'Request cancelled'}});
+  assert.equal(cancelledRequestNotice.link,'/my-appointments');
+  const coordinatorNotice = await Notification.findOne({where:{userId:f.admin.id,title:'Request cancelled'}});
+  assert.equal(coordinatorNotice.link,`/view-blood-request/${f.request.id}`);
+  const donorEmails = await EmailOutbox.findAll({where:{recipient:f.volunteer.email}});
+  const donorInbox = await Notification.findAll({where:{userId:f.volunteer.id}});
+  assert.ok(donorEmails.some(row=>row.kind==='request-update')); assert.ok(donorInbox.some(row=>row.title==='Appointment cancelled'));
+  for (const row of donorEmails) {
+    assertRedacted(row.payload);
+    if (row.kind==='request-update') assert.equal(row.payload.request.actionPath,'/my-appointments');
+  }
+  for (const row of donorInbox) assertRedacted({title:row.title,message:row.message,link:row.link});
+});
+test('SQL nearest matching orders before limiting and excludes occupied donors without loading the whole pool', async () => {
+  const f = await fixture(); await reviewRequest(f.request.id, f.admin.id, true);
+  await f.request.reload();
+  await f.request.update({ latitude: 13.411, longitude: 121.181 });
+  for (let i = 0; i < 12; i++) {
+    const far = await donorProfile(await account());
+    await far.update({ latitude: 13.9 + i * 0.001, longitude: 121.8 });
+  }
+  const near = await donorProfile(await account());
+  await near.update({ latitude: 13.412, longitude: 121.181 });
+  const matches = await findNearestDonors(f.request, 1);
+  assert.equal(matches.length, 1); assert.equal(matches[0].donor.id, near.id);
+  assert.ok(matches[0].distanceKm > 0 && matches[0].distanceKm < 1);
+  await scheduleRequest(f.request.id, f.admin.id, { donorId: near.id, scheduledDate: new Date(Date.now() + 86400000), idempotencyKey: key() });
+  const active = await createRequest(normalizeRequestInput({ ...input(f.facility.id), latitude: 13.411, longitude: 121.181 }), f.admin.id, key());
+  const alternatives = await findNearestDonors(active.request, 3);
+  assert.equal(alternatives.length, 3); assert.ok(!alternatives.some(match => match.donor.id === near.id));
+  assert.ok(alternatives.every(match => match.distanceKm !== null));
+});
+test('startup schema assertion checks actual columns even when the migration ledger says current', async () => {
+  await assertCurrentSchema();
+  const qi = sequelize.getQueryInterface(), describe = qi.describeTable;
+  qi.describeTable = async function(table, ...args) {
+    const columns = await describe.call(this,table,...args);
+    if (String(table).toLowerCase() === 'users') delete columns.authVersion;
+    return columns;
+  };
+  try {
+    await assert.rejects(assertCurrentSchema(), error => error.code === 'SCHEMA_MISMATCH' && error.missingSchemaObjects.includes('Users.authVersion'));
+  } finally { qi.describeTable = describe; }
+  await assertCurrentSchema();
+});
+test('scoped demo repair assigns only the exact synthetic hospital, preserves account data and is idempotently audited', async () => {
+  const admin = await User.create({...DEMO_ACCOUNT_DEFINITIONS[0],password:'integration-only-placeholder'});
+  const hospital = await User.create({...DEMO_ACCOUNT_DEFINITIONS[1],password:'integration-only-placeholder'});
+  await hospital.reload();
+  const before = hospital.toJSON();
+  assert.deepEqual(await inspectKnownDemoFacility(),{eligible:true,alreadyAssigned:false});
+  await hospital.update({hospitalName:'Synthetic unrelated facility'});
+  await assert.rejects(repairKnownDemoFacility(),/do not match/);
+  assert.equal(await Facility.count({where:{hospitalName:DEMO_FACILITY_NAME}}),0);
+  await hospital.update({hospitalName:DEMO_FACILITY_NAME});
+  const first = await repairKnownDemoFacility(); assert.deepEqual(first,{changed:true,facilityAssigned:true});
+  await hospital.reload();
+  for (const field of ['password','firstName','lastName','phone','address','dateOfBirth','gender','email','isActive','emailVerified','createdAt']) assert.deepEqual(hospital[field],before[field]);
+  assert.equal(hospital.authVersion,before.authVersion+1);
+  const facility = await Facility.findByPk(hospital.facilityId); assert.equal(facility.hospitalName,DEMO_FACILITY_NAME); assert.equal(facility.verifiedBy,admin.id);
+  const auditWhere = {userId:hospital.id,adminId:admin.id,action:'USER_UPDATE'};
+  const audit = await AuditLog.findOne({where:auditWhere}); assert.equal(audit.metadata.source,'local-demo-facility-repair'); assert.equal(audit.metadata.synthetic,true);
+  assert.deepEqual(await repairKnownDemoFacility(),{changed:false,facilityAssigned:true});
+  assert.equal(await AuditLog.count({where:auditWhere}),1); assert.equal(await Facility.count({where:{hospitalName:DEMO_FACILITY_NAME}}),1);
+  assert.deepEqual(await inspectKnownDemoFacility(),{eligible:true,alreadyAssigned:true});
+  await assert.rejects(repairKnownDemoFacility({env:{...process.env,NODE_ENV:'production'}}),/local nonproduction/);
+});
+after(async () => { await sequelize.close(); });

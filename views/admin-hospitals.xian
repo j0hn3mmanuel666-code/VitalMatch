@@ -1,36 +1,38 @@
 <!-- Admin Hospitals Content -->
-<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
-  <div class="container mx-auto px-4">
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="vm-page-container container mx-auto px-4">
+    {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/admin/hospitals">Retry</a></div>{{/if}}
 
     <!-- Header -->
-    <div class="mb-8">
+    <div class="vm-page-heading mb-8">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Hospital Statistics</h1>
       <p class="text-gray-600 dark:text-gray-400">View hospital blood request statistics and rankings</p>
     </div>
+      {{> record-search label="Search facilities" placeholder="Facility name or ID"}}
 
     <!-- Hospitals Table -->
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none overflow-hidden">
       {{#if hospitals.length}}
-      <div class="overflow-x-auto custom-scrollbar">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+      <div class="vm-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable data table">
+        <table data-search-mode="server" class="vm-table min-w-full divide-y divide-gray-200 dark:divide-gray-800">
           <thead class="bg-gray-50 dark:bg-[#27272a]">
             <tr>
-              <th
+              <th scope="col"
                 class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Rank</th>
-              <th
+              <th scope="col"
                 class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Hospital Name</th>
-              <th
+              <th scope="col"
                 class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Location</th>
-              <th
+              <th scope="col"
                 class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Total Requests</th>
-              <th
+              <th scope="col"
                 class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Active Requests</th>
-              <th
+              <th scope="col"
                 class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Fulfilled</th>
             </tr>
@@ -40,7 +42,7 @@
             <tr class="hover:bg-gray-50 dark:bg-[#27272a]">
               <td class="px-4 py-3 whitespace-nowrap">
                 <span
-                  class="{{#if (eq @index 0)}}bg-yellow-500{{else if (eq @index 1)}}bg-gray-400{{else if (eq @index 2)}}bg-orange-600{{else}}bg-blue-600{{/if}} text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                  class="vm-status {{#if (eq @index 0)}}bg-yellow-500{{else if (eq @index 1)}}bg-gray-400{{else if (eq @index 2)}}bg-orange-600{{else}}bg-blue-600{{/if}} text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
                   {{add @index 1}}
                 </span>
               </td>
@@ -57,7 +59,7 @@
         </table>
       </div>
       {{else}}
-      <div class="text-center py-12">
+      <div class="vm-empty-state text-center py-12">
         <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -68,21 +70,23 @@
       {{/if}}
     </div>
 
+    {{> pagination label="Facility pages"}}
     <!-- Hospital Accounts -->
     <div class="mt-8 mb-8">
       <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Hospital Accounts</h2>
       <p class="text-gray-600 dark:text-gray-400 mb-4">Verify new registrations or suspend accounts. Suspended hospitals cannot log in.</p>
     </div>
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
+    {{> record-search inputId="accountSearch" searchName="accountSearch" search=accountSearch label="Search hospital accounts" placeholder="Account name, facility, email, contact or ID"}}
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none overflow-hidden">
       {{#if hospitalUsers.length}}
-      <div class="overflow-x-auto custom-scrollbar">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+      <div class="vm-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable data table">
+        <table data-search-mode="server" class="vm-table min-w-full divide-y divide-gray-200 dark:divide-gray-800">
           <thead class="bg-gray-50 dark:bg-[#27272a]">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hospital</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hospital</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-200 dark:divide-gray-800">
@@ -93,19 +97,19 @@
               <td class="px-4 py-3 whitespace-nowrap text-sm">
                 {{#if isActive}}
                 {{#if emailVerified}}
-                <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">Verified</span>
+                <span class="vm-status vm-status--success bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">Verified</span>
                 {{else}}
-                <span class="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-semibold">Email unverified</span>
+                <span class="vm-status vm-status--warning bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-semibold">Email unverified</span>
                 {{/if}}
                 {{else}}
-                <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
+                <span class="vm-status vm-status--warning bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-semibold">Pending</span>
                 {{/if}}
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
                 {{#if isActive}}
-                <button onclick="setHospitalStatus({{id}}, 'suspend')" class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-red-200 transition">Suspend</button>
+                <button onclick="setHospitalStatus({{id}}, 'suspend')" class="vm-button vm-button--danger vm-button--small bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-red-200 transition">Suspend</button>
                 {{else}}
-                <button onclick="setHospitalStatus({{id}}, 'verify')" class="bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-green-700 transition">Verify</button>
+                <button onclick="setHospitalStatus({{id}}, 'verify')" class="vm-button vm-button--small bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-semibold hover:bg-green-700 transition vm-button--success">Verify</button>
                 {{/if}}
               </td>
             </tr>
@@ -114,14 +118,15 @@
         </table>
       </div>
       {{else}}
-      <div class="text-center py-12">
+      <div class="vm-empty-state text-center py-12">
         <p class="text-gray-500 dark:text-gray-400 text-lg">No hospital accounts registered yet</p>
       </div>
       {{/if}}
     </div>
 
   </div>
-</div>
+  {{> pagination pagination=accountPagination label="Hospital account pages"}}
+</main>
 
 <script>
   async function setHospitalStatus(id, action) {
@@ -130,6 +135,7 @@
       title: verb.charAt(0).toUpperCase() + verb.slice(1) + ' Hospital?',
       message: 'This hospital account will be ' + (action === 'verify' ? 'verified and granted full access.' : 'suspended and unable to log in.'),
       button: verb.charAt(0).toUpperCase() + verb.slice(1),
+      tone: action === 'verify' ? 'success' : 'danger',
       buttonClass: action === 'verify' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700',
       icon: action === 'verify' ? 'success' : 'warning'
     });

@@ -1,16 +1,18 @@
 <!-- Admin Calls Content -->
-<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
-  <div class="container mx-auto px-4">
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="vm-page-container container mx-auto px-4">
+    {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/admin/calls">Retry</a></div>{{/if}}
     
     <!-- Header -->
-    <div class="mb-8">
+    <div class="vm-page-heading mb-8">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Calls for Blood Donation</h1>
-      <p class="text-gray-600 dark:text-gray-400">Review public pledges and calls for donations submitted from the landing page</p>
+      <p class="text-gray-600 dark:text-gray-400">Review preliminary, self-reported donor enquiries. A lead is not a verified donor profile or a completed pledge.</p>
     </div>
+      {{> record-search label="Search donor enquiries" placeholder="Name, blood type, location, contact or notes"}}
     
     <!-- Filter Tabs -->
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none mb-6">
-      <div class="flex border-b">
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none mb-6">
+      <div class="vm-tabs flex border-b">
         <a href="/admin/calls" class="px-6 py-4 font-semibold {{#unless filter}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/unless}}">
           All
         </a>
@@ -20,29 +22,30 @@
         <a href="/admin/calls?filter=contacted" class="px-6 py-4 font-semibold {{#if (eq filter 'contacted')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
           Contacted
         </a>
+        <a href="/admin/calls?filter=converted" class="px-6 py-4 font-semibold">Converted</a><a href="/admin/calls?filter=closed" class="px-6 py-4 font-semibold">Closed</a>
       </div>
     </div>
     
     <!-- Calls Table -->
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-x-auto">
+    <div class="vm-panel vm-table-scroll bg-white dark:bg-[#18181b] rounded-md dark:shadow-none overflow-x-auto" tabindex="0" role="region" aria-label="Donation calls">
       {{#if calls.length}}
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+        <table data-search-mode="server" class="vm-table min-w-full divide-y divide-gray-200 dark:divide-gray-800">
           <thead class="bg-gray-50 dark:bg-[#27272a]">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Patient / Organizer</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blood Type</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Details</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Potential donor</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blood Type</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Details</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-200 dark:divide-gray-800">
             {{#each calls}}
               <tr class="hover:bg-gray-50 dark:bg-[#27272a]">
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  {{createdAt}}
+                  {{formatDate createdAt}}
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 font-medium">
                   {{fullName}}<br>
@@ -51,7 +54,7 @@
                 <td class="px-4 py-3 whitespace-nowrap">
                   <span class="text-lg font-bold text-red-600">{{bloodType}}</span>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 max-w-xs truncate">
+                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
                   Age: {{age}} | Wt: {{weight}}kg | Sex: {{gender}} | Tattoo: {{hasTattoo}}<br>
                   <span class="text-xs text-gray-500 dark:text-gray-400">{{message}}</span>
                 </td>
@@ -59,26 +62,26 @@
                   {{contactNumber}}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap">
-                  {{#if (eq status "Pending")}}
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-                  {{else}}
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">{{status}}</span>
-                  {{/if}}
-                </td>
+                  {{> status-badge value=status}}
+</td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                  <select onchange="updateStatus('{{id}}', this.value)" class="text-sm border-gray-300 rounded-md shadow-sm dark:shadow-none focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50">
+                  <select aria-label="Status for {{fullName}}" id="lead-status-{{id}}" class="text-sm border-gray-300 rounded-md shadow-sm dark:shadow-none focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50">
                     <option value="Pending" {{#if (eq status "Pending")}}selected{{/if}}>Pending</option>
-                    <option value="Reviewed" {{#if (eq status "Reviewed")}}selected{{/if}}>Reviewed</option>
+                    <option value="Converted" {{#if (eq status "Converted")}}selected{{/if}}>Converted to account</option>
                     <option value="Contacted" {{#if (eq status "Contacted")}}selected{{/if}}>Contacted</option>
-                    <option value="Resolved" {{#if (eq status "Resolved")}}selected{{/if}}>Resolved</option>
+                    <option value="Closed" {{#if (eq status "Closed")}}selected{{/if}}>Closed</option>
                   </select>
+                  <label class="block text-xs mt-2" for="lead-account-{{id}}">Linked donor user ID</label><input id="lead-account-{{id}}" type="number" min="1" step="1" value="{{convertedUserId}}"><p class="vm-muted text-xs mt-1 whitespace-normal">Create/review the donor account first, then enter its user ID to link this lead.</p>{{#if convertedAt}}<p class="vm-muted text-xs">Linked {{formatDate convertedAt}}</p>{{/if}}
+                  <label class="block text-xs mt-2" for="lead-notes-{{id}}">Contact / handoff notes</label><textarea id="lead-notes-{{id}}" rows="2" maxlength="1000">{{contactNotes}}</textarea>
+                  <button type="button" class="vm-button vm-button--small mt-2" onclick="updateStatus('{{id}}', this)">Save follow-up</button><a class="vm-button vm-button--small mt-2" href="/admin/users">Open account register</a>
+                  <p id="lead-error-{{id}}" class="vm-field-error" role="alert"></p>
                 </td>
               </tr>
             {{/each}}
           </tbody>
         </table>
       {{else}}
-        <div class="text-center py-12">
+        <div class="vm-empty-state text-center py-12">
           <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
@@ -89,24 +92,31 @@
     </div>
     
   </div>
-</div>
+  {{> pagination}}
+</main>
 
 <script>
-async function updateStatus(id, status) {
+async function updateStatus(id, button) {
+  const status = document.getElementById("lead-status-" + id).value;
+  const contactNotes = document.getElementById("lead-notes-" + id).value;
+  const account = document.getElementById("lead-account-" + id), convertedUserId = account.value ? Number(account.value) : undefined;
+  if (status === 'Converted' && (!Number.isSafeInteger(convertedUserId) || convertedUserId <= 0)) { document.getElementById('lead-error-' + id).textContent = 'Enter the reviewed donor account user ID before linking this lead.'; account.focus(); return; }
+  button.disabled = true; button.setAttribute('aria-busy', 'true'); button.textContent = 'Saving follow-up...';
+  document.getElementById('lead-error-' + id).textContent = '';
   try {
     const res = await fetch('/admin/calls/update-status', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status })
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.getCsrfToken() },
+      body: JSON.stringify({ id, status, contactNotes, convertedUserId })
     });
     const data = await res.json();
-    if (data.success) {
+    if (res.ok && data.success) {
       window.location.reload();
     } else {
-      alert('Failed to update status');
+      document.getElementById("lead-error-" + id).textContent = data.message || "Follow-up could not be saved. Please retry.";
     }
   } catch (err) {
-    alert('Error connecting to server');
-  }
+    document.getElementById("lead-error-" + id).textContent = "Follow-up could not be saved. Your notes are still here; retry.";
+  } finally { button.disabled = false; button.removeAttribute('aria-busy'); button.textContent = 'Save follow-up'; }
 }
 </script>

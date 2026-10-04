@@ -1,4 +1,5 @@
 import { Notification } from "../models/notificationModel.js";
+import { paginationFor, paginationLinks } from "../services/pagination.js";
 
 // Fetch notifications for the logged-in user
 export const getNotifications = async (req, res) => {
@@ -8,10 +9,12 @@ export const getNotifications = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
+    const total = await Notification.count({ where: { userId } });
+    const pagination = paginationLinks(paginationFor(req.query, total), req.path, req.query);
     const notifications = await Notification.findAll({
       where: { userId },
       order: [['createdAt', 'DESC']],
-      limit: 50 // Limit to last 50 notifications
+      limit: pagination.limit, offset: pagination.offset
     });
 
     // Count unread
@@ -22,10 +25,10 @@ export const getNotifications = async (req, res) => {
     res.json({
       success: true,
       notifications,
-      unreadCount
+      unreadCount, pagination
     });
   } catch (error) {
-    console.error("Error fetching notifications:", error);
+    console.error("Error fetching notifications:", error.name);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
@@ -40,14 +43,15 @@ export const markAsRead = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    await Notification.update(
+    const [affected] = await Notification.update(
       { isRead: true },
       { where: { id, userId } }
     );
+    if (!affected) return res.status(404).json({ success: false, message: "Notification not found" });
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Error marking notification as read:", error);
+    console.error("Error marking notification as read:", error.name);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
@@ -68,7 +72,7 @@ export const markAllAsRead = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Error marking all notifications as read:", error);
+    console.error("Error marking all notifications as read:", error.name);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
@@ -86,7 +90,7 @@ export const clearAll = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Error clearing notifications:", error);
+    console.error("Error clearing notifications:", error.name);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
@@ -102,7 +106,7 @@ export const createNotification = async (userId, title, message, type = "info", 
       link
     });
   } catch (error) {
-    console.error("Failed to create notification:", error);
+    console.error("Failed to create notification:", error.name);
   }
 };
 
@@ -115,10 +119,12 @@ export const notificationsPage = async (req, res) => {
       return res.redirect("/login");
     }
 
+    const total = await Notification.count({ where: { userId } });
+    const pagination = paginationLinks(paginationFor(req.query, total), req.path, req.query);
     const notifications = await Notification.findAll({
       where: { userId },
       order: [['createdAt', 'DESC']],
-      limit: 100
+      limit: pagination.limit, offset: pagination.offset
     });
 
     const mappedNotifications = notifications.map(n => {
@@ -133,11 +139,10 @@ export const notificationsPage = async (req, res) => {
     res.render("notifications", {
       title: "Notifications - VitalMatch",
       user: req.session.user,
-      notifications: mappedNotifications
+      notifications: mappedNotifications, pagination
     });
   } catch (error) {
-    console.error("Error rendering notifications page:", error);
-    req.flash("error_msg", "Error loading notifications");
-    res.redirect("/dashboard");
+    console.error("Notifications could not be loaded:", error.name);
+    res.status(503).render('notifications',{title:'Notifications - VitalMatch',user:req.session.user,notifications:[],error:'Notifications could not be loaded. Please retry.',pagination:paginationLinks(paginationFor({},0),'/notifications',{})});
   }
 };

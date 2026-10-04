@@ -25,12 +25,14 @@
     */
     
 import express from "express";
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { canonicalRole } from '../services/accountPolicy.js';
 import { homePage } from "../controllers/homeController.js";
 import { isAuthenticated, isAdmin, isHospital } from "../middleware/adminAuth.js";
 
 // Import security and validation middleware
-import { authLimiter, apiLimiter, uploadLimiter, mutationLimiter, csrfProtection } from "../middleware/security.js";
-import { apiCache, dbOptimization } from "../middleware/performance.js";
+import { authLimiter, apiLimiter, uploadLimiter, mutationLimiter } from "../middleware/security.js";
+
 import { 
   validateRegistration, 
   validateLogin, 
@@ -42,6 +44,12 @@ import {
 } from "../middleware/validation.js";
 
 const router = express.Router();
+// Wrap every registered handler, including middleware, so rejected async work
+// becomes a controlled response under Express 4 instead of a process crash.
+for (const method of ['get', 'post', 'put', 'patch', 'delete']) {
+  const register = router[method].bind(router);
+  router[method] = (routePath, ...handlers) => register(routePath, ...handlers.map(asyncHandler));
+}
 
 // Home page (public)
 router.get("/", homePage);
@@ -51,7 +59,7 @@ router.get("/", homePage);
 router.use([
   "/logout",
   "/requests/:id/pledge", "/requests/:id/pledge/withdraw",
-  "/requests/:id/escalate", "/requests/:id/clear-emergency",
+  "/requests/:id/escalate", "/requests/:id/clear-emergency", "/requests/:id/correct",
   "/simple-blood-request", "/new-blood-request", "/blood-request", "/request-blood",
   "/confirm-schedule/:id/:role", "/schedule-confirm/:token",
   "/appointments/:id/decline",
@@ -61,9 +69,10 @@ router.use([
   "/hospital/requests/:id/approve", "/hospital/requests/:id/decline",
   "/admin/new-blood-request", "/admin/hospitals/:id/:action",
   "/admin/fulfill-request/:id", "/admin/delete-request/:id",
+  "/admin/appointments/:id/reschedule", "/admin/appointments/:id/cancel",
   "/admin/users", "/admin/users/:id", "/admin/users/bulk",
   "/admin/settings/general", "/admin/settings/email", "/admin/settings/notifications",
-  "/admin/settings/security", "/admin/settings/test-email",
+  "/admin/settings/security", "/admin/settings/test-email", "/admin/settings/retry-email", "/admin/settings/retry-coordination", "/admin/requests/:id/review",
   "/messages/send", "/api/calls/:callId/seen", "/api/blockchain/mine",
   "/submit-call-for-donation", "/admin/calls/update-status",
   "/api/admin/public-content", "/api/admin/public-content/:section"
@@ -124,13 +133,15 @@ router.get("/verify-email", verifyEmail);
 router.post("/resend-verification", authLimiter, resendVerification);
 
 // Blood Request Routes (Protected)
-import { requestBloodPage, newRequestBloodPage, simpleRequestBloodPage, viewBloodRequestPage, submitBloodRequest, pledgeToDonate, withdrawPledge, escalateRequest, clearEmergency } from "../controllers/bloodRequestController.js";
+import { requestBloodPage, newRequestBloodPage, simpleRequestBloodPage, viewBloodRequestPage, submitBloodRequest, pledgeToDonate, withdrawPledge, escalateRequest, clearEmergency, editBloodRequestPage, correctBloodRequest } from "../controllers/bloodRequestController.js";
 
 router.get("/simple-blood-request", isAuthenticated, simpleRequestBloodPage);
 router.get("/new-blood-request", isAuthenticated, newRequestBloodPage);
 router.get("/blood-request", isAuthenticated, requestBloodPage);
 router.get("/request-blood", isAuthenticated, requestBloodPage);
 router.get("/view-blood-request/:id", isAuthenticated, viewBloodRequestPage);
+router.get("/requests/:id/edit", isAuthenticated, editBloodRequestPage);
+router.post("/requests/:id/correct", isAuthenticated, validateBloodRequest, correctBloodRequest);
 router.post("/requests/:id/pledge", isAuthenticated, pledgeToDonate);
 router.post("/requests/:id/pledge/withdraw", isAuthenticated, withdrawPledge);
 router.post("/requests/:id/escalate", isAuthenticated, escalateRequest);
@@ -178,7 +189,7 @@ router.post("/settings/notifications", isAuthenticated, updateNotificationPrefs)
 router.post("/settings/password", isAuthenticated, changePassword);
 
 // Admin Routes (Protected - Admin Only)
-import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsPage, adminReportsPage, adminBlockchainPage, adminNewBloodRequestPage, createBloodRequest, fulfillRequest, deleteRequest, getUserManagementPage, getUserList, getUserDetails, createUser, updateUser, deleteUser, bulkUpdateUsers, exportUsers, adminAppointmentsPage, setHospitalStatus, exportReports } from "../controllers/adminController.js";
+import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsPage, adminReportsPage, adminBlockchainPage, adminNewBloodRequestPage, createBloodRequest, fulfillRequest, deleteRequest, getUserManagementPage, getUserList, getUserDetails, createUser, updateUser, deleteUser, bulkUpdateUsers, exportUsers, adminAppointmentsPage, setHospitalStatus, exportReports, rescheduleAppointment, cancelAppointment, reviewBloodRequest } from "../controllers/adminController.js";
 
 router.get("/hospital/dashboard", isAuthenticated, isHospital, hospitalDashboardPage);
 
@@ -191,6 +202,9 @@ router.post("/hospital/requests/:id/decline", isAuthenticated, isHospital, decli
 router.get("/admin/dashboard", isAdmin, adminDashboardPage);
 router.get("/admin/requests", isAdmin, adminRequestsPage);
 router.get("/admin/appointments", isAdmin, adminAppointmentsPage);
+router.post("/admin/appointments/:id/reschedule", isAdmin, rescheduleAppointment);
+router.post("/admin/appointments/:id/cancel", isAdmin, cancelAppointment);
+router.post("/admin/requests/:id/review", isAdmin, reviewBloodRequest);
 router.get("/admin/new-blood-request", isAdmin, adminNewBloodRequestPage);
 router.post("/admin/new-blood-request", isAdmin, validateBloodRequest, createBloodRequest);
 router.get("/admin/donors", isAdmin, adminDonorsPage);
@@ -204,16 +218,16 @@ router.delete("/admin/delete-request/:id", isAdmin, deleteRequest);
 
 // User Management Routes (Protected - Admin Only) with API optimizations
 router.get("/admin/users", isAdmin, getUserManagementPage);
-router.get("/admin/users/api", isAdmin, apiLimiter, dbOptimization, getUserList);
+router.get("/admin/users/api", isAdmin, getUserList);
+router.get("/admin/users/export", isAdmin, exportUsers);
 router.get("/admin/users/:id", isAdmin, apiLimiter, getUserDetails);
 router.post("/admin/users", isAdmin, validateAdminUserCreation, createUser);
-router.put("/admin/users/:id", isAdmin, validateApiParams(['firstName', 'lastName', 'email', 'role'], ['phone', 'bloodType', 'isActive', 'id', 'address', 'dateOfBirth', 'gender', 'hospitalName']), updateUser);
+router.put("/admin/users/:id", isAdmin, validateApiParams(['firstName', 'lastName', 'email', 'role'], ['phone', 'bloodType', 'isActive', 'id', 'address', 'dateOfBirth', 'gender', 'hospitalName', 'facilityId', 'emailVerified']), updateUser);
 router.delete("/admin/users/:id", isAdmin, deleteUser);
 router.post("/admin/users/bulk", isAdmin, bulkUpdateUsers);
-router.get("/admin/users/export", isAdmin, exportUsers);
 
 // Settings Routes (Protected - Admin Only)
-import { settingsPage, saveGeneralSettings, saveEmailSettings, saveNotificationSettings, saveSecuritySettings, testEmailSettings, getSettings } from "../controllers/settingsController.js";
+import { settingsPage, saveGeneralSettings, saveEmailSettings, saveNotificationSettings, saveSecuritySettings, testEmailSettings, getSettings, retryEmailOutbox, retryCoordinationJobs } from "../controllers/settingsController.js";
 
 router.get("/admin/settings", isAdmin, settingsPage);
 router.post("/admin/settings/general", isAdmin, saveGeneralSettings);
@@ -221,40 +235,29 @@ router.post("/admin/settings/email", isAdmin, saveEmailSettings);
 router.post("/admin/settings/notifications", isAdmin, saveNotificationSettings);
 router.post("/admin/settings/security", isAdmin, saveSecuritySettings);
 router.post("/admin/settings/test-email", isAdmin, testEmailSettings);
+router.post("/admin/settings/retry-email", isAdmin, retryEmailOutbox);
+router.post("/admin/settings/retry-coordination", isAdmin, retryCoordinationJobs);
 router.get("/api/admin/settings", isAdmin, getSettings);
 
 // Message Routes (Protected)
-import { messagesPage, sendMessage, contactDonor, contactAdmin, uploadVoiceMessage, sendVoiceMessage } from "../controllers/messageController.js";
+import { messagesPage, sendMessage, contactDonor, contactAdmin, uploadVoiceMessage, sendVoiceMessage, serveVoiceMessage } from "../controllers/messageController.js";
 
 router.get("/messages", isAuthenticated, messagesPage);
 router.get("/messages/admin", isAuthenticated, isHospital, mutationLimiter, contactAdmin);
 router.post("/messages/send", isAuthenticated, validateApiParams(['recipientId', 'message']), sendMessage);
-router.post("/messages/send-voice", isAuthenticated, uploadLimiter, uploadVoiceMessage, validateFileUpload(['audio/wav', 'audio/mp3', 'audio/ogg'], 5 * 1024 * 1024), sendVoiceMessage);
+router.post("/messages/send-voice", isAuthenticated, uploadLimiter, uploadVoiceMessage, validateFileUpload(['audio/wav', 'audio/webm', 'audio/ogg'], 5 * 1024 * 1024), sendVoiceMessage);
+router.get('/messages/voice/:id', isAuthenticated, serveVoiceMessage);
 router.get("/contact-donor/:requestId/:donorUserId", isAdmin, contactDonor);
+router.post("/contact-donor/:requestId/:donorUserId", isAdmin, mutationLimiter, contactDonor);
 
 // Call Routes (Protected) with API optimizations
-import { getCallHistory, getConversationCallHistory, markCallAsSeen, getCallAnalytics } from "../controllers/callController.js";
+import { getCallHistory, getConversationCallHistory, markCallAsSeen, getCallAnalytics, getCallConfiguration } from "../controllers/callController.js";
+router.get("/api/calls/config", isAuthenticated, getCallConfiguration);
 
-router.get("/api/calls/history", isAuthenticated, apiLimiter, apiCache(60000), getCallHistory);
-router.get("/api/calls/history/:conversationId", isAuthenticated, apiLimiter, apiCache(60000), getConversationCallHistory);
+router.get("/api/calls/history", isAuthenticated, getCallHistory);
+router.get("/api/calls/history/:conversationId", isAuthenticated, getConversationCallHistory);
 router.post("/api/calls/:callId/seen", isAuthenticated, markCallAsSeen);
-router.get("/api/calls/analytics", isAdmin, apiLimiter, apiCache(300000), getCallAnalytics);
-
-// API Routes with enhanced security and performance
-router.get("/api/donors/search", isAuthenticated, apiLimiter, apiCache(300000), validateApiParams([], ['bloodType', 'location', 'availability']), (req, res) => {
-  // Donor search API endpoint
-  res.json({ message: "Donor search endpoint - to be implemented" });
-});
-
-router.get("/api/requests/urgent", isAuthenticated, apiLimiter, apiCache(60000), (req, res) => {
-  // Urgent requests API endpoint
-  res.json({ message: "Urgent requests endpoint - to be implemented" });
-});
-
-router.get("/api/statistics/dashboard", isAuthenticated, apiLimiter, apiCache(300000), (req, res) => {
-  // Dashboard statistics API endpoint
-  res.json({ message: "Dashboard statistics endpoint - to be implemented" });
-});
+router.get("/api/calls/analytics", isAdmin, getCallAnalytics);
 
 // Blockchain API Routes
 import { vitalMatchBlockchain } from "../services/blockchainService.js";
@@ -279,7 +282,7 @@ router.get("/api/blockchain/donor/:donorId", isAuthenticated, (req, res) => {
     const donorId = req.params.donorId;
     
     // Check if user can access this donor's data (admin or own data)
-    if (req.session.userRole !== 'admin' && req.session.userId != donorId) {
+    if (canonicalRole(req.authAccount?.role) !== 'admin' && req.session.userId != donorId) {
       return res.status(403).json({
         success: false,
         error: "Access denied"
@@ -299,7 +302,7 @@ router.get("/api/blockchain/donor/:donorId", isAuthenticated, (req, res) => {
   }
 });
 
-router.get("/api/blockchain/request/:requestId", isAuthenticated, (req, res) => {
+router.get("/api/blockchain/request/:requestId", isAdmin, (req, res) => {
   try {
     const requestId = req.params.requestId;
     const chain = vitalMatchBlockchain.getRequestChain(requestId);
@@ -316,9 +319,9 @@ router.get("/api/blockchain/request/:requestId", isAuthenticated, (req, res) => 
   }
 });
 
-router.post("/api/blockchain/mine", isAdmin, (req, res) => {
+router.post("/api/blockchain/mine", isAdmin, async (req, res) => {
   try {
-    const result = vitalMatchBlockchain.minePendingTransactions();
+    const result = await vitalMatchBlockchain.minePendingTransactions();
     
     if (result) {
       res.json({
@@ -357,7 +360,7 @@ router.get("/api/blockchain/verify", isAuthenticated, (req, res) => {
 });
 
 // Get recent blockchain activity
-router.get("/api/blockchain/recent", isAuthenticated, (req, res) => {
+router.get("/api/blockchain/recent", isAdmin, (req, res) => {
   try {
     const chain = vitalMatchBlockchain.chain;
     const recentBlocks = chain.slice(-5).reverse(); // Get last 5 blocks, most recent first
@@ -397,8 +400,8 @@ import {
 import { imageUpload, uploadImageHandler } from "../controllers/uploadController.js";
 
 // Public API routes (anyone can read)
-router.get("/api/public-content", apiLimiter, getAllPublicContent);
-router.get("/api/public-content/:section", apiLimiter, getPublicContentBySection);
+router.get("/api/public-content", getAllPublicContent);
+router.get("/api/public-content/:section", getPublicContentBySection);
 
 // Admin CMS management routes (admin only)
 router.get("/admin/cms", isAdmin, adminPublicContentPage);

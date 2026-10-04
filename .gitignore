@@ -3,6 +3,29 @@ node_modules/
 
 # Secrets - NEVER commit
 .env
+.env.*
+!.env.example
+.local/
+.impeccable/
+impeccable/
+.agents/
+.codex/
+*.sql
+*.sql.gz
+*.pem
+*.key
+*.p12
+*.pfx
+playwright-report/
+test-results/
+.local/demo-accounts.json
+.local/settings.json
+.local/backups/
+.local/test-results/
+private/
+blockchain-pending.json
+blockchain-state.json
+blockchain*.corrupt-*
 
 # Logs
 *.log
@@ -12,7 +35,7 @@ xian.log
 # User uploads (auto-recreated by multer at runtime)
 public/uploads/
 
-# Blockchain ledger (runtime data, rebuilt from genesis on fresh installs)
+# Historical ledger archives - preserve and back up runtime files
 blockchain.json
 
 # OS / editor

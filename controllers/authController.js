@@ -25,15 +25,27 @@ SOFTWARE.
 */
 
 import bcrypt from "bcrypt";
-import { User, sequelize } from "../models/userModel.js";
+import { User } from "../models/userModel.js";
 import { BloodRequest } from "../models/bloodRequestModel.js";
 import { Donor } from "../models/donorModel.js";
 import { PasswordReset } from "../models/passwordResetModel.js";
+import { Fulfillment } from '../models/workflowEventModel.js';
+import { nextCoordinationDate, isDonorReady } from '../services/coordinationPolicy.js';
+import { canonicalRole, isHospitalAccount } from '../services/accountPolicy.js';
 import { emailService } from "../services/emailService.js";
-import { validatePassword, getBcryptRounds, hashToken } from "../middleware/validation.js";
+import { validatePassword, validateEmail, getBcryptRounds, hashToken, passwordPolicyMessage } from "../middleware/validation.js";
 import { Op } from "sequelize";
-await sequelize.sync();
-
+import { AuditService } from '../services/auditService.js';
+import { retryTransaction } from '../services/transactionService.js';
+const publicAuditContext = (req, transaction, source, authorization = 'unauthenticated') => ({ transaction, actorRole: 'unverified', source, ipAddress: req.ip || req.socket?.remoteAddress, userAgent: req.get?.('User-Agent'), metadata: { actorAuthenticated: false, authorization } });
+const refreshVerification = (id, token, req, source) => retryTransaction(async transaction => {
+  const current = await User.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+  if (!current || current.emailVerified) return null;
+  await current.update({ emailVerificationToken: hashToken(token), emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) }, { transaction });
+  await AuditService.logAction(current.id, 'EMAIL_VERIFICATION_REQUEST', 'Users', current.id, null, null, publicAuditContext(req, transaction, source));
+  return current;
+});
+const invalidCredentialHash = bcrypt.hash('Invalid credential timing comparison', getBcryptRounds());
 export const loginPage = (req, res) => res.render("login", { title: "Login" });
 export const registerPage = (req, res) => res.render("register", { title: "Register" });
 export const forgotPasswordPage = (req, res) => res.render("forgotpassword", { title: "Forgot Password" });
@@ -79,31 +91,42 @@ const buildDashboardData = async (userId) => {
   activities.sort((a, b) => new Date(b.date) - new Date(a.date));
   const recentActivities = activities.slice(0, 5);
 
-  const userProfile = await User.findByPk(userId);
+  const userProfile = await User.findByPk(userId, { attributes: ['id', 'firstName', 'lastName', 'role', 'email', 'hospitalName', 'facilityId'] });
   const donorProfile = await Donor.findOne({ where: { userId } });
+  const ownRequests = await BloodRequest.findAll({ where: { userId }, attributes: ['id', 'status', 'hospitalStatus'] });
+  const requesterStats = {
+    totalRequests: ownRequests.length,
+    pendingRequests: ownRequests.filter(request => request.status === 'pending').length,
+    activeRequests: ownRequests.filter(request => ['active', 'scheduled'].includes(request.status)).length
+  };
+  let pendingReviewCount = 0;
 
   let hospitalStats = null;
-  if (userProfile && userProfile.role === 'hospital') {
-    // Facility view: own submissions plus requests this facility approved
+  if (isHospitalAccount(userProfile)) {
+    // Facility membership comes from the administrator-managed stable ID.
     const allRequests = await BloodRequest.findAll({
-      where: { [Op.or]: [{ userId }, { hospitalId: userId }] }
+      where: userProfile.facilityId ? { facilityId: userProfile.facilityId } : { userId },
+      attributes: ['id', 'status', 'hospitalStatus', 'unitsRequired', 'unitsFulfilled']
     });
     const totalCount = allRequests.length;
     const activeCount = allRequests.filter(r => r.status === 'active').length;
     const fulfilledCount = allRequests.filter(r => r.status === 'fulfilled').length;
     const totalUnits = allRequests.reduce((sum, r) => sum + (r.unitsRequired || 0), 0);
+    pendingReviewCount = userProfile.facilityId ? allRequests.filter(r => r.status === 'pending' && r.hospitalStatus === 'pending').length : 0;
 
     hospitalStats = {
       totalRequests: totalCount,
       activeRequests: activeCount,
       fulfilledRequests: fulfilledCount,
-      totalUnitsRequested: totalUnits
+      totalUnitsRequested: totalUnits,
+      unitsCollected: allRequests.reduce((sum, request) => sum + Number(request.unitsFulfilled || 0), 0)
     };
   }
 
   // Real urgent requests for the emergency alerts modal (live escalations first)
   const urgentRequests = await BloodRequest.findAll({
-    where: { status: "active", urgency: { [Op.in]: ["critical", "urgent"] } },
+    where: { status: "active", hospitalStatus: "approved", urgency: { [Op.in]: ["critical", "urgent"] } },
+    attributes: ["id", "bloodType", "unitsRequired", "hospitalName", "city", "urgency", "isEmergency", "emergencyExpiresAt", "createdAt"],
     order: [["isEmergency", "DESC"], ["createdAt", "DESC"]],
     limit: 3
   });
@@ -133,21 +156,18 @@ const buildDashboardData = async (userId) => {
   });
 
   // Real donation impact stats for this user (donations given, or own requests fulfilled)
-  const impactWhere = donorProfile
-    ? { assignedDonorId: donorProfile.id, status: "fulfilled" }
-    : { userId, status: "fulfilled" };
-  const totalDonations = await BloodRequest.count({ where: impactWhere });
-  const livesSaved = totalDonations * 2;
+  const donorFulfillments = donorProfile ? await Fulfillment.findAll({ where: { donorId: donorProfile.id }, attributes: ['unitsProvided', 'fulfilledAt'], raw: true }) : [];
+  const totalDonations = donorFulfillments.length;
+  const unitsDonated = donorFulfillments.reduce((sum, row) => sum + Number(row.unitsProvided || 0), 0);
 
   // Donor status + next eligibility (56-day whole-blood interval)
   let donorStatus = "Not Registered";
   let nextEligible = "Ready";
   if (donorProfile) {
-    donorStatus = donorProfile.isAvailable ? "Active" : "Paused";
+    donorStatus = isDonorReady(donorProfile) ? "Available" : donorProfile.isAvailable ? "Awaiting eligibility" : "Paused";
     if (donorProfile.lastDonationDate) {
-      const eligibleDate = new Date(donorProfile.lastDonationDate);
-      eligibleDate.setDate(eligibleDate.getDate() + 56);
-      if (eligibleDate > new Date()) {
+      const eligibleDate = nextCoordinationDate(donorProfile);
+      if (eligibleDate && eligibleDate > new Date()) {
         nextEligible = eligibleDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       }
     }
@@ -157,11 +177,7 @@ const buildDashboardData = async (userId) => {
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5, 1);
   sixMonthsAgo.setHours(0, 0, 0, 0);
-  const recentFulfilled = await BloodRequest.findAll({
-    where: { ...impactWhere, updatedAt: { [Op.gte]: sixMonthsAgo } },
-    attributes: ["updatedAt"],
-    raw: true
-  });
+  const recentFulfilled = donorFulfillments.filter(row => new Date(row.fulfilledAt) >= sixMonthsAgo);
   const monthBuckets = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date();
@@ -173,7 +189,7 @@ const buildDashboardData = async (userId) => {
     });
   }
   recentFulfilled.forEach(r => {
-    const d = new Date(r.updatedAt);
+    const d = new Date(r.fulfilledAt);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const bucket = monthBuckets.find(b => b.key === key);
     if (bucket) bucket.count++;
@@ -187,7 +203,7 @@ const buildDashboardData = async (userId) => {
   // Monthly request volume (last 6 months) for the hospital mini chart
   let hospitalChart = [];
   let ownBuckets = [];
-  if (userProfile && userProfile.role === "hospital") {
+  if (isHospitalAccount(userProfile)) {
     const ownRecent = await BloodRequest.findAll({
       where: { userId, createdAt: { [Op.gte]: sixMonthsAgo } },
       attributes: ["createdAt"],
@@ -210,14 +226,16 @@ const buildDashboardData = async (userId) => {
   return {
     activities: recentActivities,
     donorProfile: donorProfile ? donorProfile.toJSON() : null,
-    user: userProfile ? userProfile.toJSON() : null,
+    user: userProfile ? { ...userProfile.toJSON(), role: canonicalRole(userProfile.role) } : null,
     hospitalStats,
+    requesterStats,
+    pendingReviewCount,
     urgentRequests: alerts,
     donationStats: {
       totalDonations,
-      livesSaved,
+      unitsDonated,
       donationBar: Math.min(100, totalDonations * 10),
-      livesBar: Math.min(100, livesSaved * 5)
+      unitsBar: Math.min(100, unitsDonated * 5)
     },
     donorStatus,
     nextEligible,
@@ -238,22 +256,8 @@ export const dashboardPage = async (req, res) => {
       ...dashboardData
     });
   } catch (error) {
-    console.error("Error fetching dashboard data:", error);
-    res.render("dashboard", {
-      title: "Dashboard",
-      activities: [],
-      donorProfile: null,
-      user: null,
-      hospitalStats: null,
-      urgentRequests: [],
-      donationStats: { totalDonations: 0, livesSaved: 0, donationBar: 0, livesBar: 0 },
-      donorStatus: "Unavailable",
-      nextEligible: "Ready",
-      donationChart: [],
-      hospitalChart: [],
-      hasDonationActivity: false,
-      hasHospitalActivity: false
-    });
+    console.error("Error fetching dashboard data:");
+    res.status(503).render('error', { title: 'Dashboard unavailable', statusCode: 503, message: 'Your dashboard could not be loaded. Please retry; its totals and activity are currently unavailable.' });
   }
 };
 
@@ -262,7 +266,7 @@ export const hospitalDashboardPage = async (req, res) => {
 
   try {
     const dashboardData = await buildDashboardData(req.session.userId);
-    if (!dashboardData.user || dashboardData.user.role !== 'hospital') {
+    if (!isHospitalAccount(dashboardData.user)) {
       return res.redirect("/dashboard");
     }
 
@@ -271,22 +275,8 @@ export const hospitalDashboardPage = async (req, res) => {
       ...dashboardData
     });
   } catch (error) {
-    console.error("Error fetching hospital dashboard data:", error);
-    res.render("dashboard", {
-      title: "Hospital Dashboard",
-      activities: [],
-      donorProfile: null,
-      user: null,
-      hospitalStats: null,
-      urgentRequests: [],
-      donationStats: { totalDonations: 0, livesSaved: 0, donationBar: 0, livesBar: 0 },
-      donorStatus: "Unavailable",
-      nextEligible: "Ready",
-      donationChart: [],
-      hospitalChart: [],
-      hasDonationActivity: false,
-      hasHospitalActivity: false
-    });
+    console.error("Error fetching hospital dashboard data:");
+    res.status(503).render('error', { title: 'Hospital dashboard unavailable', statusCode: 503, message: 'The facility dashboard could not be loaded. Please retry; its totals and activity are currently unavailable.' });
   }
 };
 
@@ -329,71 +319,62 @@ export const searchDashboard = async (req, res) => {
 
     res.json({ success: true, results: [...results, ...pages].slice(0, 6) });
   } catch (error) {
-    console.error("Dashboard search error:", error);
+    console.error("Dashboard search error:");
     res.status(500).json({ success: false, results: [] });
   }
 };
 
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
-  console.log(`🔐 [Login Attempt] Email: ${email}`);
 
   // Generic response for unknown email OR wrong password so attackers cannot
   // enumerate registered addresses. Verification/active status is only revealed
   // after a correct password.
   const user = await User.findOne({ where: { email } });
-  const match = user ? await bcrypt.compare(password, user.password) : false;
+  const match = await bcrypt.compare(password, user?.password || await invalidCredentialHash);
   if (!user || !match) {
-    console.log(`❌ [Login Failed] Invalid credentials: ${email}`);
-    return res.render("login", { error: "Invalid email or password." });
+    return res.status(401).render("login", { error: "Invalid email or password." });
   }
 
   // Check if email is verified
   if (!user.emailVerified) {
-    console.log(`❌ [Login Failed] Email not verified: ${email}`);
-    return res.render("login", { error: "Please verify your email address before logging in. Check your inbox for the verification email." });
+    return res.status(403).render("login", { error: "Please verify your email address before logging in. Check your inbox for the verification email." });
   }
 
   // Check if account is active (hospitals need admin verification, anyone can be suspended)
   if (user.isActive === false) {
     if (user.role?.toLowerCase() === "hospital") {
-      console.log(`❌ [Login Failed] Hospital pending verification: ${email}`);
-      return res.render("login", { error: "Your hospital account is pending verification by an administrator. Please try again later." });
+      return res.status(403).render("login", { error: "Your hospital account is pending verification by an administrator. Please try again later." });
     }
-    console.log(`❌ [Login Failed] Account deactivated: ${email}`);
-    return res.render("login", { error: "Your account has been deactivated. Please contact support." });
+    return res.status(403).render("login", { error: "Your account has been deactivated. Please contact support." });
   }
 
   // Replace the old session so a previous account cannot leak into this login.
   req.session.regenerate((regenerateError) => {
     if (regenerateError) {
-      console.log(`❌ [Session Regeneration Error]:`, regenerateError);
-      return res.render("login", { error: "Login failed due to a server error. Please try again." });
+      return res.status(503).render("login", { error: "Login failed due to a server error. Please try again." });
     }
 
     req.session.userId = user.id;
-    req.session.userRole = user.role;
+    req.session.userRole = canonicalRole(user.role);
+    req.session.authVersion = Number(user.authVersion);
+    req.session.authenticatedAt = Date.now();
+    req.session.lastActivityAt = Date.now();
 
-    console.log(`✅ [Login Success] User ${user.id} logged in`);
 
     // Force session save before redirect
     req.session.save((saveError) => {
       if (saveError) {
-        console.log(`❌ [Session Save Error]:`, saveError);
-        return res.render("login", { error: "Login failed due to a server error. Please try again." });
+        return res.status(503).render("login", { error: "Login failed due to a server error. Please try again." });
       }
 
-      console.log(`✅ [Session Saved Successfully]`);
 
       // Redirect based on role
       if (user.role?.toLowerCase() === "admin") {
-        console.log(`🔄 [Redirect] Admin to /admin/dashboard`);
         res.redirect("/admin/dashboard");
-      } else if (user.role?.toLowerCase() === "hospital") {
-        console.log(`🔄 [Redirect] Hospital to /hospital/dashboard`);
+      } else if (isHospitalAccount(user)) {
         res.redirect("/hospital/dashboard");
       } else {
-        console.log(`🔄 [Redirect] User to /dashboard`);
         res.redirect("/dashboard");
       }
     });
@@ -415,19 +396,16 @@ export const registerUser = async (req, res) => {
     if (!existingUser.emailVerified) {
       try {
         const retryToken = emailService.generateVerificationToken();
-        await existingUser.update({
-          emailVerificationToken: hashToken(retryToken),
-          emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
-        });
-        await emailService.sendVerificationEmail(email, existingUser.firstName, retryToken);
+        const current = await refreshVerification(existingUser.id, retryToken, req, 'duplicate-registration-verification-request');
+        if (current) await emailService.sendVerificationEmail(current.email, current.firstName, retryToken);
       } catch (e) {
-        console.error("Resend on duplicate registration:", e.message);
+        console.error("Resend on duplicate registration:");
       }
     }
     return res.render("register-success", {
       title: "Registration Successful",
       email: email,
-      firstName: existingUser.firstName
+      firstName
     });
   }
 
@@ -442,7 +420,8 @@ export const registerUser = async (req, res) => {
     // validation, in case the middleware is ever bypassed).
     const hashed = await bcrypt.hash(password, getBcryptRounds());
     const userRole = "donor";
-    const user = await User.create({
+    const user = await retryTransaction(async transaction => {
+      const created = await User.create({
       firstName,
       lastName,
       email,
@@ -456,16 +435,15 @@ export const registerUser = async (req, res) => {
       emailVerified: false,
       emailVerificationToken: hashToken(verificationToken),
       emailVerificationExpires: verificationExpires
+      }, { transaction });
+      await AuditService.logAction(created.id, 'ACCOUNT_REGISTER', 'Users', created.id, null, { role: userRole, isActive: true, emailVerified: false }, publicAuditContext(req, transaction, 'public-registration'));
+      return created;
     });
 
     // Send verification email
-    console.log('📧 [Registration] Attempting to send verification email to:', email);
-    console.log('📧 [Registration] Using email service type:', process.env.EMAIL_USER === 'your-email@gmail.com' ? 'TEST (Ethereal)' : 'REAL SMTP');
     const result = await emailService.sendVerificationEmail(email, firstName, verificationToken);
-    console.log('📧 [Registration] Email sent result:', result.success);
 
     if (result.success) {
-      console.log('✅ [Registration] Verification email sent successfully');
       res.render("register-success", {
         title: "Registration Successful",
         email: email,
@@ -473,24 +451,25 @@ export const registerUser = async (req, res) => {
         previewUrl: result.previewUrl
       });
     } else {
-      console.log('❌ [Registration] Failed to send verification email');
       // If email fails, still create account but show warning
       res.send("Account created successfully, but we couldn't send the verification email. Please contact support.");
     }
 
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Registration error:");
     res.render("register", { error: "Registration failed due to a server error. Please try again." });
   }
 };
 
 export const logoutUser = (req, res) => {
+  req.app.get('io')?.in(`session:${req.sessionID}`).disconnectSockets(true);
   req.session.destroy((error) => {
     if (error) {
-      console.error("Logout session error:", error);
+      console.error("Logout session error:");
     }
 
-    res.clearCookie('vitalmatch.sid');
+    res.clearCookie('vitalmatch.sid', { path: '/', httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+    res.set('Clear-Site-Data', '"cache"');
     res.redirect("/login");
   });
 };
@@ -499,28 +478,23 @@ export const logoutUser = (req, res) => {
 export const verifyEmail = async (req, res) => {
   const { token } = req.query;
 
-  if (!token) {
+  if (typeof token !== 'string' || !/^[a-zA-Z0-9_-]{32,256}$/.test(token)) {
     return res.send("Invalid verification link");
   }
 
   try {
-    // Find user with this token (hashed lookup; legacy plaintext rows issued
-    // before hashing are upgraded on match so old emails keep working)
-    let user = await User.findOne({
-      where: {
-        emailVerificationToken: hashToken(token),
-        emailVerificationExpires: { [Op.gt]: new Date() } // Token not expired
-      }
+    // Consume and audit in the same transaction. Legacy plaintext links remain
+    // valid, while concurrent verification attempts cannot consume a token twice.
+    const user = await retryTransaction(async transaction => {
+      const current = await User.findOne({ where: {
+        emailVerificationToken: { [Op.in]: [hashToken(token), token] },
+        emailVerificationExpires: { [Op.gt]: new Date() }, emailVerified: false
+      }, transaction, lock: transaction.LOCK.UPDATE });
+      if (!current) return null;
+      await current.update({ emailVerified: true, emailVerificationToken: null, emailVerificationExpires: null }, { transaction });
+      await AuditService.logAction(current.id, 'EMAIL_VERIFY', 'Users', current.id, { emailVerified: false }, { emailVerified: true }, publicAuditContext(req, transaction, 'email-verification', 'single-use-email-verification-link'));
+      return current;
     });
-    if (!user) {
-      user = await User.findOne({
-        where: {
-          emailVerificationToken: token,
-          emailVerificationExpires: { [Op.gt]: new Date() }
-        }
-      });
-      if (user) await user.update({ emailVerificationToken: hashToken(token) });
-    }
 
     if (!user) {
       return res.render("verification-failed", {
@@ -528,13 +502,6 @@ export const verifyEmail = async (req, res) => {
         message: "Invalid or expired verification link"
       });
     }
-
-    // Update user as verified
-    await user.update({
-      emailVerified: true,
-      emailVerificationToken: null,
-      emailVerificationExpires: null
-    });
 
     // Send welcome email
     await emailService.sendWelcomeEmail(user.email, user.firstName);
@@ -545,7 +512,7 @@ export const verifyEmail = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Email verification error:", error);
+    console.error("Email verification error:");
     res.send("Verification failed. Please try again.");
   }
 };
@@ -553,6 +520,7 @@ export const verifyEmail = async (req, res) => {
 // Resend verification email
 export const resendVerification = async (req, res) => {
   const { email } = req.body;
+  if (!validateEmail(email)) return res.status(400).json({ success: false, message: 'Please provide a valid email address' });
 
   try {
     const user = await User.findOne({ where: { email } });
@@ -566,24 +534,18 @@ export const resendVerification = async (req, res) => {
 
     // Generate new token
     const verificationToken = emailService.generateVerificationToken();
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    await user.update({
-      emailVerificationToken: hashToken(verificationToken),
-      emailVerificationExpires: verificationExpires
-    });
-
+    const current = await refreshVerification(user.id, verificationToken, req, 'verification-resend');
     // Send verification email
-    const result = await emailService.sendVerificationEmail(email, user.firstName, verificationToken);
+    const result = current ? await emailService.sendVerificationEmail(current.email, current.firstName, verificationToken) : { success: true };
     if (!result.success) {
-      console.error("Resend verification email failed for:", email);
+      console.error("Resend verification delivery was not accepted.");
     }
 
     res.json({ success: true, message: uniformMessage });
 
   } catch (error) {
-    console.error("Resend verification error:", error);
-    res.json({ success: false, message: "Failed to resend verification email" });
+    console.error("Resend verification error:");
+    res.json({ success: true, message: "If an account with that email exists and is unverified, a new verification link was requested." });
   }
 };
 
@@ -591,24 +553,28 @@ export const resendVerification = async (req, res) => {
 export const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
+    if (!validateEmail(email)) {
       req.flash("error_msg", "Please enter your email address");
       return res.redirect("/forgot-password");
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { email, isActive: true, archivedAt: null } });
 
     if (user) {
-      // Invalidate older unused tokens for this email
-      await PasswordReset.update({ used: true }, { where: { email, used: false } });
-
       const token = emailService.generateVerificationToken();
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-      await PasswordReset.create({ email, token: hashToken(token), expiresAt });
+      const eligible = await retryTransaction(async transaction => {
+        const current = await User.findByPk(user.id, { transaction, lock: transaction.LOCK.UPDATE });
+        if (!current || current.email !== email || !current.isActive || current.archivedAt) return null;
+        await PasswordReset.update({ used: true }, { where: { email, used: false }, transaction });
+        await PasswordReset.create({ email, token: hashToken(token), expiresAt }, { transaction });
+        await AuditService.logAction(current.id, 'PASSWORD_RESET_REQUEST', 'Users', current.id, null, null, publicAuditContext(req, transaction, 'password-reset-request'));
+        return current;
+      });
 
-      const result = await emailService.sendPasswordResetEmail(email, user.firstName, token);
-      if (!result.success) {
-        console.error("Failed to send password reset email to:", email);
+      if (eligible) {
+        const result = await emailService.sendPasswordResetEmail(eligible.email, eligible.firstName, token);
+        if (!result.success) console.error('Password reset delivery was not accepted.');
       }
     }
 
@@ -617,7 +583,7 @@ export const requestPasswordReset = async (req, res) => {
       resetSent: true
     });
   } catch (error) {
-    console.error("Request password reset error:", error);
+    console.error("Request password reset error:");
     req.flash("error_msg", "Something went wrong. Please try again.");
     res.redirect("/forgot-password");
   }
@@ -627,6 +593,7 @@ export const requestPasswordReset = async (req, res) => {
 export const resetPasswordPage = async (req, res) => {
   try {
     const { token } = req.params;
+    if (typeof token !== 'string' || !/^[a-zA-Z0-9_-]{32,256}$/.test(token)) return res.status(400).render('reset-password', { title: 'Reset Password', tokenValid: false });
     // Hashed lookup; legacy plaintext rows are upgraded on match.
     let record = await PasswordReset.findOne({ where: { token: hashToken(token), used: false } });
     if (!record) {
@@ -634,7 +601,8 @@ export const resetPasswordPage = async (req, res) => {
       if (record) await record.update({ token: hashToken(token) });
     }
 
-    if (!record || record.expiresAt < new Date()) {
+    const resetAccount = record && await User.findOne({ where: { email: record.email, isActive: true, archivedAt: null } });
+    if (!record || record.expiresAt < new Date() || !resetAccount) {
       return res.render("reset-password", {
         title: "Reset Password",
         tokenValid: false,
@@ -648,7 +616,7 @@ export const resetPasswordPage = async (req, res) => {
       token
     });
   } catch (error) {
-    console.error("Reset password page error:", error);
+    console.error("Reset password page error:");
     res.render("reset-password", { title: "Reset Password", tokenValid: false, token: null });
   }
 };
@@ -658,6 +626,7 @@ export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { newPassword, confirmPassword } = req.body;
+    if (typeof token !== 'string' || !/^[a-zA-Z0-9_-]{32,256}$/.test(token)) return res.status(400).render('reset-password', { title: 'Reset Password', tokenValid: false });
 
     // Hashed lookup; legacy plaintext rows are upgraded on match.
     let record = await PasswordReset.findOne({ where: { token: hashToken(token), used: false } });
@@ -681,24 +650,34 @@ export const resetPassword = async (req, res) => {
     }
 
     if (!validatePassword(newPassword)) {
-      req.flash("error_msg", "Password must be at least 8 characters with uppercase, lowercase, and a number");
+      req.flash("error_msg", passwordPolicyMessage());
       return res.redirect(`/reset-password/${token}`);
     }
 
-    const user = await User.findOne({ where: { email: record.email } });
+    const user = await User.findOne({ where: { email: record.email, isActive: true, archivedAt: null } });
     if (!user) {
-      req.flash("error_msg", "Account not found");
+      req.flash("error_msg", "This reset link is invalid or has expired");
       return res.redirect("/forgot-password");
     }
 
     const hashed = await bcrypt.hash(newPassword, getBcryptRounds());
-    await user.update({ password: hashed });
-    await record.update({ used: true });
-
-    req.flash("success_msg", "Password reset successfully. Please log in with your new password.");
-    res.redirect("/login");
+    await retryTransaction(async transaction => {
+      const lockedUser = await User.findByPk(user.id, { transaction, lock: transaction.LOCK.UPDATE });
+      const current = await PasswordReset.findByPk(record.id, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!lockedUser || !lockedUser.isActive || lockedUser.archivedAt || !current || current.used || current.expiresAt < new Date() || lockedUser.email !== current.email || current.email !== record.email || ![hashToken(token), token].includes(current.token)) throw new Error('Reset token expired, used, or account identity changed');
+      await lockedUser.update({ password: hashed }, { transaction });
+      await lockedUser.increment('authVersion', { transaction });
+      await PasswordReset.update({ used: true }, { where: { email: record.email, used: false }, transaction });
+      await AuditService.logAction(user.id, 'PASSWORD_RESET', 'Users', user.id, null, { sessionsRevoked: true }, publicAuditContext(req, transaction, 'password-reset', 'single-use-password-reset-link'));
+    });
+    req.app.get('io')?.in(`user:${user.id}`).disconnectSockets(true);
+    req.session.destroy(() => {
+      res.clearCookie('vitalmatch.sid', { path: '/', httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+      res.set('Clear-Site-Data', '"cache"');
+      res.redirect('/login?passwordReset=complete');
+    });
   } catch (error) {
-    console.error("Reset password error:", error);
+    console.error("Reset password error:");
     req.flash("error_msg", "Something went wrong. Please try again.");
     res.redirect("/forgot-password");
   }

@@ -1,72 +1,43 @@
-{{> head}}
+{{#if isAdmin}}{{> admin-head}}{{> admin-sidebar}}{{else}}{{> head}}{{> user-sidebar}}{{/if}}
 
 <!-- Navigation Bar -->
-<nav class="bg-white shadow-md">
-  <div class="container mx-auto px-4 py-4">
-    <div class="flex items-center justify-between">
-      <!-- Back Button & Logo/Brand -->
-      <div class="flex items-center space-x-1 sm:space-x-3">
-        <a href="javascript:history.length > 1 ? history.back() : window.location.href='/dashboard'"
-          class="p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-        </a>
-        <div class="flex items-center space-x-1 sm:space-x-2">
-          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-          </svg>
-          <a href="{{#if isAdmin}}/admin/dashboard{{else}}/dashboard{{/if}}"
-            class="text-xl sm:text-2xl font-bold text-gray-800">VitalMatch</a>
-        </div>
-      </div>
-
-      <!-- User Menu -->
-      <div class="flex items-center space-x-4">
-        {{#if isAdmin}}
-        <a href="/admin/dashboard" class="text-gray-700 hover:text-red-600 transition">Dashboard</a>
-        <a href="/admin/requests" class="text-gray-700 hover:text-red-600 transition">Requests</a>
-        {{else}}
-        <a href="/dashboard" class="text-gray-700 hover:text-red-600 transition">Dashboard</a>
-        <a href="/my-requests" class="text-gray-700 hover:text-red-600 transition">My Requests</a>
-        {{/if}}
-        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Logout</a>
-      </div>
-    </div>
-  </div>
-</nav>
+{{> internal-header}}
 
 <!-- Blood Request View Content -->
-<div class="min-h-screen bg-gray-50 py-12">
-  <div class="container mx-auto px-4">
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-50 py-12">
+  <div class="vm-page-container container mx-auto px-4">
     <div class="max-w-4xl mx-auto">
 
       <!-- Header -->
-      <div class="bg-gradient-to-r from-red-600 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+      <div class="vm-page-heading mb-8">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-3xl font-bold mb-2">Blood Request Details</h1>
             <p class="text-white/90">View your submitted blood request information</p>
           </div>
           <a href="{{#if isAdmin}}/admin/requests{{else}}/my-requests{{/if}}"
-            class="bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg">
+            class="vm-button bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
             View All Requests
           </a>
         </div>
       </div>
 
       {{#if request}}
-
-      <style>
-        details.collapsible summary { list-style: none; cursor: pointer; }
-        details.collapsible summary::-webkit-details-marker { display: none; }
-        details.collapsible .chev { transition: transform 0.2s ease-in-out; flex-shrink: 0; }
-        details.collapsible[open] .chev { transform: rotate(180deg); }
-      </style>
-
-      <!-- Request Status Card -->
-      <div class="bg-white rounded-xl shadow-md p-6 mb-6 border-l-4 border-red-500">
+<section class="vm-panel p-6 mb-6" aria-labelledby="request-progress-heading">
+  <h2 id="request-progress-heading">Coordination progress</h2>
+  <dl class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3"><div><dt>Facility review</dt><dd>{{> status-badge value=request.hospitalStatus}}</dd></div><div><dt>Units collected</dt><dd>{{request.unitsFulfilled}} of {{request.unitsRequired}}</dd></div><div><dt>Units remaining</dt><dd>{{request.unitsRemaining}}</dd></div></dl>
+  <p class="vm-muted mt-3">{{nextAction}}</p>
+  {{#if isOwner}}{{#if (eq request.status 'pending')}}{{#if (eq request.hospitalStatus 'declined')}}<a class="vm-button mt-3" href="/requests/{{request.id}}/edit">Correct returned request</a>{{/if}}{{/if}}{{/if}}
+  {{#if hospitalDeclineReason}}<p class="vm-alert vm-alert--danger mt-3">Facility response: {{hospitalDeclineReason}}</p>{{/if}}
+  {{#if request.scheduledDate}}<p class="mt-3">Scheduled: {{formatDate request.scheduledDate}} at {{formatTime request.scheduledDate}}. {{#if request.requesterConfirmed}}Requester confirmed.{{else}}Requester confirmation needed.{{/if}} {{#if request.donorConfirmed}}Donor confirmed.{{else}}Donor confirmation needed.{{/if}}</p>{{/if}}
+  {{#if history.length}}<details class="mt-4"><summary>Request activity history (latest 100 events)</summary>{{#each history}}<article class="vm-activity-row"><div><strong>{{label}}</strong><p>{{description}}</p><time>{{formatDate createdAt}}</time></div></article>{{/each}}</details>{{/if}}
+</section>
+{{#if isAdmin}}{{#if (eq request.status 'pending')}}
+<section class="vm-panel p-6 mb-6" aria-labelledby="coordinator-review-heading"><h2 id="coordinator-review-heading">Coordinator review</h2><p class="vm-muted mt-2">Verify the facility and request details with staff before approving outreach. Enter a reason for the decision.</p><label for="coordinatorReviewReason" class="block mt-3">Review notes / return reason</label><textarea id="coordinatorReviewReason" rows="3" maxlength="1000" required></textarea><div class="flex gap-3 mt-3"><button class="vm-button vm-button--success" type="button" onclick="reviewRequest('approve')">Approve outreach</button><button class="vm-button vm-button--warning" type="button" onclick="reviewRequest('decline')">Return for correction</button></div><p id="coordinatorReviewError" role="alert" class="vm-field-error"></p></section>
+{{/if}}{{/if}}
+{{#if isOwner}}{{#if (eq request.status 'scheduled')}}<a class="vm-button mb-4 vm-button--success" href="/confirm-schedule/{{request.id}}/requester?appointment={{request.appointmentId}}&amp;version={{request.appointmentVersion}}">Review and confirm current appointment</a>{{/if}}{{/if}}
+<!-- Request Status Card -->
+      <div class="vm-panel bg-white rounded-md p-6 mb-6 border-l-4 border-red-500">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
             <div class="bg-red-100 p-4 rounded-full">
@@ -101,8 +72,9 @@
         </div>
       </div>
 
+      {{#if request.patientName}}
       <!-- Patient Information -->
-      <details class="collapsible bg-white rounded-xl shadow-md p-6 mb-6" open>
+      <details class="collapsible bg-white rounded-md p-6 mb-6" open>
         <summary class="flex items-center justify-between">
           <span class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
           <svg class="w-6 h-6 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,8 +109,9 @@
         </div>
       </details>
 
+      {{else}}<p class="vm-muted mb-4">Patient details are shared with the requester, assigned facility, and coordination staff.</p>{{/if}}
       <!-- Hospital Information -->
-      <details class="collapsible bg-white rounded-xl shadow-md p-6 mb-6">
+      <details class="collapsible bg-white rounded-md p-6 mb-6">
         <summary class="flex items-center justify-between">
           <span class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
           <svg class="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,7 +149,7 @@
       </details>
 
       <!-- Contact Information -->
-      <details class="collapsible bg-white rounded-xl shadow-md p-6 mb-6">
+      <details class="collapsible bg-white rounded-md p-6 mb-6">
         <summary class="flex items-center justify-between">
           <span class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
           <svg class="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,7 +180,7 @@
       </details>
 
       <!-- Request Details -->
-      <details class="collapsible bg-white rounded-xl shadow-md p-6 mb-6">
+      <details class="collapsible bg-white rounded-md p-6 mb-6">
         <summary class="flex items-center justify-between">
           <span class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
           <svg class="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,49 +216,8 @@
         </div>
       </details>
 
-      <!-- Blockchain Verification --
-      <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-md p-6 mb-6 text-white">
-        <h2 class="text-2xl font-bold mb-4 flex items-center">
-          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-          </svg>
-          Blockchain Verification
-        </h2>
-        
-        <div class="bg-white/10 rounded-lg p-4 mb-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-white/90">Request Status on Blockchain:</span>
-            <span id="blockchainStatus" class="px-3 py-1 bg-green-500 text-white rounded-full text-sm font-semibold">
-              ✓ Verified
-            </span>
-          </div>
-          <div class="text-sm text-white/80" id="blockchainInfo">
-            This request has been permanently recorded on the VitalMatch blockchain for transparency and immutability.
-          </div>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <span class="text-white/70">Block Hash:</span>
-            <div class="font-mono text-xs bg-white/10 p-2 rounded mt-1" id="blockHash">
-              Loading...
-            </div>
-          </div>
-          <div>
-            <span class="text-white/70">Transaction ID:</span>
-            <div class="font-mono text-xs bg-white/10 p-2 rounded mt-1" id="transactionId">
-              Loading...
-            </div>
-          </div>
-        </div>
-        
-        <button onclick="viewBlockchainDetails()" class="mt-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition text-sm">
-          View Full Blockchain Record
-        </button>
-      </div>
-    -->
       {{#if emergencyActive}}
-      <div class="bg-red-600 text-white rounded-xl p-5 mb-6 shadow-lg animate-pulse">
+      <div class="bg-red-600 text-white rounded-md p-5 mb-6 animate-pulse">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div class="flex items-center">
             <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,7 +231,7 @@
           {{#if canManageEmergency}}
           <form method="POST" action="/requests/{{request.id}}/clear-emergency" id="clearEmergencyForm">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <button type="submit" class="px-5 py-2 bg-white text-red-700 rounded-lg font-bold hover:bg-red-50 transition text-sm">Stand Down</button>
+            <button type="submit" class="vm-button vm-button--small px-5 py-2 bg-white text-red-700 rounded-lg font-bold hover:bg-red-50 transition text-sm vm-button--warning">Stand Down</button>
           </form>
           {{/if}}
         </div>
@@ -309,7 +241,7 @@
       {{#if request}}
       {{#unless (eq request.status 'fulfilled')}}
       {{#unless (eq request.status 'cancelled')}}
-      <div class="bg-orange-50 border border-orange-300 rounded-xl p-5 mb-6">
+      <div class="bg-orange-50 border border-orange-300 rounded-md p-5 mb-6">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
             <p class="font-bold text-gray-800">Declare an emergency?</p>
@@ -317,7 +249,7 @@
           </div>
           <form method="POST" action="/requests/{{request.id}}/escalate" id="escalateEmergencyForm">
             <input type="hidden" name="_csrf" value="{{csrfToken}}">
-            <button type="submit" class="px-5 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition text-sm">Declare Emergency</button>
+            <button type="submit" class="vm-button vm-button--small px-5 py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition text-sm vm-button--warning">Declare Emergency</button>
           </form>
         </div>
       </div>
@@ -330,13 +262,13 @@
       <!-- Donor Response -->
       {{#unless isAdmin}}
       {{#if request}}
-      <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-6 mb-6 text-center">
+      <div class="vm-surface-muted border border-red-200 rounded-md p-6 mb-6 text-center">
         {{#if (eq pledgeState 'offer')}}
         <h3 class="text-lg font-bold text-gray-800 mb-2">Can you donate {{request.bloodType}} blood?</h3>
         <p class="text-sm text-gray-600 mb-4">Your blood type is compatible with this request. Offer to donate and the requester will be notified immediately.</p>
         <form method="POST" action="/requests/{{request.id}}/pledge">
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
-          <button type="submit" class="px-8 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition shadow-lg">
+          <button type="submit" class="vm-button vm-button--primary px-8 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition">
             Offer to Donate
           </button>
         </form>
@@ -345,18 +277,18 @@
         <p class="text-sm text-gray-600 mb-4">The requester has been notified. They will schedule you if you are selected.</p>
         <form method="POST" action="/requests/{{request.id}}/pledge/withdraw" id="withdrawPledgeForm">
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
-          <button type="submit" class="px-6 py-2 border border-gray-300 text-gray-600 rounded-lg font-semibold hover:bg-gray-100 transition text-sm">
+          <button type="submit" class="vm-button vm-button--small px-6 py-2 border border-gray-300 text-gray-600 rounded-lg font-semibold hover:bg-gray-100 transition text-sm vm-button--danger">
             Withdraw Pledge
           </button>
         </form>
         {{else if (eq pledgeState 'nodonor')}}
         <h3 class="text-lg font-bold text-gray-800 mb-2">Want to respond to this request?</h3>
         <p class="text-sm text-gray-600 mb-4">Register as a donor first, then you can offer to donate.</p>
-        <a href="/donor-profile" class="inline-block px-8 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition shadow-lg">Become a Donor</a>
+        <a href="/donor-profile" class="vm-button inline-block px-8 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition vm-button--primary">Become a Donor</a>
         {{else if (eq pledgeState 'unavailable')}}
         <h3 class="text-lg font-bold text-gray-800 mb-2">You are currently hidden from matching</h3>
         <p class="text-sm text-gray-600 mb-4">Turn on availability in Settings to offer donations.</p>
-        <a href="/settings?tab=donor" class="inline-block px-8 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition shadow-lg">Go to Donor Settings</a>
+        <a href="/settings?tab=donor" class="vm-button inline-block px-8 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition">Go to Donor Settings</a>
         {{else if (eq pledgeState 'incompatible')}}
         <div class="text-sm text-gray-600">Your blood type is not compatible with this request, so you cannot pledge for it.</div>
         {{/if}}
@@ -367,7 +299,7 @@
       {{/if}}
       {{#if isOwner}}
       {{#if pledges.length}}
-      <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <div class="vm-panel bg-white rounded-md p-6 mb-6">
         <h3 class="text-lg font-bold text-gray-800 mb-4">Donors Who Offered ({{pledges.length}})</h3>
         <div class="space-y-3">
           {{#each pledges}}
@@ -376,7 +308,7 @@
               <p class="font-semibold text-gray-800">{{name}}</p>
               <p class="text-xs text-gray-500">{{formatDate when}}</p>
             </div>
-            <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">{{bloodType}}</span>
+            <span class="vm-status bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">{{bloodType}}</span>
           </div>
           {{/each}}
         </div>
@@ -386,21 +318,21 @@
       {{/unless}}
       {{#if isAdmin}}
       {{#if pledges.length}}
-      <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+      <div class="bg-blue-50 border border-blue-200 rounded-md p-6 mb-6">
         <h3 class="text-lg font-bold text-gray-800 mb-4">Pledged Donors ({{pledgeCount}})</h3>
         <div class="space-y-3">
           {{#each pledges}}
-          <div class="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3">
+          <div class="vm-panel flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3">
             <div>
               <p class="font-semibold text-gray-800">{{name}}</p>
               <p class="text-xs text-gray-500">{{formatDate when}}</p>
             </div>
             <div class="flex items-center gap-2">
-              <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">{{bloodType}}</span>
+              <span class="vm-status bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">{{bloodType}}</span>
               {{#if ../isAdmin}}
               {{#if donorId}}
               <a href="/admin/requests?schedule={{@root.request.id}}&donor={{donorId}}"
-                class="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition">Schedule</a>
+                class="vm-button vm-button--small px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition">Schedule</a>
               {{/if}}
               {{/if}}
             </div>
@@ -415,18 +347,12 @@
       <div class="flex justify-center space-x-4">
         {{#if isAdmin}}
         <a href="/admin/requests"
-          class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg">
+          class="vm-button px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
           Back to Admin Requests
         </a>
         {{#if request}}
         {{#unless (eq request.status 'fulfilled')}}
-        <form action="/admin/fulfill-request/{{request.id}}" method="POST" class="inline">
-          <input type="hidden" name="_csrf" value="{{csrfToken}}">
-          <button type="submit"
-            class="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition shadow-lg">
-            Mark as Fulfilled
-          </button>
-        </form>
+        <a class="vm-button vm-button--primary" href="/admin/requests?schedule={{request.id}}">Coordinate / record donation</a>
         {{/unless}}
         {{/if}}
         {{else}}
@@ -434,26 +360,26 @@
         <form action="/hospital/requests/{{request.id}}/approve" method="POST" class="inline">
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
           <button type="submit"
-            class="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition shadow-lg">
+            class="vm-button px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition vm-button--success">
             Approve (Our Patient)
           </button>
         </form>
         <form action="/hospital/requests/{{request.id}}/decline" method="POST" class="inline">
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
-          <input type="text" name="declineReason" placeholder="Reason (optional)" maxlength="200"
-            class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" />
+          <input type="text" name="declineReason" required placeholder="Reason for declining" maxlength="200"
+            class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" aria-label="Reason for declining">
           <button type="submit"
-            class="px-6 py-3 border border-red-600 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition shadow-lg">
+            class="vm-button px-6 py-3 border border-red-600 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition vm-button--danger">
             Decline
           </button>
         </form>
         {{/if}}
         <a href="/my-requests"
-          class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition shadow-lg">
+          class="vm-button px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
           View All My Requests
         </a>
         <a href="/request-blood"
-          class="px-6 py-3 border border-red-600 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition">
+          class="vm-button vm-button--primary px-6 py-3 border border-red-600 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition">
           Submit New Request
         </a>
         {{/if}}
@@ -462,7 +388,7 @@
       {{else}}
 
       <!-- No Request Found -->
-      <div class="bg-white rounded-xl shadow-md p-12 text-center">
+      <div class="vm-panel bg-white rounded-md p-12 text-center">
         <svg class="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -470,7 +396,7 @@
         <h3 class="text-xl font-semibold text-gray-800 mb-2">No Request Found</h3>
         <p class="text-gray-600 mb-6">The blood request you're looking for doesn't exist.</p>
         <a href="/request-blood"
-          class="inline-block bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition">
+          class="vm-button vm-button--primary inline-block bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition">
           Submit Blood Request
         </a>
       </div>
@@ -479,63 +405,13 @@
 
     </div>
   </div>
-</div>
+</main>
 
-{{> footer}}
+
 
 <script>
-  // Load blockchain verification data
-  async function loadBlockchainData() {
-    try {
-      const requestId = window.location.pathname.split('/').pop();
-      const response = await fetch(`/api/blockchain/request/${requestId}`);
-      const result = await response.json();
-
-      if (result.success && result.data.length > 0) {
-        const latestRecord = result.data[result.data.length - 1];
-
-        // Update blockchain status
-        document.getElementById('blockchainStatus').innerHTML = '✓ Verified';
-        document.getElementById('blockchainStatus').className = 'px-3 py-1 bg-green-500 text-white rounded-full text-sm font-semibold';
-
-        // Update blockchain info
-        document.getElementById('blockchainInfo').textContent =
-          `Recorded in block #${latestRecord.blockIndex} at ${new Date(latestRecord.timestamp).toLocaleString()}`;
-
-        // Update hashes (truncated for display)
-        document.getElementById('blockHash').textContent =
-          latestRecord.blockHash ? latestRecord.blockHash.substring(0, 32) + '...' : 'N/A';
-        document.getElementById('transactionId').textContent =
-          `${latestRecord.type}-${requestId}-${latestRecord.blockIndex}`;
-
-      } else {
-        // Not yet on blockchain
-        document.getElementById('blockchainStatus').innerHTML = '⏳ Pending';
-        document.getElementById('blockchainStatus').className = 'px-3 py-1 bg-yellow-500 text-white rounded-full text-sm font-semibold';
-        document.getElementById('blockchainInfo').textContent =
-          'This request is pending blockchain confirmation. It will be recorded in the next block.';
-        document.getElementById('blockHash').textContent = 'Pending...';
-        document.getElementById('transactionId').textContent = 'Pending...';
-      }
-    } catch (error) {
-      console.error('Error loading blockchain data:', error);
-      document.getElementById('blockchainStatus').innerHTML = '❌ Error';
-      document.getElementById('blockchainStatus').className = 'px-3 py-1 bg-red-500 text-white rounded-full text-sm font-semibold';
-      document.getElementById('blockchainInfo').textContent =
-        'Unable to verify blockchain status at this time.';
-    }
-  }
-
-  // View full blockchain details
-  function viewBlockchainDetails() {
-    const requestId = window.location.pathname.split('/').pop();
-    window.open(`/api/blockchain/request/${requestId}`, '_blank');
-  }
-
-  // Load blockchain data when page loads
   document.addEventListener('DOMContentLoaded', function () {
     {{#if request}}
-    loadBlockchainData();
     {{/if}}
 
     var escalateForm = document.getElementById('escalateEmergencyForm');
@@ -584,3 +460,15 @@
     }
   });
 </script>
+
+<script>
+async function reviewRequest(action) {
+  const reason = document.getElementById('coordinatorReviewReason'), error = document.getElementById('coordinatorReviewError');
+  if (!reason.value.trim()) { error.textContent = 'Enter review notes before saving a decision.'; reason.focus(); return; }
+  const panel = reason.closest('section'), buttons = panel.querySelectorAll('button'); buttons.forEach(button => button.disabled = true); error.textContent = 'Saving review...';
+  try { const response = await fetch('/admin/requests/{{request.id}}/review', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.getCsrfToken() }, body: JSON.stringify({ action, reason: reason.value }) }); const data = await response.json(); if (!response.ok || !data.success) throw new Error(data.message || 'Review could not be saved.'); location.reload(); }
+  catch (failure) { error.textContent = failure.message + ' Your notes are retained; retry.'; buttons.forEach(button => button.disabled = false); }
+}
+</script>
+
+{{> footer}}

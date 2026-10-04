@@ -16,26 +16,29 @@ class CallUI {
   
   // Show incoming call notification
   showIncomingCallNotification(callerName, callType, callId) {
+    if (!Number.isSafeInteger(Number(callId))) return;
+    const safeName = String(callerName || 'Caller').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+    callType = callType === 'video' ? 'video' : 'audio';
     const notification = document.createElement('div');
     notification.id = 'incoming-call-notification';
-    notification.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+    notification.className = 'fixed hidden inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
     notification.innerHTML = `
       <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
         <div class="mb-6">
           <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4">
-            ${callerName.charAt(0).toUpperCase()}
+            ${safeName.charAt(0).toUpperCase()}
           </div>
-          <h2 class="text-2xl font-bold text-gray-800 mb-2">${callerName}</h2>
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">${safeName}</h2>
           <p class="text-gray-600">Incoming ${callType} call...</p>
         </div>
         <div class="flex space-x-4">
-          <button onclick="window.callManager.declineCall(${callId})" class="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition">
+          <button data-dialog-close="true" onclick="window.callManager.declineCall(${Number(callId)})" class="vm-button vm-button--danger flex-1">
             <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
             Decline
           </button>
-          <button onclick="window.callManager.acceptCall(${callId})" class="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+          <button onclick="window.callManager.acceptCall(${Number(callId)})" class="vm-button vm-button--success flex-1">
             <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
             </svg>
@@ -45,12 +48,15 @@ class CallUI {
       </div>
     `;
     document.body.appendChild(notification);
+    if (window.registerWorkspaceDialog) window.registerWorkspaceDialog(notification);
+    notification.classList.remove('hidden');
   }
   
   // Hide incoming call notification
   hideIncomingCallNotification() {
     const notification = document.getElementById('incoming-call-notification');
     if (notification) {
+      if (window.releaseWorkspaceDialog) window.releaseWorkspaceDialog(notification);
       notification.remove();
     }
   }
@@ -59,7 +65,8 @@ class CallUI {
   showCallInterface(callType, isInitiator) {
     const callInterface = document.createElement('div');
     callInterface.id = 'call-interface';
-    callInterface.className = 'fixed inset-0 bg-gray-900 flex flex-col';
+    callInterface.className = 'fixed hidden inset-0 bg-gray-900 flex flex-col';
+    callInterface.setAttribute('aria-label', 'Active ' + (callType === 'video' ? 'video' : 'audio') + ' call');
     callInterface.style.zIndex = '9999';
     callInterface.innerHTML = `
       <!-- Video Display -->
@@ -83,21 +90,21 @@ class CallUI {
       <!-- Call Controls -->
       <div class="bg-gray-800 p-6" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 10000;">
         <div class="flex justify-center space-x-4">
-          <button id="mute-btn" onclick="window.callManager.toggleMute()" class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition shadow-lg">
+          <button id="mute-btn" aria-label="Mute microphone" aria-pressed="false" onclick="window.callManager.toggleMute()" class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition shadow-lg">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
             </svg>
           </button>
           
           ${callType === 'video' ? `
-            <button id="video-btn" onclick="window.callManager.toggleVideo()" class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition shadow-lg">
+            <button id="video-btn" aria-label="Turn camera off" aria-pressed="false" onclick="window.callManager.toggleVideo()" class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition shadow-lg">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
               </svg>
             </button>
           ` : ''}
           
-          <button onclick="window.callManager.endCall()" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition shadow-lg">
+          <button aria-label="End call" data-dialog-close="true" onclick="window.openConfirmModal({title:'End this call?',message:'This disconnects the current conversation.',button:'End call',tone:'danger',onSubmit:function(){window.callManager.endCall();}})" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition shadow-lg">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -106,15 +113,16 @@ class CallUI {
       </div>
     `;
     document.body.appendChild(callInterface);
+    if (window.registerWorkspaceDialog) window.registerWorkspaceDialog(callInterface);
+    callInterface.classList.remove('hidden');
     
-    // Start call duration timer
-    this.startCallDurationTimer();
   }
   
   // Hide call interface
   hideCallInterface() {
     const callInterface = document.getElementById('call-interface');
     if (callInterface) {
+      if (window.releaseWorkspaceDialog) window.releaseWorkspaceDialog(callInterface);
       callInterface.remove();
     }
     
@@ -132,7 +140,6 @@ class CallUI {
       localVideo.onloadedmetadata = () => {
         localVideo.play().catch(e => console.error('Error playing local video:', e));
       };
-      console.log('✅ Local video attached');
     } else {
       console.error('❌ Local video element not found');
     }
@@ -146,7 +153,6 @@ class CallUI {
       remoteVideo.onloadedmetadata = () => {
         remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
       };
-      console.log('✅ Remote video attached');
     } else {
       console.error('❌ Remote video element not found');
     }
@@ -175,6 +181,7 @@ class CallUI {
     if (status) {
       status.textContent = 'Connected';
     }
+    if (!this.callDurationInterval) this.startCallDurationTimer();
   }
   
   // Show reconnecting indicator
@@ -189,6 +196,8 @@ class CallUI {
   setMuteState(isMuted) {
     const muteBtn = document.getElementById('mute-btn');
     if (muteBtn) {
+      muteBtn.setAttribute('aria-pressed', String(isMuted));
+      muteBtn.setAttribute('aria-label', isMuted ? 'Unmute microphone' : 'Mute microphone');
       if (isMuted) {
         muteBtn.classList.add('bg-red-600');
         muteBtn.classList.remove('bg-gray-700');
@@ -203,6 +212,8 @@ class CallUI {
   setVideoState(isVideoEnabled) {
     const videoBtn = document.getElementById('video-btn');
     if (videoBtn) {
+      videoBtn.setAttribute('aria-pressed', String(!isVideoEnabled));
+      videoBtn.setAttribute('aria-label', isVideoEnabled ? 'Turn camera off' : 'Turn camera on');
       if (!isVideoEnabled) {
         videoBtn.classList.add('bg-red-600');
         videoBtn.classList.remove('bg-gray-700');

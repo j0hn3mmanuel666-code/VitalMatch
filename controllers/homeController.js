@@ -25,6 +25,8 @@ SOFTWARE.
 */
 
 import { PublicContent } from "../models/publicContentModel.js";
+import { sanitizeRichHtml } from '../middleware/validation.js';
+import { safeContentUrl } from '../services/contentSafety.js';
 
 export const homePage = async (req, res) => {
   try {
@@ -36,7 +38,7 @@ export const homePage = async (req, res) => {
 
     const normalizeText = (value) => {
       if (typeof value !== 'string') return value;
-      return value.replace(/Smart Blood Request Platform/g, 'Digital Blood Request Platform');
+      return sanitizeRichHtml(value.replace(/Smart Blood Request Platform/g, 'Digital Blood Request Platform'));
     };
 
     const normalizeContent = (item) => {
@@ -48,11 +50,13 @@ export const homePage = async (req, res) => {
         description: normalizeText(item.description),
         primaryButtonText: normalizeText(item.primaryButtonText),
         secondaryButtonText: normalizeText(item.secondaryButtonText),
-        primaryButtonLink: normalizeText(item.primaryButtonLink),
-        secondaryButtonLink: normalizeText(item.secondaryButtonLink)
+        primaryButtonLink: safeLink(item.primaryButtonLink),
+        secondaryButtonLink: safeLink(item.secondaryButtonLink),
+        imageUrl: safeLink(item.imageUrl, true)
       };
     };
 
+    const safeLink = (value, image = false) => { try { return safeContentUrl(value, { image }); } catch { return ''; } };
     publicContent = publicContent.map(normalizeContent);
 
     // Convert array to object by section for easier template access
@@ -67,6 +71,7 @@ export const homePage = async (req, res) => {
 
     res.render("home", { 
       title: "VitalMatch - Digital Blood Request Platform | Philippine Red Cross",
+      isLanding: true,
       content: contentBySection,
       sections: publicContent,
       otherSections,
@@ -79,6 +84,7 @@ export const homePage = async (req, res) => {
     // Fallback render if database unavailable
     res.render("home", { 
       title: "VitalMatch - Digital Blood Request Platform | Philippine Red Cross",
+      isLanding: true,
       content: {},
       sections: []
     });

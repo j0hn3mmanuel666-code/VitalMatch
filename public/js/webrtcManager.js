@@ -13,6 +13,7 @@ class WebRTCManager {
     this.peerConnection = null;
     this.localStream = null;
     this.remoteStream = null;
+    this.pendingCandidates = [];
     
     // ICE servers configuration
     this.iceServers = [
@@ -58,18 +59,9 @@ class WebRTCManager {
   async getLocalStream(audio, video) {
     try {
       this.localStream = await this.requestMediaPermissions(audio, video);
-      console.log('✅ Local stream obtained:', {
-        audio: this.localStream.getAudioTracks().length > 0,
-        video: this.localStream.getVideoTracks().length > 0
-      });
       
       // Log track details
       this.localStream.getTracks().forEach(track => {
-        console.log(`📹 Local ${track.kind} track:`, {
-          enabled: track.enabled,
-          readyState: track.readyState,
-          settings: track.getSettings()
-        });
       });
       
       if (this.onLocalStream) {
@@ -112,18 +104,13 @@ class WebRTCManager {
     
   // Handle remote stream
     this.peerConnection.ontrack = (event) => {
-      console.log('📹 Received remote track:', event.track.kind);
-      console.log('📹 Track readyState:', event.track.readyState);
-      console.log('📹 Track enabled:', event.track.enabled);
       
       if (!this.remoteStream) {
         this.remoteStream = new MediaStream();
-        console.log('📹 Created new remote stream');
       }
       
       // Add track to remote stream
       this.remoteStream.addTrack(event.track);
-      console.log('✅ Remote stream tracks:', this.remoteStream.getTracks().length);
       
       // Notify callback immediately when we have tracks
       if (this.onRemoteStream) {
@@ -132,15 +119,12 @@ class WebRTCManager {
       
       // Log track events
       event.track.onended = () => {
-        console.log('📹 Remote track ended:', event.track.kind);
       };
       
       event.track.onmute = () => {
-        console.log('📹 Remote track muted:', event.track.kind);
       };
       
       event.track.onunmute = () => {
-        console.log('📹 Remote track unmuted:', event.track.kind);
       };
     };
     
@@ -182,6 +166,7 @@ class WebRTCManager {
       }
       
       await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      await this.flushCandidates();
       
       const answer = await this.peerConnection.createAnswer();
       await this.peerConnection.setLocalDescription(answer);
@@ -197,6 +182,7 @@ class WebRTCManager {
   async handleAnswer(answer) {
     try {
       await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      await this.flushCandidates();
     } catch (error) {
       console.error('Error handling answer:', error);
       throw error;
@@ -205,6 +191,7 @@ class WebRTCManager {
   
   // Add ICE candidate
   async addIceCandidate(candidate) {
+    if (!this.peerConnection || !this.peerConnection.remoteDescription) { this.pendingCandidates.push(candidate); return; }
     try {
       if (this.peerConnection) {
         await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
@@ -212,6 +199,11 @@ class WebRTCManager {
     } catch (error) {
       console.error('Error adding ICE candidate:', error);
     }
+  }
+
+  async flushCandidates() {
+    const queued = this.pendingCandidates.splice(0);
+    for (const candidate of queued) await this.addIceCandidate(candidate);
   }
   
   // Toggle mute
@@ -310,6 +302,7 @@ class WebRTCManager {
   
   // Close connection
   closeConnection() {
+    this.pendingCandidates = [];
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;

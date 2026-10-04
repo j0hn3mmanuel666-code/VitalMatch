@@ -1,9 +1,9 @@
 <!-- Admin New Request Content -->
-<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
-  <div class="container mx-auto px-4">
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="vm-page-container container mx-auto px-4">
 
     <!-- Header -->
-    <div class="mb-8">
+    <div class="vm-page-heading mb-8">
       <div class="flex items-center space-x-4 mb-4">
         <a href="/admin/requests" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -17,21 +17,23 @@
 
     <!-- Flash Messages -->
     {{#if success_msg}}
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+    <div class="vm-alert vm-alert--success bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
       {{success_msg}}
     </div>
     {{/if}}
 
     {{#if error_msg}}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+    <div class="vm-alert vm-alert--danger bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
       {{error_msg}}
     </div>
     {{/if}}
 
     <!-- Form -->
-    <div class="bg-white rounded-xl shadow-md p-8">
+    <div class="vm-form-shell vm-panel bg-white rounded-md p-8">
+      {{#if formValuesJson}}<script id="request-form-data" type="application/json">{{{formValuesJson}}}</script>{{/if}}
       <form action="/admin/new-blood-request" method="POST" id="adminBloodRequestForm">
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
+          <input type="hidden" name="submissionKey" value="{{formValues.submissionKey}}">
 
         <!-- Patient Information -->
         <div class="mb-8">
@@ -45,21 +47,21 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Patient Name *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-1">Patient Name *</label>
               <input type="text" name="patientName" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-1">
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Patient Age *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-2">Patient Age *</label>
               <input type="number" name="patientAge" min="1" max="120" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-2">
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Blood Type *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-3">Blood Type *</label>
               <select name="bloodType" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-3">
                 <option value="">Select blood type</option>
                 <option value="A+">A+</option>
                 <option value="A-">A-</option>
@@ -73,9 +75,9 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Units Required *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-4">Units Required *</label>
               <input type="number" name="unitsRequired" min="1" max="10" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-4">
             </div>
           </div>
         </div>
@@ -89,25 +91,26 @@
             </svg>
             Hospital Information
           </h3>
+            {{> facility-selector}}
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Hospital Name *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-5">Hospital Name *</label>
               <input type="text" name="hospitalName" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-5">
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Hospital Address *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-6">Hospital Address *</label>
               <input type="text" name="hospitalAddress" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-6">
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">City *</label>
               <div data-city-wrap>
                 <select name="city" data-city-select required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition bg-white">
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition bg-white" aria-label="Municipality">
                   <option value="">Select municipality</option>
                   <option>Baco</option>
                   <option>Bansud</option>
@@ -127,14 +130,14 @@
                   <option value="__other">Others (specify)</option>
                 </select>
                 <input type="text" data-city-other placeholder="Specify municipality"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition mt-2 hidden">
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition mt-2 hidden" aria-label="Specify municipality">
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Province *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-7">Province *</label>
               <input type="text" name="province" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-7">
             </div>
           </div>
           <input type="hidden" name="latitude" id="adminRequestLatitude">
@@ -153,27 +156,27 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-8">Contact Person *</label>
               <input type="text" name="contactPerson" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-8">
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Contact Number *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-9">Contact Number *</label>
               <input type="tel" name="contactNumber" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-9">
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-10">Email Address *</label>
               <input type="email" name="email" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-10">
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Urgency Level *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-11">Urgency Level *</label>
               <select name="urgency" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-11">
                 <option value="">Select urgency</option>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -196,28 +199,28 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Required By Date *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-12">Required By Date *</label>
               <input type="date" name="requiredByDate" required
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition">
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition" id="vm-admin-new-request-12">
             </div>
           </div>
 
           <div class="mt-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2" for="vm-admin-new-request-13">Additional Notes</label>
             <textarea name="notes" rows="4"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
-              placeholder="Any additional information about the blood request..."></textarea>
+              placeholder="Any additional information about the blood request..." id="vm-admin-new-request-13"></textarea>
           </div>
         </div>
 
         <!-- Submit Buttons -->
-        <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+        <div class="vm-form-actions flex justify-end space-x-4 pt-6 border-t border-gray-200">
           <a href="/admin/requests"
-            class="px-8 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition">
+            class="vm-button px-8 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition vm-button--danger">
             Cancel
           </a>
           <button type="submit"
-            class="px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition shadow-lg">
+            class="vm-button px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition vm-button--primary">
             Create Blood Request
           </button>
         </div>
@@ -226,7 +229,7 @@
     </div>
 
   </div>
-</div>
+</main>
 
 <script>
   if (navigator.geolocation) {
@@ -266,3 +269,4 @@
     }
   });
 </script>
+<script src="/js/request-form-context.js?v=1" defer></script>

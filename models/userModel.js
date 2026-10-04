@@ -26,6 +26,7 @@ SOFTWARE.
 */
 import { DataTypes } from "sequelize";
 import { sequelize } from "./db.js";
+import { Facility } from './facilityModel.js';
 
 export const User = sequelize.define("User", {
   firstName: { type: DataTypes.STRING, allowNull: false },
@@ -38,9 +39,14 @@ export const User = sequelize.define("User", {
   gender: { type: DataTypes.STRING, allowNull: false },
   role: { type: DataTypes.STRING, defaultValue: "user" }, // 'user', 'donor', 'hospital', or 'admin'
   isActive: { type: DataTypes.BOOLEAN, defaultValue: true }, // false = pending verification or suspended
+  authVersion: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  facilityId: { type: DataTypes.INTEGER, allowNull: true, references: { model: Facility, key: 'id' }, onDelete: 'RESTRICT' },
+  archivedAt: { type: DataTypes.DATE, allowNull: true },
   hospitalName: { type: DataTypes.STRING, allowNull: true }, // official name for hospital accounts
   emailVerified: { type: DataTypes.BOOLEAN, defaultValue: false },
   emailVerificationToken: { type: DataTypes.STRING, allowNull: true },
   emailVerificationExpires: { type: DataTypes.DATE, allowNull: true }
 });
+User.belongsTo(Facility, { foreignKey: 'facilityId', onDelete: 'RESTRICT' });
+Facility.hasMany(User, { foreignKey: 'facilityId', onDelete: 'RESTRICT' });
 export { sequelize }; 

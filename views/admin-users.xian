@@ -1,46 +1,47 @@
 <!-- User Management Content -->
-<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
-  <div class="container mx-auto px-4">
-    
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="vm-page-container container mx-auto px-4">
+    {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/admin/users">Retry loading accounts</a></div>{{/if}}
+
     <!-- Header -->
-    <div class="mb-8">
+    <div class="vm-page-heading mb-8">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">User Management</h1>
       <p class="text-gray-600 dark:text-gray-400">Manage all system users, roles, and permissions</p>
     </div>
-    
+
     <!-- Controls Bar -->
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6 mb-6">
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none p-6 mb-6">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        
+
         <!-- Search and Filters -->
         <div class="flex flex-col md:flex-row gap-4 flex-1">
           <div class="relative">
-            <input type="text" id="searchUsers" placeholder="Search users..." 
-                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent w-full md:w-64">
+            <input type="text" id="searchUsers" placeholder="Search users..."
+                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent w-full md:w-64" aria-label="Search users">
             <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
           </div>
-          
-          <select id="roleFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+
+          <select id="roleFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" aria-label="Filter users by role">
             <option value="">All Roles</option>
             <option value="user">Users</option>
             <option value="donor">Donors</option>
             <option value="hospital">Hospitals</option>
-            <option value="hospital_admin">Hospital Admins</option>
+            <option value="hospital_admin">Legacy hospital accounts</option>
             <option value="admin">Admins</option>
           </select>
         </div>
-        
+
         <!-- Action Buttons -->
         <div class="flex gap-3">
-          <button id="exportUsers" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          <button id="exportUsers" class="vm-button px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
             Export
           </button>
-          <button id="createUser" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+          <button id="createUser" class="vm-button vm-button--primary px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
             </svg>
@@ -49,44 +50,44 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Bulk Actions Bar -->
-    <div id="bulkBar" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+    <div id="bulkBar" class="hidden bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
       <span class="text-sm font-semibold text-blue-800 dark:text-blue-300"><span id="selectedCount">0</span> selected</span>
-      <select id="bulkAction" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent">
+      <select id="bulkAction" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent" aria-label="Choose a bulk action">
         <option value="">Bulk actions...</option>
         <option value="role:user">Set role: User</option>
         <option value="role:donor">Set role: Donor</option>
         <option value="role:hospital">Set role: Hospital</option>
-        <option value="role:hospital_admin">Set role: Hospital Admin</option>
+
         <option value="role:admin">Set role: Admin</option>
         <option value="activate">Activate accounts</option>
         <option value="deactivate">Deactivate accounts</option>
       </select>
-      <button id="applyBulk" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">Apply</button>
+      <button id="applyBulk" class="vm-button vm-button--small px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">Apply</button>
     </div>
 
     <!-- Users Table -->
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none overflow-hidden">
+      <div class="vm-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable data table">
+        <table data-search-mode="server" class="vm-table w-full">
           <thead class="bg-gray-50 dark:bg-[#27272a]">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-red-600 focus:ring-red-500" aria-label="Select all rows">
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Created</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th><th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500">Created</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody id="usersTableBody" class="bg-white dark:bg-[#18181b] divide-y divide-gray-200 dark:divide-gray-800">
             <!-- Users will be loaded here via JavaScript -->
             <tr>
-              <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+              <td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                 <div class="flex items-center justify-center">
                   <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -99,14 +100,14 @@
           </tbody>
         </table>
       </div>
-      
+
       <!-- Pagination -->
       <div id="pagination" class="bg-gray-50 dark:bg-[#27272a] px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-800">
         <div class="flex-1 flex justify-between sm:hidden">
-          <button id="prevPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-[#18181b] hover:bg-gray-50 dark:bg-[#27272a]">
+          <button id="prevPageMobile" class="vm-button vm-button--small relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-[#18181b] hover:bg-gray-50 dark:bg-[#27272a]">
             Previous
           </button>
-          <button id="nextPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-[#18181b] hover:bg-gray-50 dark:bg-[#27272a]">
+          <button id="nextPageMobile" class="vm-button vm-button--primary vm-button--small ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-[#18181b] hover:bg-gray-50 dark:bg-[#27272a]">
             Next
           </button>
         </div>
@@ -124,46 +125,46 @@
         </div>
       </div>
     </div>
-    
+
   </div>
-</div>
+</main>
 
 <!-- Edit User Modal -->
 <div id="editUserModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg dark:shadow-none rounded-md bg-white dark:bg-[#18181b]">
+  <div class="relative top-20 mx-auto p-5 border w-96 dark:shadow-none rounded-md bg-white dark:bg-[#18181b]">
     <div class="mt-3">
       <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Edit User</h3>
       <form id="editUserForm">
         <input type="hidden" id="editUserId" name="userId">
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editFirstName">First Name</label>
             <input type="text" id="editFirstName" name="firstName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editLastName">Last Name</label>
             <input type="text" id="editLastName" name="lastName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
           </div>
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editEmail">Email</label>
           <input type="email" id="editEmail" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editPhone">Phone</label>
           <input type="tel" id="editPhone" name="phone" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editAddress">Address</label>
           <textarea id="editAddress" name="address" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" rows="2"></textarea>
         </div>
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date of Birth</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editDateOfBirth">Date of Birth</label>
             <input type="date" id="editDateOfBirth" name="dateOfBirth" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editGender">Gender</label>
             <select id="editGender" name="gender" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
@@ -173,24 +174,24 @@
           </div>
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editRole">Role</label>
           <select id="editRole" name="role" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
             <option value="user">User</option>
             <option value="donor">Donor</option>
             <option value="hospital">Hospital</option>
-            <option value="hospital_admin">Hospital Admin</option>
+
             <option value="admin">Admin</option>
           </select>
         </div>
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Official Hospital Name <span class="text-gray-400 font-normal">(hospital accounts only)</span></label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editHospitalName">Official Hospital Name <span class="text-gray-400 font-normal">(hospital accounts only)</span></label>
           <input type="text" id="editHospitalName" name="hospitalName" placeholder="e.g. Calapan City Hospital" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
         </div>
-        <div class="flex justify-end gap-3">
-          <button type="button" id="cancelEdit" class="px-4 py-2 bg-gray-300 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 transition-colors">
+        <div class="vm-form-actions flex justify-end gap-3">
+          <button type="button" id="cancelEdit" data-dialog-close="true" class="vm-button px-4 py-2 bg-gray-300 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 transition-colors vm-button--danger">
             Cancel
           </button>
-          <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+          <button type="submit" class="vm-button vm-button--primary px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
             Update User
           </button>
         </div>
@@ -201,40 +202,40 @@
 
 <!-- Create User Modal -->
 <div id="createUserModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
-  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg dark:shadow-none rounded-md bg-white dark:bg-[#18181b]">
+  <div class="relative top-20 mx-auto p-5 border w-96 dark:shadow-none rounded-md bg-white dark:bg-[#18181b]">
     <div class="mt-3">
       <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Create New User</h3>
       <form id="createUserForm">
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
-            <input type="text" name="firstName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-users-31">First Name</label>
+            <input type="text" name="firstName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" id="vm-admin-users-31">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
-            <input type="text" name="lastName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-users-32">Last Name</label>
+            <input type="text" name="lastName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" id="vm-admin-users-32">
           </div>
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-          <input type="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-users-33">Email</label>
+          <input type="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" id="vm-admin-users-33">
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
-          <input type="tel" name="phone" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-users-34">Phone</label>
+          <input type="tel" name="phone" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" id="vm-admin-users-34">
         </div>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
-          <textarea name="address" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" rows="2"></textarea>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-users-35">Address</label>
+          <textarea name="address" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" rows="2" id="vm-admin-users-35"></textarea>
         </div>
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date of Birth</label>
-            <input type="date" name="dateOfBirth" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-users-36">Date of Birth</label>
+            <input type="date" name="dateOfBirth" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" id="vm-admin-users-36">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
-            <select name="gender" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-users-37">Gender</label>
+            <select name="gender" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" id="vm-admin-users-37">
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -243,20 +244,20 @@
           </div>
         </div>
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
-          <select name="role" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-users-38">Role</label>
+          <select name="role" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500" id="vm-admin-users-38">
             <option value="user">User</option>
             <option value="donor">Donor</option>
             <option value="hospital">Hospital</option>
-            <option value="hospital_admin">Hospital Admin</option>
+
             <option value="admin">Admin</option>
           </select>
         </div>
-        <div class="flex justify-end gap-3">
-          <button type="button" id="cancelCreate" class="px-4 py-2 bg-gray-300 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 transition-colors">
+        <div class="vm-form-actions flex justify-end gap-3">
+          <button type="button" id="cancelCreate" data-dialog-close="true" class="vm-button px-4 py-2 bg-gray-300 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 transition-colors vm-button--danger">
             Cancel
           </button>
-          <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+          <button type="submit" class="vm-button vm-button--primary px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
             Create User
           </button>
         </div>
@@ -265,22 +266,22 @@
   </div>
 </div>
 
-<!-- Delete User Confirmation Modal -->
+<!-- Archive User Confirmation Modal -->
 <div id="deleteConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-  <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-full max-w-md shadow-lg dark:shadow-none rounded-lg bg-white dark:bg-[#18181b]">
+  <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-full max-w-md dark:shadow-none rounded-lg bg-white dark:bg-[#18181b]">
     <div class="flex flex-col items-center">
       <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
         <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
       </div>
-      <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-2">Delete User</h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">Are you sure you want to delete this user? This action cannot be undone and will remove all associated data.</p>
-      
+      <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-2">Archive User</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">Archive this account? Sign-in and donor availability stop. Requests, calls, messages, and donation history remain available for review. Reactivation requires an administrator review.</p>
+
       <div class="flex justify-center gap-3 w-full">
-        <button type="button" id="cancelDeleteUser" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm dark:shadow-none px-4 py-2 bg-white dark:bg-[#18181b] text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#27272a] focus:outline-none transition-colors">
+        <button type="button" id="cancelDeleteUser" data-dialog-close="true" class="vm-button w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm dark:shadow-none px-4 py-2 bg-white dark:bg-[#18181b] text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#27272a] focus:outline-none transition-colors vm-button--danger">
           Cancel
         </button>
-        <button type="button" id="confirmDeleteUser" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm dark:shadow-none px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none transition-colors">
-          Delete User
+        <button type="button" id="confirmDeleteUser" class="vm-button w-full inline-flex justify-center rounded-md border border-transparent shadow-sm dark:shadow-none px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none transition-colors vm-button--danger">
+          Archive User
         </button>
       </div>
     </div>
@@ -297,7 +298,7 @@ let userToDeleteId = null;
 // Load users on page load
 document.addEventListener('DOMContentLoaded', function() {
   loadUsers();
-  
+
   // Delegated event listener for dynamically generated buttons (Edit/Delete)
   document.addEventListener('click', function(e) {
     const target = e.target;
@@ -305,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (target.hasAttribute('data-action')) {
       const action = target.getAttribute('data-action');
       const userId = target.getAttribute('data-user-id');
-      
+
       if (action === 'edit-user') {
         editUser(userId);
       } else if (action === 'delete-user') {
@@ -320,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
     currentPage = 1;
     loadUsers();
   });
-  
+
   // Role filter
   document.getElementById('roleFilter').addEventListener('change', function(e) {
     currentRole = e.target.value;
@@ -337,53 +338,62 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.target.classList && e.target.classList.contains('user-checkbox')) refreshBulkBar();
   });
   document.getElementById('applyBulk').addEventListener('click', applyBulkAction);
-  
+  document.getElementById('bulkAction').addEventListener('change', function() {
+    const button = document.getElementById('applyBulk');
+    button.classList.remove('vm-button--success','vm-button--danger','vm-button--warning');
+    const tone = this.value === 'activate' ? 'success' : this.value === 'deactivate' ? 'danger' : this.value ? 'warning' : null;
+    if (tone) button.classList.add('vm-button--' + tone);
+  });
+
   // Create user modal
   document.getElementById('createUser').addEventListener('click', function() {
     document.getElementById('createUserModal').classList.remove('hidden');
   });
-  
+
   // Delete user modal events
   document.getElementById('cancelDeleteUser').addEventListener('click', function() {
     document.getElementById('deleteConfirmModal').classList.add('hidden');
     userToDeleteId = null;
   });
-  
+
   document.getElementById('confirmDeleteUser').addEventListener('click', function() {
     if (userToDeleteId) {
       executeDeleteUser(userToDeleteId);
     }
   });
-  
+
   document.getElementById('cancelCreate').addEventListener('click', function() {
     document.getElementById('createUserModal').classList.add('hidden');
     document.getElementById('createUserForm').reset();
   });
-  
+
   // Create user form submission
   document.getElementById('createUserForm').addEventListener('submit', function(e) {
     e.preventDefault();
     createUser();
   });
-  
+
   // Edit user form submission
   document.getElementById('editUserForm').addEventListener('submit', function(e) {
     e.preventDefault();
     updateUser();
   });
-  
+
   document.getElementById('cancelEdit').addEventListener('click', function() {
     document.getElementById('editUserModal').classList.add('hidden');
     document.getElementById('editUserForm').reset();
   });
-  
+
   // Export users
   document.getElementById('exportUsers').addEventListener('click', function() {
     window.location.href = '/admin/users/export';
   });
 });
 
+let userSearchRevision = 0;
 async function loadUsers() {
+  const revision = ++userSearchRevision;
+  document.getElementById("usersTableBody").setAttribute("aria-busy", "true");
   try {
     const params = new URLSearchParams({
       page: currentPage,
@@ -391,10 +401,11 @@ async function loadUsers() {
       search: currentSearch,
       role: currentRole
     });
-    
+
     const response = await fetch(`/admin/users/api?${params}`);
     const data = await response.json();
-    
+    if (revision !== userSearchRevision) return;
+    if (!response.ok) throw new Error("Users unavailable");
     if (data.success) {
       renderUsers(data.users);
       renderPagination(data.pagination);
@@ -405,28 +416,29 @@ async function loadUsers() {
     }
   } catch (error) {
     console.error('Error loading users:', error);
-    showError('Error loading users');
-  }
+    if (revision === userSearchRevision) showError('Users are unavailable. Change a filter or refresh to retry.');
+  } finally { if (revision === userSearchRevision) document.getElementById("usersTableBody").setAttribute("aria-busy", "false"); }
 }
 
+function escapeUserText(value) { return String(value || '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char])); }
 function renderUsers(users) {
   const tbody = document.getElementById('usersTableBody');
-  
+
   if (users.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+        <td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
           No users found
         </td>
       </tr>
     `;
     return;
   }
-  
-  tbody.innerHTML = users.map(user => `
+
+  tbody.innerHTML = users.map(raw => { const user = { ...raw, id: Number(raw.id), firstName: escapeUserText(raw.firstName), lastName: escapeUserText(raw.lastName), email: escapeUserText(raw.email), phone: escapeUserText(raw.phone), role: escapeUserText(raw.role) }; return `
     <tr class="hover:bg-gray-50 dark:bg-[#27272a]">
       <td class="px-6 py-4 whitespace-nowrap">
-        <input type="checkbox" class="user-checkbox rounded border-gray-300 text-red-600 focus:ring-red-500" value="${user.id}">
+        <input type="checkbox" class="user-checkbox rounded border-gray-300 text-red-600 focus:ring-red-500" value="${user.id}" aria-label="Select ${user.firstName} ${user.lastName}">
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
         <div class="flex items-center">
@@ -443,45 +455,46 @@ function renderUsers(users) {
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${user.email}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${user.phone}</td>
       <td class="px-6 py-4 whitespace-nowrap">
-        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : user.role === 'hospital' ? 'bg-blue-100 text-blue-800' : user.role === 'hospital_admin' ? 'bg-orange-100 text-orange-800' : user.role === 'donor' ? 'bg-teal-100 text-teal-800' : 'bg-green-100 text-green-800'}">
+        <span class="vm-status px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : user.role === 'hospital' ? 'bg-blue-100 text-blue-800' : user.role === 'hospital_admin' ? 'bg-orange-100 text-orange-800' : user.role === 'donor' ? 'bg-teal-100 text-teal-800' : 'bg-green-100 text-green-800'}">
           ${user.role}
         </span>
       </td>
+      <td class="px-6 py-4"><span class="vm-status ${user.isActive ? 'vm-status--success' : 'vm-status--danger'}">${user.archivedAt ? 'Archived' : user.isActive ? 'Active' : 'Disabled'}</span></td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
         ${new Date(user.createdAt).toLocaleDateString()}
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <button data-action="edit-user" data-user-id="${user.id}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
-        <button data-action="delete-user" data-user-id="${user.id}" class="text-red-600 hover:text-red-900">Delete</button>
+        <button data-action="edit-user" data-user-id="${user.id}" class="vm-button text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+        <button data-action="delete-user" data-user-id="${user.id}" class="vm-button text-red-600 hover:text-red-900 vm-button--danger">Archive</button>
       </td>
     </tr>
-  `).join('');
+  `; }).join('');
 }
 
 function renderPagination(pagination) {
-  document.getElementById('showingFrom').textContent = ((pagination.currentPage - 1) * 20) + 1;
+  document.getElementById('showingFrom').textContent = pagination.totalCount ? ((pagination.currentPage - 1) * 20) + 1 : 0;
   document.getElementById('showingTo').textContent = Math.min(pagination.currentPage * 20, pagination.totalCount);
   document.getElementById('totalUsers').textContent = pagination.totalCount;
-  
+
   const nav = document.getElementById('paginationNav');
   let paginationHTML = '';
-  
+
   // Previous button
   if (pagination.hasPrevPage) {
-    paginationHTML += `<button onclick="changePage(${pagination.currentPage - 1})" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white dark:bg-[#18181b] text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-[#27272a]">Previous</button>`;
+    paginationHTML += `<button onclick="changePage(${pagination.currentPage - 1})" class="vm-button vm-button--small relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white dark:bg-[#18181b] text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-[#27272a]">Previous</button>`;
   }
-  
+
   // Page numbers (simplified)
   for (let i = Math.max(1, pagination.currentPage - 2); i <= Math.min(pagination.totalPages, pagination.currentPage + 2); i++) {
     const isActive = i === pagination.currentPage;
-    paginationHTML += `<button onclick="changePage(${i})" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${isActive ? 'bg-red-50 border-red-500 text-red-600' : 'bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#27272a]'}">${i}</button>`;
+    paginationHTML += `<button onclick="changePage(${i})" aria-current="${isActive ? 'page' : 'false'}" class="vm-button vm-button--small relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${isActive ? 'bg-red-50 border-red-500 text-red-600' : 'bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#27272a]'}">${i}</button>`;
   }
-  
+
   // Next button
   if (pagination.hasNextPage) {
-    paginationHTML += `<button onclick="changePage(${pagination.currentPage + 1})" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white dark:bg-[#18181b] text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-[#27272a]">Next</button>`;
+    paginationHTML += `<button onclick="changePage(${pagination.currentPage + 1})" class="vm-button vm-button--small relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white dark:bg-[#18181b] text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-[#27272a]">Next</button>`;
   }
-  
+
   nav.innerHTML = paginationHTML;
 }
 
@@ -509,7 +522,7 @@ async function applyBulkAction() {
       title: 'Deactivate Accounts?',
       message: ids.length + ' account(s) will be deactivated and logged out immediately.',
       button: 'Deactivate',
-      icon: 'warning'
+      tone: 'danger'
     });
     if (!ok) return;
     updates = { isActive: false };
@@ -549,7 +562,7 @@ async function createUser() {
     const form = document.getElementById('createUserForm');
     const formData = new FormData(form);
     const userData = Object.fromEntries(formData);
-    
+
     const response = await fetch('/admin/users', {
       method: 'POST',
       headers: {
@@ -557,9 +570,9 @@ async function createUser() {
       },
       body: JSON.stringify(userData)
     });
-    
+
     const data = await response.json();
-    
+
     if (data.success) {
       document.getElementById('createUserModal').classList.add('hidden');
       form.reset();
@@ -584,23 +597,23 @@ async function deleteUser(userId) {
 
 async function executeDeleteUser(userId) {
   document.getElementById('deleteConfirmModal').classList.add('hidden');
-  
+
   try {
     const response = await fetch(`/admin/users/${userId}`, {
-      method: 'DELETE'
+      method: 'DELETE', headers: { 'X-CSRF-Token': window.getCsrfToken() }
     });
-    
+
     const data = await response.json();
-    
+
     if (data.success) {
       loadUsers();
-      showSuccess('User deleted successfully');
+      showSuccess('Account archived. Coordination history is preserved.');
     } else {
-      showError(data.message || 'Failed to delete user');
+      showError(data.message || 'Failed to archive account');
     }
   } catch (error) {
-    console.error('Error deleting user:', error);
-    showError('Error deleting user');
+    console.error('Error archiving account:', error);
+    showError('Error archiving account');
   }
 }
 
@@ -609,10 +622,10 @@ async function editUser(userId) {
     // Fetch user details
     const response = await fetch(`/admin/users/${userId}`);
     const data = await response.json();
-    
+
     if (data.success) {
       const user = data.user;
-      
+
       // Populate the edit form
       document.getElementById('editUserId').value = user.id;
       document.getElementById('editFirstName').value = user.firstName;
@@ -622,9 +635,9 @@ async function editUser(userId) {
       document.getElementById('editAddress').value = user.address;
       document.getElementById('editDateOfBirth').value = user.dateOfBirth;
       document.getElementById('editGender').value = user.gender;
-      document.getElementById('editRole').value = user.role;
+      document.getElementById('editRole').value = user.role === 'hospital_admin' ? 'hospital' : user.role;
       document.getElementById('editHospitalName').value = user.hospitalName || '';
-      
+
       // Show the edit modal
       document.getElementById('editUserModal').classList.remove('hidden');
     } else {
@@ -642,10 +655,10 @@ async function updateUser() {
     const formData = new FormData(form);
     const userData = Object.fromEntries(formData);
     const userId = userData.userId;
-    
+
     // Remove userId from userData as it's not needed in the request body
     delete userData.userId;
-    
+
     const response = await fetch(`/admin/users/${userId}`, {
       method: 'PUT',
       headers: {
@@ -653,9 +666,9 @@ async function updateUser() {
       },
       body: JSON.stringify(userData)
     });
-    
+
     const data = await response.json();
-    
+
     if (data.success) {
       document.getElementById('editUserModal').classList.add('hidden');
       form.reset();
@@ -673,10 +686,10 @@ async function updateUser() {
 function showSuccess(message) {
   // Simple success notification
   const notification = document.createElement('div');
-  notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg dark:shadow-none z-50';
+  notification.className = 'vm-toast vm-toast--success fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg  dark:shadow-none z-50';
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     notification.remove();
   }, 3000);
@@ -685,10 +698,10 @@ function showSuccess(message) {
 function showError(message) {
   // Simple error notification
   const notification = document.createElement('div');
-  notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg dark:shadow-none z-50';
+  notification.className = 'vm-toast vm-toast--danger fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg  dark:shadow-none z-50';
   notification.textContent = message;
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     notification.remove();
   }, 3000);

@@ -3,913 +3,79 @@
 {{> user-sidebar}}
 
 <!-- Single Top Navigation Bar -->
-<nav class="bg-white shadow-md sticky top-0 z-50">
-  <div class="container mx-auto px-2 sm:px-4 py-2 sm:py-4">
-    <div class="flex items-center justify-between">
-      <!-- Left: Hamburger + Logo -->
-      <div class="flex items-center space-x-1 sm:space-x-4">
-        <!-- Hamburger Button -->
-        <label for="sidebar-toggle" class="cursor-pointer hover:bg-gray-100 p-1 sm:p-2 rounded-lg transition-colors">
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </label>
-
-        <!-- Logo -->
-        <div class="flex items-center space-x-1 sm:space-x-2">
-          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-          </svg>
-          <span class="text-xl sm:text-2xl font-bold text-gray-800">VitalMatch</span>
-        </div>
-      </div>
-
-      <!-- Center: Search Bar (Desktop) -->
-      <div class="hidden lg:flex flex-1 max-w-md mx-8">
-        <div class="relative w-full">
-          <input type="text" id="dashboardSearch" placeholder="Search requests, donors, messages..."
-            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-            onkeyup="handleDashboardSearch(event)">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <!-- Search Results Dropdown -->
-          <div id="dashboardSearchResults"
-            class="hidden absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-64 overflow-y-auto z-50">
-            <!-- Search results will be populated here -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: User Menu with Notifications -->
-      <div class="flex items-center space-x-1 sm:space-x-4">
-        <!-- Mobile Search Button -->
-        <button
-          class="lg:hidden text-gray-600 hover:text-gray-800 hover:bg-gray-100 p-1 sm:p-2 rounded-lg transition-colors"
-          onclick="toggleDashboardMobileSearch()">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
-
-        <!-- Notifications Bell -->
-        <div class="relative">
-          <button id="notificationBtn"
-            class="relative p-1 sm:p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-            onclick="toggleNotifications()">
-            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            <!-- Notification Badge -->
-            <span id="notificationBadge"
-              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-semibold animate-pulse">3</span>
-          </button>
-
-          <!-- Notifications Dropdown -->
-          <div id="notificationDropdown"
-            class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50">
-            <div class="p-4 border-b">
-              <div class="flex items-center justify-between">
-                <h3 class="font-semibold text-gray-800">Notifications</h3>
-                <button onclick="markAllNotificationsRead()" class="text-sm text-blue-600 hover:text-blue-700">Mark all
-                  read</button>
-              </div>
-            </div>
-
-            <div id="notificationList" class="max-h-96 overflow-y-auto">
-              <!-- Notifications will be populated here dynamically -->
-              <div class="p-8 text-center text-gray-500">
-                <div
-                  class="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-2">
-                </div>
-                Loading...
-              </div>
-            </div>
-
-            <div class="p-4 border-t">
-              <a href="/notifications" class="block w-full text-center text-sm text-blue-600 hover:text-blue-700 font-semibold">
-                View All Notifications
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <span class="text-gray-700 hidden md:inline">Welcome, <span class="font-semibold">{{#if
-            user}}{{user.firstName}}{{else}}Administrator{{/if}}</span></span>
-        <a href="/logout"
-          class="bg-red-600 text-white px-2 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-base rounded-lg hover:bg-red-700 transition-colors transform hover:scale-105">Logout</a>
-      </div>
-    </div>
-
-    <!-- Mobile Search Bar -->
-    <div id="dashboardMobileSearch" class="hidden mt-4 lg:hidden">
-      <div class="relative">
-        <input type="text" id="dashboardMobileSearchInput" placeholder="Search requests, donors, messages..."
-          class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-base"
-          onkeyup="handleDashboardSearch(event, true)">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
-</nav>
-
-<!-- Breadcrumb Navigation for Dashboard -->
-<div class="bg-gray-50 border-b border-gray-200">
-  <div class="container mx-auto px-4 py-3">
-    <nav class="flex items-center space-x-2 text-sm" aria-label="Breadcrumb">
-      <ol class="flex items-center space-x-2">
-        <li class="flex items-center">
-          <a href="/" class="text-gray-600 hover:text-red-600 transition-colors">Home</a>
-        </li>
-        <li class="flex items-center">
-          <svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-          <span class="text-gray-800 font-semibold">{{title}}</span>
-        </li>
-      </ol>
-    </nav>
-  </div>
-</div>
+{{> internal-header dashboard=true}}
 
 <!-- Dashboard Content -->
-<div class="min-h-screen bg-gray-50 py-8">
-  <div class="container mx-auto px-4">
-
-    <!-- Welcome Banner with Real-time Status -->
-    <div
-      class="bg-gradient-to-r from-red-600 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white relative overflow-hidden">
-      <!-- Background Pattern -->
-      <div class="absolute inset-0 opacity-10">
-        <svg class="w-full h-full" viewBox="0 0 100 100" fill="none">
-          <defs>
-            <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" stroke-width="0.5" />
-            </pattern>
-          </defs>
-          <rect width="100" height="100" fill="url(#grid)" />
-        </svg>
+<main id="main-content" tabindex="-1" class="vm-page">
+  <div class="vm-page-container">
+    {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/dashboard">Retry loading dashboard</a></div>{{/if}}
+    <div class="vm-page-heading vm-heading-actions">
+      <div><p class="vm-eyebrow">{{#if (eq user.role 'hospital')}}Hospital coordination{{else}}Your workspace{{/if}}</p><h1>{{#if (eq user.role 'hospital')}}Hospital dashboard{{else}}Dashboard{{/if}}</h1><p>{{#if (eq user.role 'hospital')}}Follow your requests and coordinate the next step with donors and the chapter.{{else}}Review current requests, manage your availability, and keep track of your activity.{{/if}}</p></div>
+      <a href="/new-blood-request" class="vm-button vm-button--primary">New blood request</a>
+    </div>
+    {{#unless error}}<dl class="vm-dashboard-summary">
+      {{#if (eq user.role 'hospital')}}
+      <div><dt>Active requests</dt><dd>{{#if hospitalStats}}{{hospitalStats.activeRequests}}{{else}}0{{/if}}</dd><p><a href="/my-requests" class="vm-text-link">Review your requests</a></p></div>
+      <div><dt>Fulfilled requests</dt><dd>{{#if hospitalStats}}{{hospitalStats.fulfilledRequests}}{{else}}0{{/if}}</dd><p>Completed coordination</p></div>
+      <div><dt>Facility reviews needed</dt><dd>{{pendingReviewCount}}</dd><p><a href="/hospital/patients" class="vm-text-link">Open review inbox</a></p></div>
+      {{else}}
+      {{#if donorProfile}}
+      <div><dt>Your availability</dt><dd style="font-size:1.15rem">{{donorStatus}}</dd><p><a href="/donor-profile" class="vm-text-link">Manage availability</a></p></div>
+      <div><dt>Completed donations</dt><dd>{{donationStats.totalDonations}}</dd><p>Your recorded donation activity</p></div>
+      <div><dt>Next coordination date</dt><dd style="font-size:1.15rem">{{nextEligible}}</dd><p>Final eligibility is assessed by medical staff</p></div>
+      {{else}}
+      <div><dt>Requests awaiting review</dt><dd>{{requesterStats.pendingRequests}}</dd><p><a href="/my-requests" class="vm-text-link">Follow facility review</a></p></div>
+      <div><dt>Open requests</dt><dd>{{requesterStats.activeRequests}}</dd><p><a href="/my-requests" class="vm-text-link">Review coordination</a></p></div>
+      <div><dt>Your requests</dt><dd>{{requesterStats.totalRequests}}</dd><p>Submitted requests and outcomes</p></div>
+      {{/if}}
+      {{/if}}
+    </dl>
+    <div class="vm-dashboard-grid">
+      <div>
+        <section aria-labelledby="current-requests-title">
+          <div class="vm-section-heading"><div><h2 id="current-requests-title">Requests needing donor support</h2><p class="vm-muted text-sm mt-1">Recent active urgent requests in the coordination network.</p></div><button type="button" onclick="showEmergencyAlerts()" class="vm-button vm-button--small">View alerts</button></div>
+          {{#if urgentRequests.length}}
+          <div class="vm-table-scroll" tabindex="0" role="region" aria-label="Current urgent blood requests"><table class="vm-table"><caption>Current urgent blood requests</caption><thead><tr><th scope="col" class="text-left">Request</th><th scope="col" class="text-left">Blood needed</th><th scope="col" class="text-left">Priority</th><th scope="col" class="text-right">Action</th></tr></thead><tbody>
+            {{#each urgentRequests}}<tr><td><strong class="text-sm font-semibold">Request #{{id}}</strong><p class="vm-muted text-xs">{{hospitalName}}</p></td><td class="whitespace-nowrap">{{bloodType}} <span class="vm-muted">· {{unitsRequired}} units</span></td><td><span class="vm-status {{#if emergencyActive}}vm-status--danger{{else}}{{#if (eq urgency 'critical')}}vm-status--danger{{else}}vm-status--warning{{/if}}{{/if}}">{{urgencyLabel}}</span></td><td class="text-right"><a href="/view-blood-request/{{id}}" class="vm-button vm-button--small">View request</a></td></tr>{{/each}}
+          </tbody></table></div>
+          {{else}}<div class="vm-empty-state vm-panel"><h3>No urgent requests at the moment</h3><p>New urgent requests will appear here when coordination is needed.</p><a class="vm-text-link inline-block mt-3" href="/map">View the blood map</a></div>{{/if}}
+        </section>
+        <section class="vm-section" aria-labelledby="activity-title">
+          <div class="vm-section-heading"><h2 id="activity-title">Recent activity</h2><a href="/history" class="vm-text-link text-sm">View history</a></div>
+          {{#if activities.length}}{{#each activities}}<article class="vm-activity-row"><div><h3>{{title}}</h3><p>{{description}}</p><p class="mt-1"><time>{{formatDate date}}</time></p></div><a class="vm-button vm-button--small" href="{{link}}">View details</a></article>{{/each}}{{else}}<div class="vm-empty-state"><h3>No activity yet</h3><p>Your requests and profile updates will appear here.</p></div>{{/if}}
+        </section>
       </div>
-
-      <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 class="text-3xl font-bold mb-2">Hello, {{#if user}}{{#if (eq user.role 'hospital')}}{{#if user.hospitalName}}{{user.hospitalName}}{{else}}{{user.firstName}}{{/if}}{{else}}{{user.firstName}}{{/if}}{{else}}there{{/if}}!</h1>
-          <p class="text-white/90 text-lg mb-4 md:mb-0">Welcome to your VitalMatch {{title}}. Ready to make a difference
-            today?</p>
-        </div>
-
-        <!-- Real-time Status Indicators -->
-        <div class="flex flex-col md:flex-row gap-4">
-          <div class="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 text-center">
-            <div class="flex items-center justify-center mb-1">
-              <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse mr-2"></div>
-              <span class="text-sm font-semibold">System Status</span>
-            </div>
-            <p class="text-xs text-white/80">All systems operational</p>
-          </div>
-
+      <aside aria-label="Frequent tasks">
+        <h2 class="mb-4">Quick access</h2>
+        <div class="vm-action-list">
           {{#if (eq user.role 'hospital')}}
-          <div class="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 text-center">
-            <div class="flex items-center justify-center mb-1">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              <span class="text-sm font-semibold">Hospital Mode</span>
-            </div>
-            <a href="/messages/admin" class="text-xs text-white font-semibold underline hover:text-red-100 transition-colors">Message Admin →</a>
-          </div>
+          <a href="/hospital/patients"><span><strong>Review patient requests</strong><small>Approve or decline requests directed to your hospital.</small></span><span aria-hidden="true">→</span></a>
+          <a href="/messages/admin"><span><strong>Contact the coordination team</strong><small>Continue the conversation with a chapter administrator.</small></span><span aria-hidden="true">→</span></a>
           {{else}}
-          <div class="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 text-center">
-            <div class="flex items-center justify-center mb-1">
-              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="text-sm font-semibold">Donor Status</span>
-            </div>
-            <p class="text-xs text-white/80">Available to donate</p>
-          </div>
+          <a href="/view-donor-profile"><span><strong>{{#if donorProfile}}Your donor profile{{else}}Complete your donor profile{{/if}}</strong><small>Keep your contact details and availability current.</small></span><span aria-hidden="true">→</span></a>
+          <a href="/my-appointments"><span><strong>Appointments</strong><small>Review schedules and confirm your availability.</small></span><span aria-hidden="true">→</span></a>
           {{/if}}
+          <a href="/my-requests"><span><strong>Your blood requests</strong><small>Follow request status and donor responses.</small></span><span aria-hidden="true">→</span></a>
+          <a href="/messages"><span><strong>Messages</strong><small>Stay in touch with donors and coordinators.</small></span><span aria-hidden="true">→</span></a>
+          <a href="/map"><span><strong>Blood map</strong><small>See current requests and donor locations.</small></span><span aria-hidden="true">→</span></a>
+          <a href="/help"><span><strong>Help & guidelines</strong><small>Understand requests, matching, and the donation process.</small></span><span aria-hidden="true">→</span></a>
         </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Quick Actions with Notifications -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-
-      <!-- Request Blood Card -->
-      <a href="/new-blood-request"
-        class="group bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-red-500 relative overflow-hidden">
-        <!-- Background Gradient on Hover -->
-        <div
-          class="absolute inset-0 bg-gradient-to-br from-red-50 to-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        </div>
-
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-red-100 p-3 rounded-lg group-hover:bg-red-200 transition-colors">
-              <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">URGENT</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Request Blood</h3>
-          <p class="text-gray-600 text-sm mb-3">Submit an urgent blood request for your hospital or patient</p>
-          <div class="flex items-center text-red-600 text-sm font-semibold">
-            <span>Start Request</span>
-            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-      </a>
-
-      <!-- Donor Profile / Messages Card -->
-      {{#if (eq user.role 'hospital')}}
-      <a href="/messages"
-        class="group bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-blue-500 relative overflow-hidden">
-        <div
-          class="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        </div>
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-blue-100 p-3 rounded-lg group-hover:bg-blue-200 transition-colors">
-              <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            </div>
-            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-semibold">CHAT</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Messages</h3>
-          <p class="text-gray-600 text-sm mb-3">Communicate with blood donors and Red Cross administrators</p>
-          <div class="flex items-center text-blue-600 text-sm font-semibold">
-            <span>Open Chat</span>
-            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-      </a>
-      {{else}}
-      <a href="/view-donor-profile"
-        class="group bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-blue-500 relative overflow-hidden">
-        <div
-          class="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        </div>
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-blue-100 p-3 rounded-lg group-hover:bg-blue-200 transition-colors">
-              <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <div class="flex items-center">
-              <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-1"></div>
-              <span class="text-green-600 text-xs font-semibold">ACTIVE</span>
-            </div>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Donor Profile</h3>
-          <p class="text-gray-600 text-sm mb-3">View or update your donor information and availability status</p>
-          <div class="flex items-center text-blue-600 text-sm font-semibold">
-            <span>Manage Profile</span>
-            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-      </a>
-      {{/if}}
- 
-      <!-- My Requests Card -->
-      <a href="/my-requests"
-        class="group bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-green-500 relative overflow-hidden">
-        <div
-          class="absolute inset-0 bg-gradient-to-br from-green-50 to-green-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        </div>
- 
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-green-100 p-3 rounded-lg group-hover:bg-green-200 transition-colors">
-              <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-semibold">{{#if hospitalStats}}{{hospitalStats.activeRequests}}{{else}}0{{/if}} ACTIVE</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">My Requests</h3>
-          <p class="text-gray-600 text-sm mb-3">View and manage your blood requests and donations</p>
-          <div class="flex items-center text-green-600 text-sm font-semibold">
-            <span>View History</span>
-            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-      </a>
- 
-      <!-- Emergency Alerts / Guidelines Card -->
-      {{#if (eq user.role 'hospital')}}
-      <a href="/help"
-        class="group bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-orange-500 relative overflow-hidden">
-        <div
-          class="absolute inset-0 bg-gradient-to-br from-orange-50 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        </div>
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-orange-100 p-3 rounded-lg group-hover:bg-orange-200 transition-colors">
-              <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.168.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.168.477-4.5 1.253" />
-              </svg>
-            </div>
-            <span class="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold">INFO</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Guidelines</h3>
-          <p class="text-gray-600 text-sm mb-3">Learn about blood request requirements and matching procedures</p>
-          <div class="flex items-center text-orange-600 text-sm font-semibold">
-            <span>View Info</span>
-            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-      </a>
-      {{else}}
-      <div
-        class="group bg-white rounded-xl shadow-md p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border-2 border-transparent hover:border-orange-500 relative overflow-hidden cursor-pointer"
-        onclick="showEmergencyAlerts()">
-        <div
-          class="absolute inset-0 bg-gradient-to-br from-orange-50 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        </div>
- 
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-4">
-            <div class="bg-orange-100 p-3 rounded-lg group-hover:bg-orange-200 transition-colors">
-              <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-            <span class="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold animate-pulse">2
-              NEW</span>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Emergency Alerts</h3>
-          <p class="text-gray-600 text-sm mb-3">Urgent blood requests in your area that need immediate attention</p>
-          <div class="flex items-center text-orange-600 text-sm font-semibold">
-            <span>View Alerts</span>
-            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-      </div>
-      {{/if}}
-
-    </div>
-
-    <!-- Enhanced Statistics Section with Charts -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-
-      <!-- Your Impact Stats / Hospital Request Metrics -->
-      {{#if (eq user.role 'hospital')}}
-      <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-gray-800">Hospital Request Metrics</h2>
-          <div class="flex items-center space-x-2">
-            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-            <span class="text-sm text-gray-600">Hospital Account</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-
-          <div class="text-center group">
-            <div
-              class="bg-gradient-to-br from-red-100 to-red-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-gray-800 mb-1">{{#if hospitalStats}}{{hospitalStats.totalRequests}}{{else}}0{{/if}}</p>
-            <p class="text-gray-600 text-sm">Total Requests</p>
-          </div>
-
-          <div class="text-center group">
-            <div
-              class="bg-gradient-to-br from-blue-100 to-blue-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-gray-800 mb-1">{{#if hospitalStats}}{{hospitalStats.activeRequests}}{{else}}0{{/if}}</p>
-            <p class="text-gray-600 text-sm">Active Requests</p>
-          </div>
-
-          <div class="text-center group">
-            <div
-              class="bg-gradient-to-br from-green-100 to-green-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-gray-800 mb-1">{{#if hospitalStats}}{{hospitalStats.fulfilledRequests}}{{else}}0{{/if}}</p>
-            <p class="text-gray-600 text-sm">Fulfilled Requests</p>
-          </div>
-
-          <div class="text-center group">
-            <div
-              class="bg-gradient-to-br from-purple-100 to-purple-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg class="w-10 h-10 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-gray-800 mb-1">{{#if hospitalStats}}{{hospitalStats.totalUnitsRequested}}{{else}}0{{/if}}</p>
-            <p class="text-gray-600 text-sm">Units Requested</p>
-          </div>
-
-        </div>
-
-        <!-- Mini Chart Placeholder -->
-        <div class="bg-gray-50 rounded-lg p-4">
-          <h3 class="text-sm font-semibold text-gray-700 mb-3">Blood Requests Volume (Last 6 Months)</h3>
-          {{#if hasHospitalActivity}}
-          <div class="flex items-end justify-between h-24 space-x-2">
-            {{#each hospitalChart}}
-            <div class="bg-blue-500 rounded-t w-full" style="height: {{height}}%" title="{{label}}"></div>
-            {{/each}}
-          </div>
-          <div class="flex justify-between text-xs text-gray-500 mt-2">
-            {{#each hospitalChart}}
-            <span>{{label}}</span>
-            {{/each}}
-          </div>
+        <details class="vm-analytics"><summary>{{#if (eq user.role 'hospital')}}Request activity{{else}}Donation activity{{/if}} · last 6 months</summary>
+          {{#if (eq user.role 'hospital')}}
+          {{#if hasHospitalActivity}}<div class="flex items-end justify-between h-24 gap-2" role="img" aria-label="Request activity for the last six months">{{#each hospitalChart}}<div class="bg-gray-600 w-full" style="height:{{height}}%" title="{{label}}"></div>{{/each}}</div><div class="flex justify-between text-xs vm-muted mt-2">{{#each hospitalChart}}<span>{{label}}</span>{{/each}}</div>{{else}}<p class="vm-muted text-sm">No requests recorded in the last six months.</p>{{/if}}
           {{else}}
-          <p class="text-sm text-gray-500 py-2">No requests in the last 6 months - new requests will appear here.</p>
+          {{#if hasDonationActivity}}<div class="flex items-end justify-between h-24 gap-2" role="img" aria-label="Donation activity for the last six months">{{#each donationChart}}<div class="bg-gray-600 w-full" style="height:{{height}}%" title="{{label}}"></div>{{/each}}</div><div class="flex justify-between text-xs vm-muted mt-2">{{#each donationChart}}<span>{{label}}</span>{{/each}}</div>{{else}}<p class="vm-muted text-sm">No donations recorded in the last six months.</p>{{/if}}
           {{/if}}
-        </div>
-      </div>
-      {{else}}
-      <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6 self-start">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-gray-800">Your Impact Dashboard</h2>
-          <div class="flex items-center space-x-2">
-            <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            <span class="text-sm text-gray-600">Live Data</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-
-          <div class="text-center group">
-            <div
-              class="bg-gradient-to-br from-red-100 to-red-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg class="w-10 h-10 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-gray-800 mb-1">{{donationStats.totalDonations}}</p>
-            <p class="text-gray-600 text-sm">Total Donations</p>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div class="bg-red-500 h-2 rounded-full" style="width: {{donationStats.donationBar}}%"></div>
-            </div>
-          </div>
-
-          <div class="text-center group">
-            <div
-              class="bg-gradient-to-br from-blue-100 to-blue-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <p class="text-3xl font-bold text-gray-800 mb-1">{{donationStats.livesSaved}}</p>
-            <p class="text-gray-600 text-sm">Lives Saved</p>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div class="bg-blue-500 h-2 rounded-full" style="width: {{donationStats.livesBar}}%"></div>
-            </div>
-          </div>
-
-          <div class="text-center group">
-            <div
-              class="bg-gradient-to-br from-green-100 to-green-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p class="text-2xl font-bold text-green-600 mb-1">{{donorStatus}}</p>
-            <p class="text-gray-600 text-sm">Donor Status</p>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div class="bg-green-500 h-2 rounded-full animate-pulse" style="width: 100%"></div>
-            </div>
-          </div>
-
-          <div class="text-center group">
-            <div
-              class="bg-gradient-to-br from-purple-100 to-purple-200 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg class="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p class="text-2xl font-bold text-gray-800 mb-1">{{nextEligible}}</p>
-            <p class="text-gray-600 text-sm">Next Eligible</p>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-              <div class="bg-purple-500 h-2 rounded-full" style="width: 100%"></div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Mini Chart Placeholder -->
-        <div class="bg-gray-50 rounded-lg p-4">
-          <h3 class="text-sm font-semibold text-gray-700 mb-3">Donation Activity (Last 6 Months)</h3>
-          {{#if hasDonationActivity}}
-          <div class="flex items-end justify-between h-24 space-x-2">
-            {{#each donationChart}}
-            <div class="bg-red-500 rounded-t w-full" style="height: {{height}}%" title="{{label}}"></div>
-            {{/each}}
-          </div>
-          <div class="flex justify-between text-xs text-gray-500 mt-2">
-            {{#each donationChart}}
-            <span>{{label}}</span>
-            {{/each}}
-          </div>
-          {{else}}
-          <p class="text-sm text-gray-500 py-2">No donations yet - your activity will appear here after your first donation.</p>
-          {{/if}}
-        </div>
-
-      <!-- Quick Actions -->
-      <div class="bg-gray-50 rounded-lg p-4 mt-4">
-        <h3 class="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
-        <div class="grid grid-cols-2 gap-3">
-          <a href="/new-blood-request" class="flex items-center space-x-3 p-3 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
-            <span class="w-9 h-9 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">+</span>
-            <span class="text-sm font-semibold text-gray-800">Request Blood</span>
-          </a>
-          <a href="/map" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
-            <svg class="w-9 h-9 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            <span class="text-sm font-semibold text-gray-800">Blood Map</span>
-          </a>
-          <a href="/my-requests" class="flex items-center space-x-3 p-3 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
-            <svg class="w-9 h-9 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <span class="text-sm font-semibold text-gray-800">My Requests</span>
-          </a>
-          <a href="/messages" class="flex items-center space-x-3 p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors">
-            <svg class="w-9 h-9 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span class="text-sm font-semibold text-gray-800">Messages</span>
-          </a>
-        </div>
-      </div>
-      </div>
-      {{/if}}
-
-      <!-- Quick Actions Sidebar -->
-      <div class="space-y-6">
-
-        <!-- Blood Type Compatibility / Hospital Details -->
-        {{#if (eq user.role 'hospital')}}
-        <div class="bg-white rounded-xl shadow-md p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Hospital Details</h3>
-          <div class="space-y-3">
-            {{#if user.hospitalName}}
-            <div>
-              <p class="text-xs text-gray-500 font-semibold uppercase">Hospital Name</p>
-              <p class="text-sm text-gray-800 font-bold">{{user.hospitalName}}</p>
-            </div>
-            {{/if}}
-            <div>
-              <p class="text-xs text-gray-500 font-semibold uppercase">Representative Name</p>
-              <p class="text-sm text-gray-800 font-medium">{{user.firstName}} {{user.lastName}}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500 font-semibold uppercase">Email Address</p>
-              <p class="text-sm text-gray-800 truncate font-medium">{{user.email}}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500 font-semibold uppercase">Contact Number</p>
-              <p class="text-sm text-gray-800 font-medium">{{user.phone}}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500 font-semibold uppercase">Registered Address</p>
-              <p class="text-sm text-gray-800 font-medium">{{user.address}}</p>
-            </div>
-            <div class="pt-2 border-t">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                Authorized Requester
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hospital Assistance Center -->
-        <div class="bg-white rounded-xl shadow-md p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Assistance Center</h3>
-          <div class="space-y-4">
-            <div class="p-3 bg-red-50 rounded-lg border border-red-100">
-              <p class="text-xs text-red-600 font-semibold uppercase mb-1">Red Cross Emergency Line</p>
-              <p class="text-sm font-bold text-red-700">PRC Mindoro: (043) 288-1234</p>
-              <p class="text-xs text-gray-500 mt-1">24/7 Blood Coordination Desk</p>
-            </div>
-            <div class="text-center py-2">
-              <p class="text-xs text-gray-500">Need to update account verification details? Please contact support@vitalmatch.ph.</p>
-            </div>
-          </div>
-        </div>
-        {{else}}
-        <!-- Blood Type Compatibility -->
-        <div class="bg-white rounded-xl shadow-md p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Blood Type Info</h3>
-          {{#if donorProfile.bloodType}}
-          <div class="text-center">
-            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span class="text-2xl font-bold text-red-600">{{donorProfile.bloodType}}</span>
-            </div>
-            <p class="text-sm text-gray-600 mb-3">Your Blood Type</p>
-            <div class="text-xs text-gray-500">
-              <p class="mb-1">Based on your registered donor profile.</p>
-            </div>
-          </div>
-          {{else}}
-          <div class="text-center">
-            <div
-              class="w-16 h-16 bg-gray-100 border border-dashed border-gray-300 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span class="text-xl font-bold text-gray-400">?</span>
-            </div>
-            <p class="text-sm text-gray-600 mb-3">Blood Type Not Set</p>
-            <div class="text-xs text-gray-500 mb-4">
-              <p>You haven't added a blood type to your profile yet.</p>
-            </div>
-            <a href="/view-donor-profile"
-              class="inline-block text-xs font-semibold bg-gray-100 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-200 transition">Update
-              Profile</a>
-          </div>
-          {{/if}}
-        </div>
-
-        <!-- Upcoming Appointments -->
-        <div class="bg-white rounded-xl shadow-md p-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Upcoming</h3>
-          <div class="space-y-3">
-            <div class="flex items-center p-3 bg-blue-50 rounded-lg">
-              <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-              <div class="flex-1">
-                <p class="text-sm font-semibold text-gray-800">Health Check</p>
-                <p class="text-xs text-gray-600">Tomorrow, 2:00 PM</p>
-              </div>
-            </div>
-
-            <div class="text-center py-4">
-              <svg class="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p class="text-sm text-gray-500">No other appointments</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Donate Button -->
-        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-md p-6 text-white text-center">
-          <svg class="w-12 h-12 mx-auto mb-3 opacity-90" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-          </svg>
-          <h3 class="text-lg font-semibold mb-2">Ready to Donate?</h3>
-          <p class="text-sm text-white/90 mb-4">Your next donation can save up to 3 lives</p>
-          <button class="bg-white text-red-600 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-100 transition">
-            Schedule Donation
-          </button>
-        </div>
-        {{/if}}
-
-        <!-- Blockchain Status Widget --
-        <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-md p-6 text-white">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold">Blockchain Status</h3>
-            <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse" id="blockchainStatusDot"></div>
-          </div>
-          
-          <div class="space-y-3">
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-white/80">Total Blocks:</span>
-              <span class="font-semibold" id="dashboardTotalBlocks">-</span>
-            </div>
-            
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-white/80">Your Records:</span>
-              <span class="font-semibold" id="dashboardUserRecords">-</span>
-            </div>
-            
-            <div class="flex justify-between items-center">
-              <span class="text-sm text-white/80">Pending:</span>
-              <span class="font-semibold" id="dashboardPendingTx">-</span>
-            </div>
-          </div>
-          
-          <div class="mt-4 pt-4 border-t border-white/20">
-            <div class="flex items-center justify-between">
-              <span class="text-xs text-white/70">Integrity:</span>
-              <span class="text-xs font-semibold" id="blockchainIntegrity">Verified ✓</span>
-            </div>
-          </div>
-          
-          <button onclick="window.open('/admin/blockchain', '_blank')" class="mt-4 w-full bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-            View Blockchain
-          </button>
-        </div>
-      -->
-      </div>
-
+        </details>
+      </aside>
     </div>
-
-    <!-- Enhanced Recent Activity -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Recent Activity</h2>
-        <div class="flex items-center space-x-3">
-          <button class="text-sm text-gray-600 hover:text-gray-800 transition">
-            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
-            </svg>
-            Filter
-          </button>
-          <button class="text-sm text-blue-600 hover:text-blue-700 transition font-semibold">
-            View All
-          </button>
-        </div>
-      </div>
-
-      {{#if activities.length}}
-      <div class="space-y-4">
-        {{#each activities}}
-        <div
-          class="group flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 cursor-pointer border border-transparent hover:border-gray-200">
-          <!-- Icon with Animation -->
-          <div class="flex-shrink-0">
-            {{#if (eq type 'request')}}
-            <div class="bg-red-100 p-3 rounded-lg group-hover:bg-red-200 transition-colors">
-              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            {{else}}
-            <div class="bg-blue-100 p-3 rounded-lg group-hover:bg-blue-200 transition-colors">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            {{/if}}
-          </div>
-
-          <!-- Content -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-lg font-semibold text-gray-800 group-hover:text-gray-900 transition-colors">{{title}}</h3>
-              {{#if (eq type 'request')}}
-              {{#if (eq status 'active')}}
-              <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center">
-                <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                Active
-              </span>
-              {{else if (eq status 'fulfilled')}}
-              <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center">
-                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clip-rule="evenodd" />
-                </svg>
-                Fulfilled
-              </span>
-              {{else if (eq status 'cancelled')}}
-              <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold">Cancelled</span>
-              {{else}}
-              <span
-                class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center">
-                <div class="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></div>
-                Pending
-              </span>
-              {{/if}}
-              {{else}}
-              {{#if (eq status 'active')}}
-              <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center">
-                <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                Available
-              </span>
-              {{else}}
-              <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold">Unavailable</span>
-              {{/if}}
-              {{/if}}
-            </div>
-            <p class="text-gray-600 text-sm mb-3 leading-relaxed">{{description}}</p>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center text-gray-400 text-xs">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{{date}}</span>
-              </div>
-              <a href="{{link}}"
-                class="text-blue-600 hover:text-blue-700 text-sm font-semibold flex items-center group-hover:translate-x-1 transition-transform">
-                View Details
-                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </a>
-            </div>
-          </div>
-        </div>
-        {{/each}}
-      </div>
-
-      <!-- Load More Button -->
-      <div class="text-center mt-6">
-        <button
-          class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold transition-colors">
-          Load More Activities
-        </button>
-      </div>
-
-      {{else}}
-      <!-- Enhanced Empty State -->
-      <div class="text-center py-16">
-        <div class="relative">
-          <!-- Animated Background -->
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full opacity-50"></div>
-          </div>
-
-          <!-- Icon -->
-          <div class="relative z-10 mb-6">
-            <svg class="w-20 h-20 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-
-          <h3 class="text-xl font-semibold text-gray-700 mb-3">No Recent Activity</h3>
-          <p class="text-gray-500 mb-6 max-w-md mx-auto">Your donation history and requests will appear here once you
-            start using VitalMatch</p>
-
-          <!-- Quick Action Buttons -->
-          <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/new-blood-request"
-              class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition">
-              Make Your First Request
-            </a>
-            <a href="/view-donor-profile"
-              class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-              Complete Donor Profile
-            </a>
-          </div>
-        </div>
-      </div>
-      {{/if}}
-    </div>
-
+    {{/unless}}
   </div>
-</div>
+</main>
 
 <!-- Emergency Alerts Modal -->
 <div id="emergencyModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+  <div class="bg-white rounded-md max-w-2xl w-full max-h-[80vh] overflow-y-auto">
     <div class="p-6 border-b">
       <div class="flex items-center justify-between">
         <div class="flex items-center">
@@ -921,7 +87,7 @@
           </div>
           <h2 class="text-xl font-bold text-gray-800">Emergency Blood Requests</h2>
         </div>
-        <button onclick="closeEmergencyModal()" class="text-gray-400 hover:text-gray-600">
+        <button onclick="closeEmergencyModal()" class="vm-button text-gray-400 hover:text-gray-600" aria-label="Close dialog">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -934,21 +100,21 @@
       <div class="border {{#if (eq urgency 'critical')}}border-red-200 bg-red-50{{else}}border-orange-200 bg-orange-50{{/if}} rounded-lg p-4">
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center">
-            <span class="{{#if (eq urgency 'critical')}}bg-red-500{{else}}bg-orange-500{{/if}} text-white text-xs px-2 py-1 rounded-full font-semibold mr-3">{{urgencyLabel}}</span>
+            <span class="vm-status {{#if (eq urgency 'critical')}}vm-status--danger{{else}}vm-status--warning{{/if}} text-white text-xs px-2 py-1 rounded-full font-semibold mr-3">{{urgencyLabel}}</span>
             <h3 class="font-semibold text-gray-800">{{bloodType}} Blood Needed Urgently</h3>
           </div>
           <span class="text-xs text-gray-500">{{timeAgo}}</span>
         </div>
         <p class="text-sm text-gray-700 mb-3">
           <strong>Hospital:</strong> {{hospitalName}}<br>
-          <strong>Patient:</strong> {{patientName}}<br>
+
           <strong>Required:</strong> {{unitsRequired}} units of {{bloodType}} blood<br>
           <strong>Location:</strong> {{city}}, {{province}}
         </p>
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-600">Request #{{id}}</span>
           <a href="/view-blood-request/{{id}}"
-            class="{{#if (eq urgency 'critical')}}bg-red-600 hover:bg-red-700{{else}}bg-orange-600 hover:bg-orange-700{{/if}} text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+            class="vm-button vm-button--small {{#if (eq urgency 'critical')}}bg-red-600 hover:bg-red-700{{else}}bg-orange-600 hover:bg-orange-700{{/if}} text-white px-4 py-2 rounded-lg text-sm font-semibold transition vm-button--primary">
             Respond Now
           </a>
         </div>
@@ -965,10 +131,10 @@
 
 <!-- Nearby Blood Request Notification Modal -->
 <div id="requestNotificationModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+  <div class="vm-panel bg-white rounded-md max-w-md w-full">
     <div class="p-5 border-b flex items-center justify-between">
       <h2 id="requestNotificationTitle" class="text-lg font-bold text-gray-800">Nearby Blood Request</h2>
-      <button onclick="closeRequestNotificationModal()" class="text-gray-400 hover:text-gray-600" aria-label="Close notification">
+      <button onclick="closeRequestNotificationModal()" class="vm-button text-gray-400 hover:text-gray-600" aria-label="Close notification">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -977,137 +143,14 @@
     <div class="p-5">
       <p id="requestNotificationMessage" class="text-sm leading-6 text-gray-600"></p>
       <div class="mt-5 flex justify-end gap-3">
-        <button onclick="closeRequestNotificationModal()" class="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800">Close</button>
-        <a id="requestNotificationLink" href="#" class="px-4 py-2 rounded-lg bg-red-600 text-sm font-semibold text-white hover:bg-red-700">View Request</a>
+        <button onclick="closeRequestNotificationModal()" class="vm-button vm-button--small px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800">Close</button>
+        <a id="requestNotificationLink" href="#" class="vm-button vm-button--small px-4 py-2 rounded-lg bg-red-600 text-sm font-semibold text-white hover:bg-red-700">View Request</a>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  // Dashboard Search Functionality
-  let dashboardSearchTimeout;
-  function handleDashboardSearch(event, isMobile = false) {
-    const query = event.target.value.trim();
-    const resultsContainer = document.getElementById('dashboardSearchResults');
-
-    // Clear previous timeout
-    clearTimeout(dashboardSearchTimeout);
-
-    if (query.length < 2) {
-      resultsContainer.classList.add('hidden');
-      return;
-    }
-
-    // Debounce search
-    dashboardSearchTimeout = setTimeout(() => {
-      performDashboardSearch(query, resultsContainer, isMobile);
-    }, 300);
-  }
-
-  function performDashboardSearch(query, resultsContainer, isMobile) {
-    // Show loading state
-    resultsContainer.innerHTML = `
-    <div class="p-4 text-center">
-      <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600 mx-auto"></div>
-      <p class="text-sm text-gray-600 mt-2">Searching...</p>
-    </div>
-  `;
-    resultsContainer.classList.remove('hidden');
-
-    // Real search against the user's own requests and app pages
-    fetch(`/api/search?q=${encodeURIComponent(query)}`)
-      .then(response => response.json())
-      .then(data => {
-        displayDashboardSearchResults(data.results || [], resultsContainer);
-      })
-      .catch(() => {
-        displayDashboardSearchResults([], resultsContainer);
-      });
-  }
-
-  function displayDashboardSearchResults(results, container) {
-    if (results.length === 0) {
-      container.innerHTML = `
-      <div class="p-4 text-center">
-        <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-        </svg>
-        <p class="text-sm text-gray-600">No results found</p>
-      </div>
-    `;
-      return;
-    }
-
-    const resultsHTML = results.map(result => {
-      const icon = getDashboardSearchResultIcon(result.type);
-      const statusBadge = getDashboardSearchStatusBadge(result.status, result.type);
-
-      return `
-      <a href="${result.url}" class="flex items-center p-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0">
-        <div class="flex-shrink-0 mr-3">
-          ${icon}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between mb-1">
-            <p class="text-sm font-semibold text-gray-800 truncate">${result.title}</p>
-            ${statusBadge}
-          </div>
-          <p class="text-xs text-gray-600 truncate">${result.subtitle}</p>
-        </div>
-        <svg class="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-        </svg>
-      </a>
-    `;
-    }).join('');
-
-    container.innerHTML = resultsHTML;
-  }
-
-  function getDashboardSearchResultIcon(type) {
-    const icons = {
-      request: '<div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>',
-      donor: '<div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></div>',
-      message: '<div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div>',
-      page: '<div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>'
-    };
-    return icons[type] || icons.page;
-  }
-
-  function getDashboardSearchStatusBadge(status, type) {
-    if (!status) return '';
-
-    const badges = {
-      active: '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">Active</span>',
-      fulfilled: '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">Fulfilled</span>',
-      available: '<span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">Available</span>',
-      unread: '<span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-semibold">New</span>',
-      read: ''
-    };
-
-    return badges[status] || '';
-  }
-
-  function toggleDashboardMobileSearch() {
-    const searchBar = document.getElementById('dashboardMobileSearch');
-    searchBar.classList.toggle('hidden');
-
-    if (!searchBar.classList.contains('hidden')) {
-      document.getElementById('dashboardMobileSearchInput').focus();
-    }
-  }
-
-  // Close search results when clicking outside
-  document.addEventListener('click', function (e) {
-    const searchContainer = document.querySelector('#dashboardSearch')?.parentElement;
-    const resultsContainer = document.getElementById('dashboardSearchResults');
-
-    if (searchContainer && !searchContainer.contains(e.target)) {
-      resultsContainer?.classList.add('hidden');
-    }
-  });
-
   // Sidebar active state is handled by the shared user-sidebar partial
 
   // Emergency Alerts Modal Functions
@@ -1139,7 +182,7 @@
         document.body.style.overflow = 'hidden';
       })
       .catch(() => {
-        window.location.href = link;
+        window.location.href = '/notifications';
       });
   }
 
@@ -1158,7 +201,8 @@
   // Notification Dropdown Functions
   function toggleNotifications() {
     const dropdown = document.getElementById('notificationDropdown');
-    dropdown.classList.toggle('hidden');
+    const hidden = dropdown.classList.toggle('hidden');
+    document.getElementById('notificationBtn').setAttribute('aria-expanded', String(!hidden));
   }
 
   // Close notification dropdown when clicking outside
@@ -1168,115 +212,9 @@
 
     if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
       notificationDropdown.classList.add('hidden');
+      notificationBtn.setAttribute('aria-expanded', 'false');
     }
   });
-
-  // Simulate real-time updates
-  function updateDashboardStats() {
-    // This would normally fetch real data from the server
-    console.log('Updating dashboard stats...');
-
-    // Update blockchain status
-    loadDashboardBlockchainData();
-  }
-
-  // Load blockchain data for dashboard widget
-  async function loadDashboardBlockchainData() {
-    try {
-      const response = await fetch('/api/blockchain/stats');
-      const result = await response.json();
-
-      if (result.success) {
-        const data = result.data;
-
-        // Update blockchain status dot
-        const statusDot = document.getElementById('blockchainStatusDot');
-        if (data.isValid) {
-          statusDot.className = 'w-3 h-3 bg-green-400 rounded-full animate-pulse';
-        } else {
-          statusDot.className = 'w-3 h-3 bg-red-400 rounded-full animate-pulse';
-        }
-
-        // Update statistics
-        document.getElementById('dashboardTotalBlocks').textContent = data.totalBlocks || '-';
-        document.getElementById('dashboardUserRecords').textContent =
-          (data.donations + data.requests + data.fulfillments) || '-';
-        document.getElementById('dashboardPendingTx').textContent = data.pendingTransactions || '-';
-
-        // Update integrity status
-        const integrityElement = document.getElementById('blockchainIntegrity');
-        if (data.isValid) {
-          integrityElement.textContent = 'Verified ✓';
-          integrityElement.className = 'text-xs font-semibold text-green-200';
-        } else {
-          integrityElement.textContent = 'Compromised ❌';
-          integrityElement.className = 'text-xs font-semibold text-red-200';
-        }
-      }
-    } catch (error) {
-      console.error('Error loading blockchain data:', error);
-      // Show error state
-      document.getElementById('dashboardTotalBlocks').textContent = 'Error';
-      document.getElementById('dashboardUserRecords').textContent = 'Error';
-      document.getElementById('dashboardPendingTx').textContent = 'Error';
-    }
-  }
-
-  // Update stats every 30 seconds
-  setInterval(updateDashboardStats, 30000);
-
-  // Add notification sound for emergency alerts (optional)
-  function playNotificationSound() {
-    // Create a simple beep sound
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
-    } catch (error) {
-      console.log('Audio not supported');
-    }
-  }
-
-  // Simulate new emergency alert (for demo purposes)
-  setTimeout(() => {
-    // Update notification badge
-    const badge = document.querySelector('.animate-pulse');
-    if (badge) {
-      badge.textContent = '3 NEW';
-      playNotificationSound();
-    }
-  }, 10000); // Show new alert after 10 seconds
-
-  // Simulate real-time notification updates
-  function addNewNotification(type, title, message) {
-    const badge = document.getElementById('notificationBadge');
-    const currentCount = parseInt(badge.textContent) || 0;
-    badge.textContent = currentCount + 1;
-    badge.classList.add('animate-pulse');
-
-    // Play notification sound
-    playNotificationSound();
-
-    // You could also add the notification to the dropdown here
-    console.log(`New ${type} notification: ${title} - ${message}`);
-  }
-
-  // Example: Simulate receiving a new notification after 15 seconds
-  setTimeout(() => {
-    addNewNotification('emergency', 'New Blood Request', 'AB+ blood needed urgently');
-  }, 15000);
 
   // Keyboard shortcuts for dashboard
   function initializeDashboardKeyboardShortcuts() {
@@ -1284,10 +222,7 @@
       // Ctrl/Cmd + K for search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        const searchInput = document.getElementById('dashboardSearch') || document.getElementById('dashboardMobileSearchInput');
-        if (searchInput) {
-          searchInput.focus();
-        }
+        window.focusWorkspaceSearch();
       }
 
       // Alt + N for notifications
@@ -1299,18 +234,13 @@
       // Alt + M for mobile menu (sidebar)
       if (e.altKey && e.key === 'm') {
         e.preventDefault();
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        if (sidebarToggle) {
-          sidebarToggle.click();
-        }
+        document.querySelector('.vm-header [data-sidebar-toggle]')?.click();
       }
 
       // Escape to close modals and dropdowns
       if (e.key === 'Escape') {
         const emergencyModal = document.getElementById('emergencyModal');
         const notificationDropdown = document.getElementById('notificationDropdown');
-        const searchResults = document.getElementById('dashboardSearchResults');
-        const mobileSearch = document.getElementById('dashboardMobileSearch');
 
         if (!emergencyModal.classList.contains('hidden')) {
           closeEmergencyModal();
@@ -1323,73 +253,15 @@
 
         if (!notificationDropdown.classList.contains('hidden')) {
           notificationDropdown.classList.add('hidden');
+          document.getElementById('notificationBtn').setAttribute('aria-expanded', 'false');
         }
 
-        if (!searchResults.classList.contains('hidden')) {
-          searchResults.classList.add('hidden');
-        }
-
-        if (!mobileSearch.classList.contains('hidden')) {
-          toggleDashboardMobileSearch();
-        }
+        window.closeWorkspaceSearch();
       }
     });
   }
 
-  // Dashboard Animation on Load
-  document.addEventListener('DOMContentLoaded', function () {
-    // Initialize keyboard shortcuts
-    initializeDashboardKeyboardShortcuts();
-
-    // Update sidebar active state
-    updateSidebarActiveState();
-
-    // Load initial blockchain data
-    loadDashboardBlockchainData();
-
-    // Animate statistics cards
-    const statCards = document.querySelectorAll('.group');
-    statCards.forEach((card, index) => {
-      setTimeout(() => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'all 0.5s ease-out';
-
-        setTimeout(() => {
-          card.style.opacity = '1';
-          card.style.transform = 'translateY(0)';
-        }, 100);
-      }, index * 100);
-    });
-
-    // Add keyboard shortcut hints
-    const searchInput = document.getElementById('dashboardSearch');
-    if (searchInput) {
-      searchInput.setAttribute('title', 'Press Ctrl+K to focus search');
-    }
-
-    // Add focus trap for modals
-    const emergencyModal = document.getElementById('emergencyModal');
-    emergencyModal.addEventListener('keydown', function (e) {
-      if (e.key === 'Tab') {
-        const focusableElements = emergencyModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            e.preventDefault();
-            lastElement.focus();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            e.preventDefault();
-            firstElement.focus();
-          }
-        }
-      }
-    });
-  });
+  document.addEventListener('DOMContentLoaded', initializeDashboardKeyboardShortcuts);
 </script>
 
 {{> footer}}

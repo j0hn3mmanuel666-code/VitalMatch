@@ -1,25 +1,27 @@
 <!-- Admin Reports Content -->
-<div class="min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
-  <div class="container mx-auto px-4">
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="vm-page-container container mx-auto px-4">
+    {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/admin/reports">Retry loading reports</a></div>{{/if}}
     
     <!-- Header -->
-    <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div class="vm-page-heading vm-heading-actions mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">System Reports</h1>
-        <p class="text-gray-600 dark:text-gray-400">Generate and view comprehensive system reports</p>
+        <p class="vm-eyebrow">Chapter coordination</p>
+        <h1>Coordination reports</h1>
+        <p>Review request demand, donor readiness, and recorded outcomes.</p>
       </div>
-      <a href="/admin/reports/export" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
+      {{#unless error}}<a href="/admin/reports/export" class="vm-button inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         Export CSV
-      </a>
+      </a>{{/unless}}
     </div>
     
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    {{#unless error}}<!-- Summary Cards -->
+    <div class="vm-report-summaries grid grid-cols-1 md:grid-cols-3 mb-8">
       
-      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+      <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none p-6">
         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Blood Request Summary</h3>
         <div class="space-y-3">
           <div class="flex justify-between">
@@ -32,7 +34,7 @@
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600 dark:text-gray-400">Fulfilled:</span>
-            <span class="font-bold text-blue-600">{{summary.fulfilledRequests}}</span>
+            <span class="font-bold text-green-600">{{summary.fulfilledRequests}}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600 dark:text-gray-400">Cancelled:</span>
@@ -41,7 +43,7 @@
         </div>
       </div>
       
-      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+      <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none p-6">
         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Donor Summary</h3>
         <div class="space-y-3">
           <div class="flex justify-between">
@@ -49,29 +51,29 @@
             <span class="font-bold text-gray-900 dark:text-gray-100">{{summary.totalDonors}}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Available:</span>
+            <span class="text-gray-600 dark:text-gray-400">Ready for coordination:</span>
             <span class="font-bold text-green-600">{{summary.availableDonors}}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Unavailable:</span>
+            <span class="text-gray-600 dark:text-gray-400">Needs review / paused:</span>
             <span class="font-bold text-gray-600 dark:text-gray-400">{{summary.unavailableDonors}}</span>
           </div>
         </div>
       </div>
       
-      <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Impact Summary</h3>
+      <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none p-6">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Recorded outcomes</h3>
         <div class="space-y-3">
           <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Lives Saved:</span>
-            <span class="font-bold text-purple-600">{{summary.livesSaved}}</span>
+            <span class="text-gray-600 dark:text-gray-400">Units actually collected:</span>
+            <span class="font-bold text-gray-800 dark:text-gray-200">{{summary.unitsCollected}}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Success Rate:</span>
+            <span class="text-gray-600 dark:text-gray-400">Requests fulfilled:</span>
             <span class="font-bold text-green-600">{{summary.successRate}}%</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600 dark:text-gray-400">Avg Response Time:</span>
+            <span class="text-gray-600 dark:text-gray-400">Average time to fulfil:</span>
             <span class="font-bold text-blue-600">{{summary.avgResponseTime}}</span>
           </div>
         </div>
@@ -80,18 +82,18 @@
     </div>
     
     <!-- Blood Type Report -->
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6 mb-6">
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none p-6 mb-6">
       <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Blood Type Demand Report</h2>
       {{#if bloodTypeReport.length}}
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+        <div class="vm-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable data table">
+          <table data-search-label="blood type demand" class="vm-table min-w-full divide-y divide-gray-200 dark:divide-gray-800">
             <thead class="bg-gray-50 dark:bg-[#27272a]">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blood Type</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Requests</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Units Requested</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fulfilled</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Percentage</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blood Type</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Requests</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Units Requested</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fulfilled</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Percentage</th>
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-200 dark:divide-gray-800">
@@ -115,18 +117,18 @@
     </div>
     
     <!-- Monthly Trend Report -->
-    <div class="bg-white dark:bg-[#18181b] rounded-xl shadow-md dark:shadow-none p-6">
+    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none p-6">
       <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Monthly Trend Report</h2>
       {{#if monthlyReport.length}}
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+        <div class="vm-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable data table">
+          <table data-search-label="monthly trends" class="vm-table min-w-full divide-y divide-gray-200 dark:divide-gray-800">
             <thead class="bg-gray-50 dark:bg-[#27272a]">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Month</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Requests</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">New Donors</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fulfilled</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Success Rate</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Month</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Requests</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">New Donors</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fulfilled</th>
+                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Success Rate</th>
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-200 dark:divide-gray-800">
@@ -147,5 +149,6 @@
       {{/if}}
     </div>
     
+    {{/unless}}
   </div>
-</div>
+</main>

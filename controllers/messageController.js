@@ -5,7 +5,7 @@ Copyright (c) 2025 Christian I. Cabrera || XianFire Framework
 Mindoro State University - Philippines
 */
 
-import { Message, sequelize } from "../models/messageModel.js";
+import { Message } from "../models/messageModel.js";
 import { User } from "../models/userModel.js";
 import { BloodRequest } from "../models/bloodRequestModel.js";
 import { Donor } from "../models/donorModel.js";
@@ -13,8 +13,7 @@ import { Op } from "sequelize";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-
-await sequelize.sync();
+import crypto from "node:crypto";
 
 // Helper function to create conversation ID
 function createConversationId(userId1, userId2) {
@@ -125,7 +124,7 @@ export const messagesPage = async (req, res) => {
         messages = conversationMessages.map(msg => ({
           message: msg.message,
           messageType: msg.messageType,
-          audioFilePath: msg.audioFilePath,
+          audioFilePath: msg.messageType === 'voice' ? `/messages/voice/${msg.id}` : null,
           audioDuration: msg.audioDuration,
           waveformData: msg.waveformData,
           isSender: msg.senderId === currentUserId,
@@ -162,7 +161,7 @@ export const messagesPage = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error loading messages:", error);
+    console.error("Error loading messages:");
     res.render("messages", {
       title: "Messages",
       userName: "User",
@@ -183,8 +182,13 @@ export const sendMessage = async (req, res) => {
   try {
     const { recipientId, message } = req.body;
     const senderId = req.session.userId;
+    if (!/^\d+$/.test(String(recipientId)) || Number(recipientId) === Number(senderId) ||
+      typeof message !== 'string' || !message.trim() || message.length > 4000) {
+      return res.status(400).json({ success: false, error: 'Invalid message or recipient' });
+    }
+    const recipient = await User.findOne({ where: { id: Number(recipientId), isActive: true, emailVerified: true }, attributes: ['id'] });
+    if (!recipient) return res.status(400).json({ success: false, error: 'Recipient unavailable' });
 
-    console.log(`📤 Sending message from ${senderId} to ${recipientId}`);
 
     const conversationId = createConversationId(senderId, parseInt(recipientId));
 
@@ -196,13 +200,12 @@ export const sendMessage = async (req, res) => {
       isRead: false
     });
 
-    console.log(`✅ Message sent successfully`);
 
     // Redirect back to the conversation
     res.redirect(`/messages?userId=${recipientId}`);
 
   } catch (error) {
-    console.error("Error sending message:", error);
+    console.error("Error sending message:");
     res.redirect("/messages");
   }
 };
@@ -224,7 +227,7 @@ export const contactAdmin = async (req, res) => {
 
     res.redirect(`/messages?userId=${admin.id}`);
   } catch (error) {
-    console.error("Error contacting admin:", error);
+    console.error("Error contacting admin:");
     req.flash("error_msg", "Could not open admin chat. Please try again.");
     res.redirect(req.get("Referer") || "/hospital/dashboard");
   }
@@ -238,31 +241,27 @@ export const contactDonor = async (req, res) => {
     const { requestId, donorUserId } = req.params;
     const adminUserId = req.session.userId;
 
-    console.log(`🔍 Contact Donor - RequestID: ${requestId}, DonorUserID: ${donorUserId}, AdminID: ${adminUserId}`);
 
     // Get blood request details
     const bloodRequest = await BloodRequest.findByPk(requestId);
     if (!bloodRequest) {
-      console.log("❌ Blood request not found");
       return res.redirect("/admin/requests");
     }
 
-    console.log(`📋 Found blood request: ${bloodRequest.patientName} - ${bloodRequest.bloodType}`);
 
     // Get donor details
     const donor = await Donor.findOne({ where: { userId: donorUserId } });
     const donorUser = await User.findByPk(donorUserId);
 
-    if (!donor || !donorUser) {
-      console.log("❌ Donor or donor user not found");
+    if (!donor || !donorUser?.isActive || !donorUser.emailVerified) {
       return res.redirect("/admin/requests");
     }
+    // A navigation opens the conversation; only a CSRF-protected POST sends.
+    if (req.method === 'GET') return res.redirect(`/messages?userId=${donorUserId}`);
 
-    console.log(`👤 Found donor: ${donorUser.firstName} ${donorUser.lastName} (${donor.bloodType})`);
 
     // Create conversation ID
     const conversationId = createConversationId(adminUserId, parseInt(donorUserId));
-    console.log(`💬 Conversation ID: ${conversationId}`);
 
     // Create automatic initial message from admin to donor
     const initialMessage = `Dear, ${donorUser.firstName}
@@ -274,7 +273,7 @@ Hospital: ${bloodRequest.hospitalName}  Location: ${bloodRequest.hospitalAddress
 Blood Type Needed: ${bloodRequest.bloodType} 
 Units Required: ${bloodRequest.unitsRequired}
 Urgency: ${bloodRequest.urgency} 
-Patient: ${bloodRequest.patientName} Contact Information: ${bloodRequest.contactNumber} 
+Request: #${bloodRequest.id}
 
 Your prompt assistance could significantly impact the patient's recovery. 
 
@@ -294,81 +293,106 @@ VitalMatch Admin Team`;
       isRead: false
     });
 
-    console.log("✅ Message sent successfully");
 
     // Redirect to messages page with the donor conversation
     res.redirect(`/messages?userId=${donorUserId}`);
 
   } catch (error) {
-    console.error("❌ Error contacting donor:", error);
+    console.error("❌ Error contacting donor:");
     res.redirect("/admin/requests");
   }
 };
 
 
-// Configure multer for voice message uploads
+// Private voice files never enter the public static directory. Legacy files are
+// preserved and served only through the same participant-authorized endpoint.
+export const privateVoiceDirectory = path.resolve(process.cwd(), 'storage/private/voice-messages');
+const audioTypes = { 'audio/webm': '.webm', 'audio/ogg': '.ogg', 'audio/wav': '.wav' };
 const voiceMessageStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'public/uploads/voice-messages';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(privateVoiceDirectory, { recursive: true });
+    cb(null, privateVoiceDirectory);
   },
-  filename: (req, file, cb) => {
-    const uniqueName = `voice_${Date.now()}_${Math.random().toString(36).substring(7)}.webm`;
-    cb(null, uniqueName);
-  }
+  filename: (_req, file, cb) => cb(null, `${crypto.randomBytes(24).toString('hex')}${audioTypes[file.mimetype]}`)
 });
-
 const voiceMessageUpload = multer({
   storage: voiceMessageStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'audio/webm' || file.mimetype === 'audio/ogg' || file.mimetype === 'audio/wav') {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Only audio files are allowed.'));
-    }
+  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5, fieldSize: 10000 },
+  fileFilter: (_req, file, cb) => {
+    if (Object.hasOwn(audioTypes, file.mimetype)) cb(null, true);
+    else cb(Object.assign(new Error('Unsupported media'), { code: 'INVALID_MEDIA' }));
   }
 });
-
 export const uploadVoiceMessage = voiceMessageUpload.single('audio');
 
-// Send voice message
+export function audioSignatureMatches(buffer, mime) {
+  if (mime === 'audio/webm') return buffer.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]));
+  if (mime === 'audio/ogg') return buffer.subarray(0, 4).toString() === 'OggS';
+  return mime === 'audio/wav' && buffer.subarray(0, 4).toString() === 'RIFF' && buffer.subarray(8, 12).toString() === 'WAVE';
+}
+function discardUploadedAudio(req) {
+  if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch {} }
+}
 export const sendVoiceMessage = async (req, res) => {
-  if (!req.session.userId) return res.redirect("/login");
-
   try {
     const { recipientId, duration, waveformData } = req.body;
-    const senderId = req.session.userId;
-
-    if (!req.file) {
-      return res.status(400).json({ error: 'No audio file uploaded' });
+    if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
+    const recipient = typeof recipientId === 'string' && /^\d+$/.test(recipientId) && Number.isSafeInteger(Number(recipientId)) && Number(recipientId) > 0 && Number(recipientId) !== Number(req.session.userId)
+      ? await User.findOne({ where: { id: Number(recipientId), isActive: true, emailVerified: true }, attributes: ['id'] }) : null;
+    const bytes = await fs.promises.readFile(req.file.path);
+    if (!recipient || !audioSignatureMatches(bytes, req.file.mimetype)) {
+      discardUploadedAudio(req);
+      return res.status(400).json({ error: 'Invalid audio file or recipient' });
     }
-
-    console.log(`🎤 Sending voice message from ${senderId} to ${recipientId}`);
-
-    const conversationId = createConversationId(senderId, parseInt(recipientId));
-    const audioFilePath = `/uploads/voice-messages/${req.file.filename}`;
-
-    await Message.create({
-      senderId,
-      receiverId: parseInt(recipientId),
-      messageType: 'voice',
-      audioFilePath,
-      audioDuration: parseInt(duration) || 0,
-      waveformData: waveformData || null,
-      conversationId,
-      isRead: false
+    const seconds = typeof duration === 'string' && duration.trim() ? Number(duration) : NaN;
+    if (!Number.isFinite(seconds) || seconds < 0 || seconds > 600) {
+      discardUploadedAudio(req);
+      return res.status(400).json({ error: 'Audio duration must be between 0 and 600 seconds' });
+    }
+    let waveform = null;
+    if (waveformData) {
+      const parsed = JSON.parse(waveformData);
+      if (!Array.isArray(parsed) || parsed.length > 1000 || !parsed.every(n => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 1)) {
+        discardUploadedAudio(req);
+        return res.status(400).json({ error: 'Invalid waveform data' });
+      }
+      waveform = JSON.stringify(parsed);
+    }
+    const message = await Message.create({
+      senderId: req.session.userId, receiverId: recipient.id,
+      messageType: 'voice', audioFilePath: `private:${req.file.filename}`,
+      audioDuration: Math.round(seconds), waveformData: waveform,
+      conversationId: createConversationId(req.session.userId, recipient.id), isRead: false
     });
-
-    console.log(`✅ Voice message sent successfully`);
-
-    res.json({ success: true, audioFilePath });
-
+    res.json({ success: true, audioFilePath: `/messages/voice/${message.id}` });
   } catch (error) {
-    console.error("Error sending voice message:", error);
-    res.status(500).json({ error: 'Failed to send voice message' });
+    discardUploadedAudio(req);
+    const malformed = error instanceof SyntaxError;
+    res.status(malformed ? 400 : 500).json({ error: malformed ? 'Invalid waveform data' : 'Failed to send voice message' });
   }
+};
+
+export const serveVoiceMessage = async (req, res, next) => {
+  try {
+    if (!/^\d+$/.test(req.params.id)) return res.sendStatus(404);
+    const message = await Message.findOne({ where: {
+      id: Number(req.params.id), messageType: 'voice',
+      [Op.or]: [{ senderId: req.session.userId }, { receiverId: req.session.userId }]
+    } });
+    if (!message?.audioFilePath) return res.sendStatus(404);
+    const stored = message.audioFilePath;
+    let file;
+    if (/^private:[a-f0-9]{48}\.(webm|ogg|wav)$/.test(stored)) {
+      file = path.join(privateVoiceDirectory, stored.slice(8));
+    } else if (/^\/uploads\/voice-messages\/voice_[A-Za-z0-9_]+\.webm$/.test(stored)) {
+      file = path.resolve(process.cwd(), 'public/uploads/voice-messages', path.basename(stored));
+    } else return res.sendStatus(404);
+    res.set('Cache-Control', 'private, no-store, no-cache');
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.sendFile(file, error => {
+      if (!error || res.headersSent) return;
+      if (error.status === 404) return res.sendStatus(404);
+      next(error);
+    });
+  } catch (error) { next(error); }
 };

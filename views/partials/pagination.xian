@@ -1,0 +1,9 @@
+{{#if pagination}}
+<nav class="vm-pagination flex flex-wrap items-center justify-between gap-3 my-4" aria-label="{{#if label}}{{label}}{{else}}Record pages{{/if}}" data-workspace-pagination data-page="{{pagination.page}}" data-page-param="{{pagination.pageParam}}" data-total-pages="{{pagination.totalPages}}">
+  <p class="vm-muted text-sm">{{#if pagination.total}}Page {{pagination.page}} of {{pagination.totalPages}} &middot; {{pagination.total}} records{{else}}No records{{/if}}</p>
+  <div class="flex gap-2">
+    {{#if pagination.hasPrev}}<a class="vm-button vm-button--small" data-page-offset="-1" href="{{pagination.previousUrl}}">Previous</a>{{/if}}
+    {{#if pagination.hasNext}}<a class="vm-button vm-button--small" data-page-offset="1" href="{{pagination.nextUrl}}">Next</a>{{/if}}
+  </div>
+</nav>
+{{/if}}

@@ -24,20 +24,11 @@ SOFTWARE.
 */
 
 import { PublicContent } from "../models/publicContentModel.js";
+import { AuditService } from '../services/auditService.js';
+import { retryTransaction } from '../services/transactionService.js';
 import { sanitizeRichHtml } from "../middleware/validation.js";
+import { safeContentUrl } from '../services/contentSafety.js';
 
-// CMS text is rendered unescaped ({{{...}}}) on public pages, so it must be
-// sanitized before storage - otherwise a compromised admin account means
-// stored XSS for every visitor.
-const sanitizeCmsFields = (fields) => {
-  const out = { ...fields };
-  for (const key of ["title", "subtitle", "description", "primaryButtonText", "secondaryButtonText"]) {
-    if (typeof out[key] === "string") out[key] = sanitizeRichHtml(out[key]);
-  }
-  return out;
-};
-
-// Get all public content sections
 export const getAllPublicContent = async (req, res) => {
   try {
     const content = await PublicContent.findAll({
@@ -50,7 +41,7 @@ export const getAllPublicContent = async (req, res) => {
       data: content
     });
   } catch (error) {
-    console.error("Error fetching public content:", error);
+    console.error("Error fetching public content:", error.name);
     res.status(500).json({
       success: false,
       message: "Error fetching public content"
@@ -78,7 +69,7 @@ export const getPublicContentBySection = async (req, res) => {
       data: content
     });
   } catch (error) {
-    console.error("Error fetching public content:", error);
+    console.error("Error fetching public content:", error.name);
     res.status(500).json({
       success: false,
       message: "Error fetching public content"
@@ -86,136 +77,55 @@ export const getPublicContentBySection = async (req, res) => {
   }
 };
 
-// Create new public content section
-export const createPublicContent = async (req, res) => {
-  try {
-    const {
-      section,
-      title,
-      subtitle,
-      description,
-      primaryButtonText,
-      primaryButtonLink,
-      secondaryButtonText,
-      secondaryButtonLink,
-      imageUrl,
-      metadata
-    } = req.body;
-
-    // Check if section already exists
-    const existing = await PublicContent.findOne({ where: { section } });
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: "Section already exists"
-      });
-    }
-
-    const content = await PublicContent.create({
-      section,
-      ...sanitizeCmsFields({ title, subtitle, description, primaryButtonText, secondaryButtonText }),
-      primaryButtonLink,
-      secondaryButtonLink,
-      imageUrl,
-      metadata,
-      isActive: true
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Public content created successfully",
-      data: content
-    });
-  } catch (error) {
-    console.error("Error creating public content:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating public content"
-    });
+function cmsInput(body, creating = false) {
+  const values = {};
+  if (creating) {
+    if (typeof body.section !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(body.section)) throw Object.assign(new Error('Provide a valid section identifier.'),{status:400});
+    values.section = body.section;
   }
-};
-
-// Update public content section
-export const updatePublicContent = async (req, res) => {
-  try {
-    const { section } = req.params;
-    const {
-      title,
-      subtitle,
-      description,
-      primaryButtonText,
-      primaryButtonLink,
-      secondaryButtonText,
-      secondaryButtonLink,
-      imageUrl,
-      isActive,
-      metadata
-    } = req.body;
-
-    const content = await PublicContent.findOne({ where: { section } });
-    if (!content) {
-      return res.status(404).json({
-        success: false,
-        message: "Content section not found"
-      });
-    }
-
-    // Use explicit undefined checks so empty strings from the form
-    // are saved (instead of keeping the old value when falsy).
-    const clean = sanitizeCmsFields({ title, subtitle, description, primaryButtonText, secondaryButtonText });
-    await content.update({
-      title: title !== undefined ? clean.title : content.title,
-      subtitle: subtitle !== undefined ? clean.subtitle : content.subtitle,
-      description: description !== undefined ? clean.description : content.description,
-      primaryButtonText: primaryButtonText !== undefined ? clean.primaryButtonText : content.primaryButtonText,
-      secondaryButtonText: secondaryButtonText !== undefined ? clean.secondaryButtonText : content.secondaryButtonText,
-      secondaryButtonLink: secondaryButtonLink !== undefined ? secondaryButtonLink : content.secondaryButtonLink,
-      imageUrl: imageUrl !== undefined ? imageUrl : content.imageUrl,
-      isActive: isActive !== undefined ? isActive : content.isActive,
-      metadata: metadata !== undefined ? metadata : content.metadata
-    });
-
-    res.json({
-      success: true,
-      message: "Public content updated successfully",
-      data: content
-    });
-  } catch (error) {
-    console.error("Error updating public content:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating public content"
-    });
+  for(const field of ['title','subtitle','description','primaryButtonText','secondaryButtonText']) {
+    if(body[field] === undefined) continue;
+    if(typeof body[field] !== 'string' || body[field].length > (field === 'description' ? 20000 : 1000)) throw Object.assign(new Error('Provide valid content text.'),{status:400});
+    values[field] = sanitizeRichHtml(body[field]);
   }
-};
-
-// Delete public content section
-export const deletePublicContent = async (req, res) => {
-  try {
-    const { section } = req.params;
-
-    const content = await PublicContent.findOne({ where: { section } });
-    if (!content) {
-      return res.status(404).json({
-        success: false,
-        message: "Content section not found"
-      });
-    }
-
-    await content.update({ isActive: false });
-
-    res.json({
-      success: true,
-      message: "Public content deactivated successfully"
-    });
-  } catch (error) {
-    console.error("Error deleting public content:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error deleting public content"
-    });
+  for(const field of ['primaryButtonLink','secondaryButtonLink','imageUrl']) {
+    if(body[field] === undefined) continue;
+    try { values[field]=safeContentUrl(body[field],{image:field==='imageUrl'}); } catch {throw Object.assign(new Error('Use a valid local or HTTPS content link.'),{status:400});}
   }
-};
+  if(body.isActive !== undefined) {
+    if(![true,false,'true','false'].includes(body.isActive)) throw Object.assign(new Error('Choose a valid active status.'),{status:400});
+    values.isActive=body.isActive===true || body.isActive==='true';
+  } else if(creating) values.isActive=true;
+  if(body.metadata !== undefined) {
+    if(body.metadata!==null && (typeof body.metadata!=='object' || Array.isArray(body.metadata) || JSON.stringify(body.metadata).length>20000)) throw Object.assign(new Error('Provide valid content metadata.'),{status:400});
+    values.metadata=body.metadata;
+  }
+  return values;
+}
+async function mutateContent(req,res,mode) {
+  try {
+    const values=mode==='deactivate' ? {isActive:false} : cmsInput(req.body,mode==='create');
+    const content=await retryTransaction(async transaction=>{
+      let row;
+      if(mode==='create') row=await PublicContent.create(values,{transaction});
+      else {
+        row=await PublicContent.findOne({where:{section:req.params.section},transaction,lock:transaction.LOCK.UPDATE});
+        if(!row) throw Object.assign(new Error('Content section not found'),{status:404});
+        await row.update(values,{transaction});
+      }
+      await AuditService.logAction(req.session.userId,'CMS_'+mode.toUpperCase(),'public_content',row.id,null,{section:row.section,changedFields:Object.keys(values)}, {...AuditService.getRequestContext(req),actorRole:'admin',transaction});
+      return row;
+    });
+    res.status(mode==='create'?201:200).json({success:true,message:mode==='deactivate'?'Public content deactivated successfully':'Public content saved successfully',data:content});
+  }catch(error){
+    console.error('Public content mutation failed:',error.name);
+    const status=error.status || (error.name==='SequelizeUniqueConstraintError'?409:503);
+    res.status(status).json({success:false,message:error.status ? error.message : status===409?'Section already exists':'Public content could not be saved. Please retry.'});
+  }
+}
+export const createPublicContent=(req,res)=>mutateContent(req,res,'create');
+export const updatePublicContent=(req,res)=>mutateContent(req,res,'update');
+export const deletePublicContent=(req,res)=>mutateContent(req,res,'deactivate');
 
 // Admin page to view and manage all public content
 export const adminPublicContentPage = async (req, res) => {
@@ -231,7 +141,7 @@ export const adminPublicContentPage = async (req, res) => {
       user: req.user
     });
   } catch (error) {
-    console.error("Error loading admin public content page:", error);
+    console.error("Error loading admin public content page:", error.name);
     res.status(500).render("error", {
       title: "Server Error - VitalMatch",
       statusCode: 500,

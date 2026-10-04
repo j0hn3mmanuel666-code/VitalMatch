@@ -1,14 +1,21 @@
 {{> head-public}}
-
-<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">{{heading}}</h1>
-    <p class="text-sm text-gray-500 mb-6">VitalMatch - Digital Blood Request Platform</p>
-    <div class="prose text-gray-700 leading-relaxed whitespace-pre-line">{{body}}</div>
-    <div class="mt-8">
-      <a href="/" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
-        Back to Home
-      </a>
-    </div>
+{{> public-nav}}
+<main id="main-content" tabindex="-1" class="journey-info">
+  <div class="journey-container journey-info__layout">
+    <nav class="journey-info__nav" aria-label="Public information"><a href="/about" data-public-link>About VitalMatch</a><a href="/contact" data-public-link>Contact &amp; support</a><a href="/privacy" data-public-link>Privacy policy</a><a href="/terms" data-public-link>Terms of service</a></nav>
+    <article class="journey-info__article" aria-labelledby="info-heading">
+      <p class="journey-eyebrow">VitalMatch &middot; Oriental Mindoro</p><h1 id="info-heading">{{heading}}</h1>
+      <p class="journey-info__meta">Community blood donation coordination</p>
+      {{#if (eq heading "Contact Us")}}
+      <div class="journey-contact">
+        <p>For help with your account, donor registration, or hospital access, contact the VitalMatch coordination team.</p>
+        <section><h2>Platform support</h2><a class="journey-text-link" href="mailto:support@vitalmatch.ph">support@vitalmatch.ph</a><address>Calapan City, Oriental Mindoro<br>Philippines 5200</address></section>
+        <section><h2>Blood services information</h2><p>For current Philippine Red Cross blood service information and chapter details, use the official organization website.</p><a class="journey-text-link" href="https://redcross.org.ph/give-blood/" target="_blank" rel="noopener">Visit Philippine Red Cross blood services <span aria-hidden="true">↗</span></a></section>
+        <p class="journey-alert">For a medical emergency, seek immediate care from your hospital or local emergency service. Do not wait for an online response.</p>
+      </div>
+      {{else}}<div class="journey-info__body">{{body}}</div>{{/if}}
+      <div class="journey-info__actions"><a class="journey-button journey-button--secondary" href="/">Back to home</a>{{#if (eq heading "About Us")}}<a class="journey-button" href="/register">Become a donor</a>{{/if}}</div>
+    </article>
   </div>
-</div>
+</main>
+{{> public-footer}}

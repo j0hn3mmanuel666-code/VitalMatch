@@ -6,7 +6,6 @@ Mindoro State University - Philippines
 */
 
 import compression from 'compression';
-import { createHash } from 'crypto';
 
 // Compression middleware
 export const compressionMiddleware = compression({
@@ -20,38 +19,25 @@ export const compressionMiddleware = compression({
   threshold: 1024, // Only compress responses larger than 1KB
 });
 
-// Cache control middleware
-export const cacheControl = (maxAge = 3600) => {
-  return (req, res, next) => {
-    if (req.method === 'GET') {
-      // Set cache headers for static assets
-      if (req.url.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
-        res.set('Cache-Control', `public, max-age=${maxAge * 24}`); // 24 hours for static assets
-        res.set('ETag', createHash('md5').update(req.url).digest('hex'));
-      } else {
-        // Prevent caching for dynamic HTML routes and Authentication redirects
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
-      }
-    }
-    next();
-  };
+// Dynamic responses remain private even when a route ends in a file extension.
+// Only express.static can override this for an actual public asset on disk.
+export const cacheControl = () => (req,res,next) => {
+  if (['GET','HEAD'].includes(req.method)) {
+    res.set('Cache-Control','private, no-store, no-cache, must-revalidate');
+    res.set('Pragma','no-cache');res.set('Expires','0');
+  }
+  next();
 };
 
 // Response time middleware
 export const responseTime = (req, res, next) => {
   const start = process.hrtime.bigint();
   
-  res.on('finish', () => {
-    const end = process.hrtime.bigint();
-    const duration = Number(end - start) / 1000000; // Convert to milliseconds
-    
-    // Only set header if response hasn't been sent yet
-    if (!res.headersSent) {
-      res.set('X-Response-Time', `${duration.toFixed(2)}ms`);
-    }
-  });
+  const writeHead = res.writeHead;
+  res.writeHead = function(...args) {
+    if (!res.headersSent) res.set('X-Response-Time', `${(Number(process.hrtime.bigint() - start) / 1000000).toFixed(2)}ms`);
+    return writeHead.apply(this,args);
+  };
   
   next();
 };
@@ -74,153 +60,8 @@ export const memoryMonitor = (req, res, next) => {
   next();
 };
 
-// Simple in-memory cache for frequently accessed data
-class SimpleCache {
-  constructor(ttl = 300000) { // 5 minutes default TTL
-    this.cache = new Map();
-    this.ttl = ttl;
-  }
-  
-  set(key, value) {
-    const expiry = Date.now() + this.ttl;
-    this.cache.set(key, { value, expiry });
-    
-    // Clean up expired entries periodically
-    if (this.cache.size > 100) {
-      this.cleanup();
-    }
-  }
-  
-  get(key) {
-    const item = this.cache.get(key);
-    if (!item) return null;
-    
-    if (Date.now() > item.expiry) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return item.value;
-  }
-  
-  delete(key) {
-    this.cache.delete(key);
-  }
-  
-  cleanup() {
-    const now = Date.now();
-    for (const [key, item] of this.cache.entries()) {
-      if (now > item.expiry) {
-        this.cache.delete(key);
-      }
-    }
-  }
-  
-  clear() {
-    this.cache.clear();
-  }
-  
-  size() {
-    return this.cache.size;
-  }
-}
-
-// Create cache instances
-export const dataCache = new SimpleCache(300000); // 5 minutes
-export const sessionCache = new SimpleCache(900000); // 15 minutes
-
-// Cache middleware for API responses
-export const apiCache = (ttl = 300000) => {
-  return (req, res, next) => {
-    // Only cache GET requests
-    if (req.method !== 'GET') {
-      return next();
-    }
-    
-    const key = `api:${req.originalUrl}:${req.session?.userId || 'anonymous'}`;
-    const cached = dataCache.get(key);
-    
-    if (cached) {
-      if (!res.headersSent) {
-        res.set('X-Cache', 'HIT');
-      }
-      return res.json(cached);
-    }
-    
-    // Override res.json to cache the response
-    const originalJson = res.json;
-    res.json = function(data) {
-      if (res.statusCode === 200) {
-        dataCache.set(key, data);
-        if (!res.headersSent) {
-          res.set('X-Cache', 'MISS');
-        }
-      }
-      originalJson.call(this, data);
-    };
-    
-    next();
-  };
-};
-
-// Database query optimization middleware
-export const dbOptimization = (req, res, next) => {
-  // Add query optimization hints
-  req.dbOptions = {
-    // Enable query result caching
-    cache: true,
-    // Set reasonable limits
-    limit: req.query.limit ? Math.min(parseInt(req.query.limit), 100) : 20,
-    offset: req.query.offset ? parseInt(req.query.offset) : 0,
-    // Optimize includes
-    include: req.query.include ? req.query.include.split(',').slice(0, 5) : []
-  };
-  
-  next();
-};
-
-// Request size limiting
-export const requestSizeLimit = (maxSize = '10mb') => {
-  return (req, res, next) => {
-    let size = 0;
-    const limit = parseSize(maxSize);
-    
-    req.on('data', (chunk) => {
-      size += chunk.length;
-      if (size > limit) {
-        res.status(413).json({
-          error: 'Request too large',
-          details: `Request size exceeds ${maxSize} limit`
-        });
-        return;
-      }
-    });
-    
-    next();
-  };
-};
-
-// Helper function to parse size strings
-function parseSize(size) {
-  if (typeof size === 'number') return size;
-  
-  const units = {
-    'b': 1,
-    'kb': 1024,
-    'mb': 1024 * 1024,
-    'gb': 1024 * 1024 * 1024
-  };
-  
-  const match = size.toLowerCase().match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/);
-  if (!match) return 1024 * 1024; // Default 1MB
-  
-  const value = parseFloat(match[1]);
-  const unit = match[2] || 'b';
-  
-  return Math.floor(value * units[unit]);
-}
-
 // Performance monitoring
+export const safeRequestLabel = req => `${req.method} ${String(req.originalUrl || req.url || '').split('?')[0].replace(/\/(reset-password|schedule-confirm)\/[^/]+/g, '/$1/[redacted]')}`;
 export const performanceMonitor = (req, res, next) => {
   const start = process.hrtime.bigint();
   
@@ -230,12 +71,12 @@ export const performanceMonitor = (req, res, next) => {
     
     // Log slow requests
     if (duration > 1000) { // Requests taking more than 1 second
-      console.warn(`Slow request detected: ${req.method} ${req.originalUrl} - ${duration.toFixed(2)}ms`);
+      console.warn(`Slow request detected: ${safeRequestLabel(req)} - ${duration.toFixed(2)}ms`);
     }
     
     // Store performance metrics (in production, you might send this to a monitoring service)
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`Performance: ${req.method} ${req.originalUrl} - ${duration.toFixed(2)}ms`);
+      console.log(`Performance: ${safeRequestLabel(req)} - ${duration.toFixed(2)}ms`);
     }
   });
   
@@ -256,8 +97,6 @@ export const gracefulShutdown = (server, io, sequelize) => {
       console.log('Server closed successfully');
 
       // Clean up resources
-      dataCache.clear();
-      sessionCache.clear();
 
       try {
         if (io) {
@@ -314,10 +153,6 @@ export const healthCheck = async (req, res) => {
       used: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
       total: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
       external: `${Math.round(memUsage.external / 1024 / 1024)}MB`
-    },
-    cache: {
-      dataCache: dataCache.size(),
-      sessionCache: sessionCache.size()
     }
   };
 

@@ -3,63 +3,37 @@
 {{> user-sidebar}}
 
 <!-- Navigation Bar -->
-<nav class="bg-white shadow-md">
-  <div class="container mx-auto px-4 py-4">
-    <div class="flex items-center justify-between">
-      <!-- Back Button & Logo/Brand -->
-      <div class="flex items-center space-x-1 sm:space-x-3">
-        <label for="sidebar-toggle" class="cursor-pointer p-1 sm:p-2 -ml-2 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors" title="Menu">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </label>
-        <div class="flex items-center space-x-1 sm:space-x-2">
-          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-          </svg>
-          <a href="/dashboard" class="text-xl sm:text-2xl font-bold text-gray-800">VitalMatch</a>
-        </div>
-      </div>
-
-      <!-- User Menu -->
-      <div class="flex items-center space-x-4">
-        <a href="/dashboard" class="text-gray-700 hover:text-red-600 transition">Dashboard</a>
-        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Logout</a>
-      </div>
-    </div>
-  </div>
-</nav>
+{{> internal-header}}
 
 <!-- Request Blood Form -->
-<div class="min-h-screen bg-gray-50 py-12">
-  <div class="container mx-auto px-4">
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-50 py-12">
+  <div class="vm-page-container container mx-auto px-4">
     <div class="max-w-3xl mx-auto">
 
       <!-- Header -->
-      <div class="bg-gradient-to-r from-red-600 to-blue-600 rounded-xl shadow-lg p-8 mb-8 text-white">
+      <div class="vm-page-heading mb-8">
         <h1 class="text-3xl font-bold mb-2">Request Blood</h1>
         <p class="text-white/90">Submit an urgent blood request for your hospital or patient</p>
       </div>
 
       <!-- Flash Messages -->
       {{#if success_msg}}
-      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+      <div class="vm-alert vm-alert--success bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
         {{success_msg}}
       </div>
       {{/if}}
 
       {{#if error_msg}}
-      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+      <div class="vm-alert vm-alert--danger bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
         {{error_msg}}
       </div>
       {{/if}}
 
       <!-- Form Card with Enhanced Interactions -->
-      <div class="bg-white rounded-xl shadow-md p-8 relative">
+      <div class="vm-form-shell vm-panel bg-white rounded-md p-8 relative">
         <!-- Loading Overlay -->
         <div id="loadingOverlay"
-          class="hidden absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50 rounded-xl">
+          class="hidden absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50 rounded-md">
           <div class="text-center">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
             <p class="text-gray-600 font-semibold">Submitting your request...</p>
@@ -67,25 +41,28 @@
           </div>
         </div>
 
-        <form id="bloodRequestForm" action="/new-blood-request" method="POST" novalidate>
+        <form id="bloodRequestForm" data-workspace-form action="{{#if formAction}}{{formAction}}{{else}}/new-blood-request{{/if}}" method="POST" novalidate>
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
+          <input type="hidden" name="submissionKey" value="{{formValues.submissionKey}}">
+          {{#if editRequestId}}<input type="hidden" name="version" value="{{formValues.version}}"><p class="vm-alert vm-alert--info mb-4">Correcting request #{{editRequestId}}. Saving returns it for a new facility or coordinator review.</p>{{/if}}
+          {{#if formValuesJson}}<script id="request-form-data" type="application/json">{{{formValuesJson}}}</script>{{/if}}
 
           <!-- Step Indicator -->
           <div class="mb-6">
             <div class="flex items-center justify-between mb-4">
               <span class="text-sm font-semibold text-gray-600">Step <span id="stepNumber">1</span> of 5</span>
-              <span id="progressText" class="text-sm text-gray-500">0% Complete</span>
+              <span id="progressText" class="text-sm text-gray-500">Step 1 of 5</span>
             </div>
             <div class="flex items-center mb-4">
               <div class="step-pill flex-1 text-center text-xs font-semibold py-2 rounded-l-lg" data-step-pill="1">1. Patient</div>
               <div class="step-pill flex-1 text-center text-xs font-semibold py-2" data-step-pill="2">2. Components</div>
               <div class="step-pill flex-1 text-center text-xs font-semibold py-2" data-step-pill="3">3. Hospital</div>
               <div class="step-pill flex-1 text-center text-xs font-semibold py-2" data-step-pill="4">4. Contact</div>
-              <div class="step-pill flex-1 text-center text-xs font-semibold py-2 rounded-r-lg" data-step-pill="5">5. Review</div>
+              <div class="step-pill flex-1 text-center text-xs font-semibold py-2 rounded-r-lg" data-step-pill="5">5. Additional details</div>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2">
               <div id="progressBar"
-                class="bg-gradient-to-r from-red-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                class="vm-surface-muted h-2 rounded-full transition-all duration-300"
                 style="width: 0%"></div>
             </div>
           </div>
@@ -102,7 +79,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="form-group">
-                <label class="block text-gray-700 font-semibold mb-2">
+                <label class="block text-gray-700 font-semibold mb-2" for="patientName">
                   Patient Name *
                   <span class="tooltip-trigger ml-1 cursor-help"
                     data-tooltip="Enter the full name of the patient who needs blood">
@@ -127,7 +104,7 @@
               </div>
 
               <div class="form-group">
-                <label class="block text-gray-700 font-semibold mb-2">
+                <label class="block text-gray-700 font-semibold mb-2" for="patientAge">
                   Patient Age *
                   <span class="tooltip-trigger ml-1 cursor-help" data-tooltip="Age must be between 0 and 120 years">
                     <svg class="w-4 h-4 inline text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +128,7 @@
               </div>
 
               <div class="form-group">
-                <label class="block text-gray-700 font-semibold mb-2">
+                <label class="block text-gray-700 font-semibold mb-2" for="bloodType">
                   Blood Type Required *
                   <span class="tooltip-trigger ml-1 cursor-help"
                     data-tooltip="Select the specific blood type needed for the patient">
@@ -186,7 +163,7 @@
               </div>
 
               <div class="form-group">
-                <label class="block text-gray-700 font-semibold mb-2">
+                <label class="block text-gray-700 font-semibold mb-2" for="unitsRequired">
                   Units Required *
                   <span class="tooltip-trigger ml-1 cursor-help"
                     data-tooltip="Number of blood units needed (typically 1-4 units per patient)">
@@ -196,9 +173,9 @@
                     </svg>
                   </span>
                 </label>
-                <input type="number" name="unitsRequired" id="unitsRequired" required min="1" max="20"
+                <input type="number" name="unitsRequired" id="unitsRequired" required min="1" max="10"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Number of units" data-validate="required,min:1,max:20">
+                  placeholder="Number of units (1-10)" data-validate="required,min:1,max:10">
                 <div class="error-message hidden text-red-600 text-sm mt-1"></div>
                 <div class="success-message hidden text-green-600 text-sm mt-1">
                   <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -213,7 +190,7 @@
           </div>
 
           <!-- Blood Component and Transfusion Information Section -->
-          <div class="mb-8 form-step hidden" data-step="2">
+          <div class="mb-8 form-step" data-step="2">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -225,7 +202,7 @@
             <div class="grid grid-cols-1 gap-6">
               <!-- Indication of Transfusion -->
               <div class="form-group">
-                <label class="block text-gray-700 font-semibold mb-2">
+                <label class="block text-gray-700 font-semibold mb-2" for="indicationOfTransfusion">
                   Indication of Transfusion *
                   <span class="tooltip-trigger ml-1 cursor-help"
                     data-tooltip="Medical reason or indication for the blood transfusion">
@@ -264,12 +241,11 @@
                 </label>
 
                 <div class="bg-gray-50 rounded-lg p-4">
-                  <p class="text-sm text-gray-600 mb-3">Select the blood components needed and specify the units/volume
-                    for each:</p>
+                  <p class="text-sm text-gray-600 mb-3">Select the blood components needed and enter a positive quantity for each, for example 2 units or 450 ml. Maximum quantity per component: 100000.</p>
 
                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     <!-- Whole Blood -->
-                    <div class="flex flex-col space-y-2 p-3 bg-white rounded-lg border">
+                    <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
                         <input type="checkbox" id="wholeBlood" name="bloodComponents[]" value="wholeBlood"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
@@ -277,11 +253,11 @@
                       </div>
                       <input type="text" name="wholeBloodVolume" id="wholeBloodVolume" placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        disabled>
+                        disabled aria-label="Units/Volume">
                     </div>
 
                     <!-- Packed RBC -->
-                    <div class="flex flex-col space-y-2 p-3 bg-white rounded-lg border">
+                    <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
                         <input type="checkbox" id="packedRBC" name="bloodComponents[]" value="packedRBC"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
@@ -289,11 +265,11 @@
                       </div>
                       <input type="text" name="packedRBCVolume" id="packedRBCVolume" placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        disabled>
+                        disabled aria-label="Units/Volume">
                     </div>
 
                     <!-- Platelet Concentrate -->
-                    <div class="flex flex-col space-y-2 p-3 bg-white rounded-lg border">
+                    <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
                         <input type="checkbox" id="plateletConcentrate" name="bloodComponents[]"
                           value="plateletConcentrate"
@@ -304,11 +280,11 @@
                       <input type="text" name="plateletConcentrateVolume" id="plateletConcentrateVolume"
                         placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        disabled>
+                        disabled aria-label="Units/Volume">
                     </div>
 
                     <!-- Fresh Frozen Plasma -->
-                    <div class="flex flex-col space-y-2 p-3 bg-white rounded-lg border">
+                    <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
                         <input type="checkbox" id="freshFrozenPlasma" name="bloodComponents[]" value="freshFrozenPlasma"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
@@ -318,11 +294,11 @@
                       <input type="text" name="freshFrozenPlasmaVolume" id="freshFrozenPlasmaVolume"
                         placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        disabled>
+                        disabled aria-label="Units/Volume">
                     </div>
 
                     <!-- Cryoprecipitate -->
-                    <div class="flex flex-col space-y-2 p-3 bg-white rounded-lg border">
+                    <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
                         <input type="checkbox" id="cryoprecipitate" name="bloodComponents[]" value="cryoprecipitate"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
@@ -332,11 +308,11 @@
                       <input type="text" name="cryoprecipitateVolume" id="cryoprecipitateVolume"
                         placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        disabled>
+                        disabled aria-label="Units/Volume">
                     </div>
 
                     <!-- Platelet Apheresis -->
-                    <div class="flex flex-col space-y-2 p-3 bg-white rounded-lg border">
+                    <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
                         <input type="checkbox" id="plateletApheresis" name="bloodComponents[]" value="plateletApheresis"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
@@ -346,7 +322,7 @@
                       <input type="text" name="plateletApheresisVolume" id="plateletApheresisVolume"
                         placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                        disabled>
+                        disabled aria-label="Units/Volume">
                     </div>
                   </div>
                 </div>
@@ -365,7 +341,7 @@
           </div>
 
           <!-- Hospital Information Section -->
-          <div class="mb-8 form-step hidden" data-step="3">
+          <div class="mb-8 form-step" data-step="3">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -373,27 +349,28 @@
               </svg>
               Hospital Information
             </h2>
+            {{> facility-selector}}
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-gray-700 font-semibold mb-2">Hospital Name *</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-49">Hospital Name *</label>
                 <input type="text" name="hospitalName" required value="{{profile.hospitalName}}"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Enter hospital name">
+                  placeholder="Enter hospital name" id="vm-request-blood-49">
               </div>
 
               <div>
-                <label class="block text-gray-700 font-semibold mb-2">Hospital Address *</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-50">Hospital Address *</label>
                 <input type="text" name="hospitalAddress" required
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Enter complete address">
+                  placeholder="Enter complete address" id="vm-request-blood-50">
               </div>
 
               <div>
                 <label class="block text-gray-700 font-semibold mb-2">City *</label>
                 <div data-city-wrap>
                   <select name="city" data-city-select required
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white">
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white" aria-label="Municipality">
                     <option value="">Select municipality</option>
                     <option>Baco</option>
                     <option>Bansud</option>
@@ -413,15 +390,15 @@
                     <option value="__other">Others (specify)</option>
                   </select>
                   <input type="text" data-city-other placeholder="Specify municipality"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent mt-2 hidden">
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent mt-2 hidden" aria-label="Specify municipality">
                 </div>
               </div>
 
               <div>
-                <label class="block text-gray-700 font-semibold mb-2">Province *</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-51">Province *</label>
                 <input type="text" name="province" required
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Enter province">
+                  placeholder="Enter province" id="vm-request-blood-51">
               </div>
             </div>
             <input type="hidden" name="latitude" id="requestLatitude">
@@ -429,7 +406,7 @@
           </div>
 
           <!-- Contact Information Section -->
-          <div class="mb-8 form-step hidden" data-step="4">
+          <div class="mb-8 form-step" data-step="4">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -440,30 +417,30 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label class="block text-gray-700 font-semibold mb-2">Contact Person *</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-52">Contact Person *</label>
                 <input type="text" name="contactPerson" required value="{{profile.firstName}} {{profile.lastName}}"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Enter contact person name">
+                  placeholder="Enter contact person name" id="vm-request-blood-52">
               </div>
 
               <div>
-                <label class="block text-gray-700 font-semibold mb-2">Contact Number *</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-53">Contact Number *</label>
                 <input type="tel" name="contactNumber" required value="{{profile.phone}}"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="09XX-XXX-XXXX">
+                  placeholder="09XX-XXX-XXXX" id="vm-request-blood-53">
               </div>
 
               <div>
-                <label class="block text-gray-700 font-semibold mb-2">Email Address *</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-54">Email Address *</label>
                 <input type="email" name="email" required value="{{profile.email}}"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="email@example.com">
+                  placeholder="email@example.com" id="vm-request-blood-54">
               </div>
             </div>
           </div>
 
           <!-- Urgency and Additional Information -->
-          <div class="mb-8 form-step hidden" data-step="5">
+          <div class="mb-8 form-step" data-step="5">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -474,9 +451,9 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label class="block text-gray-700 font-semibold mb-2">Urgency Level *</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-55">Urgency Level *</label>
                 <select name="urgency" required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" id="vm-request-blood-55">
                   <option value="">Select urgency level</option>
                   <option value="critical">Critical - Immediate</option>
                   <option value="urgent">Urgent - Within 24 hours</option>
@@ -485,32 +462,32 @@
               </div>
 
               <div>
-                <label class="block text-gray-700 font-semibold mb-2">Required By Date *</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-56">Required By Date *</label>
                 <input type="date" name="requiredByDate" required
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" id="vm-request-blood-56">
               </div>
 
               <div class="md:col-span-2">
-                <label class="block text-gray-700 font-semibold mb-2">Additional Notes</label>
+                <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-57">Additional Notes</label>
                 <textarea name="notes" rows="2"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Any additional information about the patient's condition or special requirements..."></textarea>
+                  placeholder="Any additional information about the patient's condition or special requirements..." id="vm-request-blood-57"></textarea>
               </div>
             </div>
           </div>
 
           <!-- Wizard Navigation -->
-          <div class="flex justify-between items-center">
+          <div class="vm-form-actions flex justify-between items-center">
             <button type="button" id="wizardBack"
-              class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200 invisible">
+              class="vm-button px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200 invisible">
               &larr; Back
             </button>
             <button type="button" id="wizardNext"
-              class="px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all duration-200 shadow-lg hover:shadow-xl">
+              class="vm-button vm-button--primary px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all duration-200">
               Next &rarr;
             </button>
             <button type="submit" id="submitBtn"
-              class="hidden px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+              class="vm-button vm-button--primary px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all duration-200 transform">
               <span id="submitText">Submit Blood Request</span>
               <span id="submitLoader" class="hidden">
                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" fill="none" viewBox="0 0 24 24">
@@ -538,498 +515,17 @@
           <div>
             <p class="text-blue-800 font-semibold mb-1">Important Information</p>
             <p class="text-blue-700 text-sm">Once submitted, your blood request will be processed by our matching
-              algorithm. Qualified donors in your area will be notified immediately. You will receive updates via email
-              and SMS.</p>
+              algorithm. The named facility or a coordinator first reviews your request. Once approved, matching alerts appear in VitalMatch; email delivery depends on the configured service and your preferences.</p>
           </div>
         </div>
       </div>
 
     </div>
   </div>
-</div>
+</main>
+
+
+
+<script src="/js/workspace-form.js?v=1" defer></script>
 
 {{> footer}}
-
-<script>
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(position => {
-      document.getElementById('requestLatitude').value = position.coords.latitude;
-      document.getElementById('requestLongitude').value = position.coords.longitude;
-    }, () => {});
-  }
-</script>
-
-<script>
-  // Multi-step wizard: one short section per step, validate before advancing
-  (function () {
-    var currentStep = 1;
-    var totalSteps = 5;
-    var form = document.getElementById('bloodRequestForm');
-    if (!form) return;
-
-    function validateStep(n) {
-      var step = form.querySelector('.form-step[data-step="' + n + '"]');
-      if (!step) return true;
-      var fields = step.querySelectorAll('input, select, textarea');
-      for (var i = 0; i < fields.length; i++) {
-        var f = fields[i];
-        if (f.type === 'hidden' || f.disabled) continue;
-        if (f.hasAttribute('required') && !String(f.value).trim()) {
-          f.focus();
-          if (f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          f.classList.add('border-red-500');
-          (function (el) { setTimeout(function () { el.classList.remove('border-red-500'); }, 2500); })(f);
-          return false;
-        }
-      }
-      // Step 2 also needs at least one blood component (server requires it)
-      if (n === 2 && form.querySelectorAll('input[name="bloodComponents[]"]:checked').length === 0) {
-        alert('Please select at least one blood component.');
-        return false;
-      }
-      return true;
-    }
-
-    function showStep(n) {
-      currentStep = Math.min(Math.max(n, 1), totalSteps);
-      form.querySelectorAll('.form-step').forEach(function (s) {
-        s.classList.toggle('hidden', s.getAttribute('data-step') != currentStep);
-      });
-      document.querySelectorAll('[data-step-pill]').forEach(function (p) {
-        var pn = parseInt(p.getAttribute('data-step-pill'), 10);
-        p.classList.remove('bg-red-600', 'text-white', 'bg-green-100', 'text-green-700', 'bg-gray-100', 'text-gray-500');
-        if (pn < currentStep) { p.classList.add('bg-green-100', 'text-green-700'); }
-        else if (pn === currentStep) { p.classList.add('bg-red-600', 'text-white'); }
-        else { p.classList.add('bg-gray-100', 'text-gray-500'); }
-      });
-      document.getElementById('stepNumber').textContent = currentStep;
-      document.getElementById('wizardBack').classList.toggle('invisible', currentStep === 1);
-      document.getElementById('wizardNext').classList.toggle('hidden', currentStep === totalSteps);
-      document.getElementById('submitBtn').classList.toggle('hidden', currentStep !== totalSteps);
-      form.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    document.getElementById('wizardNext').addEventListener('click', function () {
-      if (validateStep(currentStep)) showStep(currentStep + 1);
-    });
-    document.getElementById('wizardBack').addEventListener('click', function () {
-      showStep(currentStep - 1);
-    });
-
-    showStep(1);
-  })();
-</script>
-
-<!-- Tooltip Container -->
-<div id="tooltip"
-  class="absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity duration-200">
-  <div id="tooltipText"></div>
-  <div class="tooltip-arrow absolute w-2 h-2 bg-gray-900 transform rotate-45"></div>
-</div>
-
-<!-- Success Modal -->
-<div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform scale-95 transition-transform duration-300">
-    <div class="text-center">
-      <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-        </svg>
-      </div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">Request Submitted Successfully!</h3>
-      <p class="text-gray-600 mb-6">Your blood request has been submitted and is being processed. You will receive
-        notifications when donors respond.</p>
-      <button onclick="closeSuccessModal()"
-        class="w-full bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition">
-        Continue to Dashboard
-      </button>
-    </div>
-  </div>
-</div>
-
-<script>
-  // Enhanced Form Validation and Interactions
-  class BloodRequestForm {
-    constructor() {
-      this.form = document.getElementById('bloodRequestForm');
-      this.submitBtn = document.getElementById('submitBtn');
-      this.progressBar = document.getElementById('progressBar');
-      this.progressText = document.getElementById('progressText');
-      this.loadingOverlay = document.getElementById('loadingOverlay');
-
-      this.totalFields = this.form.querySelectorAll('[data-validate]').length;
-      this.validFields = 0;
-
-      this.init();
-    }
-
-    init() {
-      this.setupEventListeners();
-      this.setupTooltips();
-      this.setupBloodComponentHandlers();
-      this.updateProgress();
-    }
-
-    setupEventListeners() {
-      // Real-time validation
-      this.form.querySelectorAll('[data-validate]').forEach(field => {
-        field.addEventListener('input', (e) => this.validateField(e.target));
-        field.addEventListener('blur', (e) => this.validateField(e.target));
-        field.addEventListener('focus', (e) => this.clearFieldErrors(e.target));
-      });
-
-      // Form submission
-      this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-
-      // Auto-save draft functionality has been completely disabled per user request
-      // this.form.addEventListener('input', () => this.saveDraft());
-    }
-
-    setupTooltips() {
-      const tooltip = document.getElementById('tooltip');
-      const tooltipText = document.getElementById('tooltipText');
-
-      document.querySelectorAll('.tooltip-trigger').forEach(trigger => {
-        trigger.addEventListener('mouseenter', (e) => {
-          const text = e.target.closest('.tooltip-trigger').dataset.tooltip;
-          tooltipText.textContent = text;
-
-          const rect = e.target.getBoundingClientRect();
-          tooltip.style.left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + 'px';
-          tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + 'px';
-
-          tooltip.classList.remove('opacity-0');
-          tooltip.classList.add('opacity-100');
-        });
-
-        trigger.addEventListener('mouseleave', () => {
-          tooltip.classList.remove('opacity-100');
-          tooltip.classList.add('opacity-0');
-        });
-      });
-    }
-
-    setupBloodComponentHandlers() {
-      // Handle blood component checkboxes
-      const bloodComponents = [
-        'wholeBlood',
-        'packedRBC',
-        'plateletConcentrate',
-        'freshFrozenPlasma',
-        'cryoprecipitate',
-        'plateletApheresis'
-      ];
-
-      bloodComponents.forEach(component => {
-        const checkbox = document.getElementById(component);
-        const volumeInput = document.getElementById(component + 'Volume');
-
-        if (checkbox && volumeInput) {
-          checkbox.addEventListener('change', (e) => {
-            if (e.target.checked) {
-              volumeInput.disabled = false;
-              volumeInput.focus();
-              volumeInput.classList.remove('bg-gray-100');
-              volumeInput.classList.add('bg-white');
-            } else {
-              volumeInput.disabled = true;
-              volumeInput.value = '';
-              volumeInput.classList.remove('bg-white');
-              volumeInput.classList.add('bg-gray-100');
-            }
-            this.validateBloodComponents();
-          });
-
-          // Validate volume input when typing
-          volumeInput.addEventListener('input', () => {
-            this.validateBloodComponents();
-          });
-        }
-      });
-    }
-
-    validateBloodComponents() {
-      const checkboxes = document.querySelectorAll('input[name="bloodComponents[]"]');
-      const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
-      const bloodComponentGroup = document.querySelector('.form-group:has(input[name="bloodComponents[]"])');
-      const errorDiv = bloodComponentGroup?.querySelector('.error-message');
-      const successDiv = bloodComponentGroup?.querySelector('.success-message');
-
-      let isValid = true;
-      let errorMessage = '';
-
-      // Check if at least one component is selected
-      if (checkedBoxes.length === 0) {
-        isValid = false;
-        errorMessage = 'Please select at least one blood component';
-      } else {
-        // Check if all selected components have volume specified
-        for (const checkbox of checkedBoxes) {
-          const componentName = checkbox.value;
-          const volumeInput = document.getElementById(componentName + 'Volume');
-          if (!volumeInput.value.trim()) {
-            isValid = false;
-            errorMessage = 'Please specify units/volume for all selected components';
-            break;
-          }
-        }
-      }
-
-      // Update UI
-      if (errorDiv && successDiv) {
-        if (isValid && checkedBoxes.length > 0) {
-          errorDiv.classList.add('hidden');
-          successDiv.classList.remove('hidden');
-        } else if (!isValid) {
-          errorDiv.textContent = errorMessage;
-          errorDiv.classList.remove('hidden');
-          successDiv.classList.add('hidden');
-        } else {
-          errorDiv.classList.add('hidden');
-          successDiv.classList.add('hidden');
-        }
-      }
-
-      return isValid;
-    }
-
-    validateField(field) {
-      const rules = field.dataset.validate.split(',');
-      const value = field.value.trim();
-      let isValid = true;
-      let errorMessage = '';
-
-      // Clear previous states
-      this.clearFieldErrors(field);
-
-      for (const rule of rules) {
-        const [ruleName, ruleValue] = rule.split(':');
-
-        switch (ruleName) {
-          case 'required':
-            if (!value) {
-              isValid = false;
-              errorMessage = 'This field is required';
-            }
-            break;
-
-          case 'minLength':
-            if (value && value.length < parseInt(ruleValue)) {
-              isValid = false;
-              errorMessage = `Minimum ${ruleValue} characters required`;
-            }
-            break;
-
-          case 'min':
-            if (value && parseInt(value) < parseInt(ruleValue)) {
-              isValid = false;
-              errorMessage = `Minimum value is ${ruleValue}`;
-            }
-            break;
-
-          case 'max':
-            if (value && parseInt(value) > parseInt(ruleValue)) {
-              isValid = false;
-              errorMessage = `Maximum value is ${ruleValue}`;
-            }
-            break;
-
-          case 'email':
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (value && !emailRegex.test(value)) {
-              isValid = false;
-              errorMessage = 'Please enter a valid email address';
-            }
-            break;
-
-          case 'phone':
-            const phoneRegex = /^09\d{9}$/;
-            if (value && !phoneRegex.test(value.replace(/[-\s]/g, ''))) {
-              isValid = false;
-              errorMessage = 'Please enter a valid Philippine mobile number';
-            }
-            break;
-        }
-
-        if (!isValid) break;
-      }
-
-      // Update field appearance
-      if (isValid && value) {
-        this.showFieldSuccess(field);
-      } else if (!isValid) {
-        this.showFieldError(field, errorMessage);
-      }
-
-      this.updateProgress();
-      return isValid;
-    }
-
-    showFieldError(field, message) {
-      field.classList.add('border-red-500', 'bg-red-50');
-      field.classList.remove('border-green-500', 'bg-green-50');
-
-      const errorDiv = field.parentNode.querySelector('.error-message');
-      const successDiv = field.parentNode.querySelector('.success-message');
-
-      if (errorDiv) {
-        errorDiv.textContent = message;
-        errorDiv.classList.remove('hidden');
-      }
-
-      if (successDiv) {
-        successDiv.classList.add('hidden');
-      }
-    }
-
-    showFieldSuccess(field) {
-      field.classList.add('border-green-500', 'bg-green-50');
-      field.classList.remove('border-red-500', 'bg-red-50');
-
-      const errorDiv = field.parentNode.querySelector('.error-message');
-      const successDiv = field.parentNode.querySelector('.success-message');
-
-      if (errorDiv) {
-        errorDiv.classList.add('hidden');
-      }
-
-      if (successDiv) {
-        successDiv.classList.remove('hidden');
-      }
-    }
-
-    clearFieldErrors(field) {
-      field.classList.remove('border-red-500', 'bg-red-50', 'border-green-500', 'bg-green-50');
-
-      const errorDiv = field.parentNode.querySelector('.error-message');
-      const successDiv = field.parentNode.querySelector('.success-message');
-
-      if (errorDiv) errorDiv.classList.add('hidden');
-      if (successDiv) successDiv.classList.add('hidden');
-    }
-
-    updateProgress() {
-      // Simplified - just enable the button
-      this.submitBtn.disabled = false;
-      this.submitBtn.classList.add('pulse-animation');
-    }
-
-    async handleSubmit(e) {
-      // Don't prevent default - let the form submit normally
-      // e.preventDefault();
-
-      // Show loading state
-      this.showLoading(true);
-    }
-
-    showLoading(show) {
-      const submitText = document.getElementById('submitText');
-      const submitLoader = document.getElementById('submitLoader');
-
-      if (show) {
-        this.loadingOverlay.classList.remove('hidden');
-        submitText.classList.add('hidden');
-        submitLoader.classList.remove('hidden');
-        this.submitBtn.disabled = true;
-      } else {
-        this.loadingOverlay.classList.add('hidden');
-        submitText.classList.remove('hidden');
-        submitLoader.classList.add('hidden');
-        this.submitBtn.disabled = false;
-      }
-    }
-
-    async simulateSubmission() {
-      // Simulate network delay
-      return new Promise(resolve => setTimeout(resolve, 2000));
-    }
-
-    showSuccessModal() {
-      const modal = document.getElementById('successModal');
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-        modal.querySelector('.transform').classList.remove('scale-95');
-        modal.querySelector('.transform').classList.add('scale-100');
-      }, 10);
-    }
-
-    showNotification(message, type = 'info') {
-      // Create notification element
-      const notification = document.createElement('div');
-      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 ${type === 'error' ? 'bg-red-600 text-white' :
-          type === 'success' ? 'bg-green-600 text-white' :
-            'bg-blue-600 text-white'
-        }`;
-      notification.textContent = message;
-
-      document.body.appendChild(notification);
-
-      // Animate in
-      setTimeout(() => {
-        notification.classList.remove('translate-x-full');
-      }, 10);
-
-      // Remove after 5 seconds
-      setTimeout(() => {
-        notification.classList.add('translate-x-full');
-        setTimeout(() => notification.remove(), 300);
-      }, 5000);
-    }
-
-    saveDraft() {
-      // Auto-save form data to localStorage
-      const formData = new FormData(this.form);
-      const data = Object.fromEntries(formData);
-      localStorage.setItem('bloodRequestDraft', JSON.stringify(data));
-    }
-
-    loadDraft() {
-      // Load saved draft
-      const draft = localStorage.getItem('bloodRequestDraft');
-      if (draft) {
-        const data = JSON.parse(draft);
-        Object.keys(data).forEach(key => {
-          const field = this.form.querySelector(`[name="${key}"]`);
-          if (field) {
-            field.value = data[key];
-            this.validateField(field);
-          }
-        });
-      }
-    }
-  }
-
-  // Success Modal Functions
-  function closeSuccessModal() {
-    const modal = document.getElementById('successModal');
-    modal.classList.add('hidden');
-    window.location.href = '/dashboard';
-  }
-
-  // Initialize form when DOM is loaded
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = new BloodRequestForm();
-    // Draft loading disabled to prevent automatic details from appearing
-    // form.loadDraft(); 
-  });
-
-  // Add pulse animation CSS
-  const style = document.createElement('style');
-  style.textContent = `
-  .pulse-animation {
-    animation: pulse 2s infinite;
-  }
-  
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-  }
-  
-  .tooltip-arrow {
-    bottom: -4px;
-    left: 50%;
-    transform: translateX(-50%) rotate(45deg);
-  }
-`;
-  document.head.appendChild(style);
-</script>

@@ -1,33 +1,21 @@
-<!-- Shared public top bar for login / register / public pages -->
-<nav class="bg-white/95 backdrop-blur shadow-md sticky top-0 z-50">
-  <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center space-x-3">
-      <button onclick="if (history.length > 1) { history.back(); } else { window.location.href = '/'; }"
-        class="text-gray-600 hover:text-gray-800 hover:bg-gray-100 p-2 rounded-lg transition-colors" aria-label="Go back">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-      </button>
-      <a href="/" class="flex items-center space-x-2">
-        <svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-          <path
-            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-        </svg>
-        <span class="text-2xl font-bold text-gray-800">VitalMatch</span>
+<header class="journey-header" data-public-header>
+  <div class="journey-context"><div class="journey-container"><span>Philippine Red Cross  <span aria-hidden="true">&middot;</span> Mindoro Chapter</span><span class="journey-context__location">Serving Oriental Mindoro</span></div></div>
+  <nav class="journey-nav" aria-label="Main navigation">
+    <div class="journey-container journey-nav__inner">
+      <a href="/" class="journey-nav__brand" aria-label="VitalMatch home">
+        <svg aria-hidden="true" viewBox="0 0 32 40" fill="currentColor"><path d="M16 1C12 7 2 18 2 25a14 14 0 0 0 28 0C30 18 20 7 16 1Z"/><path d="M9 26a7 7 0 0 0 7 7" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>VitalMatch<small>Blood donation coordination</small></span>
       </a>
+      <button type="button" class="journey-nav__toggle" data-nav-toggle aria-controls="public-nav-panel" aria-expanded="false"><span data-menu-label>Menu</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div class="journey-nav__panel" id="public-nav-panel">
+        <div class="journey-nav__links"><a href="/" data-public-link>Home</a><a href="/about" data-public-link>About</a><a href="/#how-it-works">How it works</a><a href="/contact" data-public-link>Contact</a></div>
+        <div class="journey-nav__actions">
+          {{#if user}}<a href="{{#if isAdmin}}/admin/dashboard{{else}}/dashboard{{/if}}" class="journey-button journey-button--secondary">My account</a>{{else}}
+          {{#unless hideLogin}}<a href="/login" class="journey-nav__quiet" data-public-link>Sign in</a>{{/unless}}
+          {{#unless hideRegister}}<a href="/register" class="journey-button" data-public-link>Become a donor</a>{{/unless}}
+          {{/if}}
+        </div>
+      </div>
     </div>
-    <div class="hidden sm:flex items-center space-x-6 text-sm font-semibold">
-      <a href="/" class="text-gray-600 hover:text-red-600 transition-colors">Home</a>
-      <a href="/about" class="text-gray-600 hover:text-red-600 transition-colors">About</a>
-      <a href="/contact" class="text-gray-600 hover:text-red-600 transition-colors">Contact</a>
-    </div>
-    <div class="flex items-center space-x-2">
-      {{#unless hideLogin}}
-      <a href="/login" class="text-red-600 hover:text-red-700 font-semibold px-4 py-2 rounded-lg hover:bg-red-50 transition-colors">Login</a>
-      {{/unless}}
-      {{#unless hideRegister}}
-      <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors">Register</a>
-      {{/unless}}
-    </div>
-  </div>
-</nav>
+  </nav>
+</header>

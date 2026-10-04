@@ -1,348 +1,65 @@
-/*
-MIT License
-VitalMatch Blockchain Service
-*/
-
-import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
-
+﻿import crypto from 'node:crypto';
+import fs from 'node:fs';
+import { promises as fsAsync } from 'node:fs';
+import path from 'node:path';
+import { setImmediate as yieldEventLoop } from 'node:timers/promises';
 class Block {
-  constructor(index, timestamp, data, previousHash) {
-    this.index = index;
-    this.timestamp = timestamp;
-    this.data = data;
-    this.previousHash = previousHash;
-    this.nonce = 0;
-    this.hash = this.calculateHash();
-  }
-
-  calculateHash() {
-    return crypto
-      .createHash('sha256')
-      .update(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data) + this.nonce)
-      .digest('hex');
-  }
-
-  mineBlock(difficulty) {
-    const target = Array(difficulty + 1).join('0');
-    
-    while (this.hash.substring(0, difficulty) !== target) {
-      this.nonce++;
-      this.hash = this.calculateHash();
-    }
-
-    console.log(`⛏️  Block mined: ${this.hash}`);
+  constructor(index,timestamp,data,previousHash) { Object.assign(this,{index,timestamp,data,previousHash,nonce:0}); this.hash=this.calculateHash(); }
+  calculateHash() { return crypto.createHash('sha256').update(this.index+this.previousHash+this.timestamp+JSON.stringify(this.data)+this.nonce).digest('hex'); }
+  async mineBlock(difficulty) {
+    const prefix='0'.repeat(difficulty);
+    while (!this.hash.startsWith(prefix)) { this.nonce++; this.hash=this.calculateHash(); if (this.nonce%256===0) await yieldEventLoop(); }
   }
 }
-
-class VitalMatchBlockchain {
-  constructor() {
-    this.chain = [this.createGenesisBlock()];
-    this.difficulty = 2;
-    this.pendingTransactions = [];
-    this.miningReward = 100;
-    this.blockchainFile = 'blockchain.json';
-    this.pendingFile = 'blockchain-pending.json';
-    this.loadBlockchain();
-    this.loadPending();
-  }
-
-  createGenesisBlock() {
-    return new Block(0, Date.now(), {
-      type: 'genesis',
-      message: 'VitalMatch Blockchain Genesis Block',
-      version: '1.0.0'
-    }, '0');
-  }
-
-  getLatestBlock() {
-    return this.chain[this.chain.length - 1];
-  }
-
-  // Add blood donation record to blockchain
-  addDonationRecord(donorId, donationData) {
-    const transaction = {
-      type: 'donation',
-      donorId: donorId,
-      timestamp: Date.now(),
-      data: {
-        bloodType: donationData.bloodType,
-        units: donationData.units,
-        location: donationData.location,
-        medicalChecks: donationData.medicalChecks,
-        hash: this.hashDonationData(donationData)
-      }
-    };
-
-    this.pendingTransactions.push(transaction);
-    this.savePending();
-    console.log('📝 Donation record added to pending transactions');
-  }
-
-  // Add blood request record to blockchain
-  addRequestRecord(requestId, requestData) {
-    const transaction = {
-      type: 'request',
-      requestId: requestId,
-      timestamp: Date.now(),
-      data: {
-        // Hashed, never raw: the ledger is append-only and patient IDs must
-        // not be recoverable from it. (Nothing reads this field back.)
-        patientIdHash: requestData.patientId
-          ? crypto.createHash('sha256').update(String(requestData.patientId)).digest('hex')
-          : null,
-        bloodType: requestData.bloodType,
-        units: requestData.unitsRequired,
-        urgency: requestData.urgency,
-        hospital: requestData.hospitalName,
-        status: requestData.status
-      }
-    };
-
-    this.pendingTransactions.push(transaction);
-    this.savePending();
-    console.log('📝 Blood request added to pending transactions');
-  }
-
-  // Add fulfillment record to blockchain
-  addFulfillmentRecord(requestId, donorId, fulfillmentData) {
-    const transaction = {
-      type: 'fulfillment',
-      requestId: requestId,
-      donorId: donorId,
-      timestamp: Date.now(),
-      data: {
-        unitsProvided: fulfillmentData.units,
-        matchingScore: fulfillmentData.matchingScore,
-        verificationHash: this.hashFulfillmentData(fulfillmentData)
-      }
-    };
-
-    this.pendingTransactions.push(transaction);
-    this.savePending();
-    console.log('📝 Fulfillment record added to pending transactions');
-  }
-
-  // Mine pending transactions into a new block
-  minePendingTransactions() {
-    if (this.pendingTransactions.length === 0) {
-      console.log('⚠️  No pending transactions to mine');
-      return false;
+export class VitalMatchBlockchain {
+  constructor({ directory=process.cwd(), writeFile=fsAsync.writeFile, rename=fsAsync.rename }={}) {
+    this.directory=directory; this.writeFile=writeFile; this.rename=rename;
+    this.difficulty=2; this.chain=[new Block(0,Date.now(),{type:'genesis',message:'VitalMatch Blockchain Genesis Block',version:'1.0.0'},'0')];
+    this.pendingTransactions=[]; this.queue=Promise.resolve(); this.stateFile=path.join(directory,'blockchain-state.json');
+    const state=fs.existsSync(this.stateFile) ? JSON.parse(fs.readFileSync(this.stateFile,'utf8')) : null;
+    const oldChain=path.join(directory,'blockchain.json'),oldPending=path.join(directory,'blockchain-pending.json');
+    const chain=state?.chain || (fs.existsSync(oldChain) ? JSON.parse(fs.readFileSync(oldChain,'utf8')) : null);
+    if (chain) {
+      if (!Array.isArray(chain) || !chain.length) throw new Error('Ledger history is invalid; restore from backup');
+      this.chain=chain.map(data=>Object.assign(new Block(data.index,data.timestamp,data.data,data.previousHash),data));
     }
-
-    const block = new Block(
-      this.getLatestBlock().index + 1,
-      Date.now(),
-      this.pendingTransactions,
-      this.getLatestBlock().hash
-    );
-
-    block.mineBlock(this.difficulty);
-    
-    console.log('✅ Block successfully mined!');
-    this.chain.push(block);
-    this.pendingTransactions = [];
-    this.savePending();
-
-    this.saveBlockchain();
-    return true;
+    this.pendingTransactions=state?.pending || (fs.existsSync(oldPending) ? JSON.parse(fs.readFileSync(oldPending,'utf8')) : []);
+    if (!Array.isArray(this.pendingTransactions) || !this.isChainValid()) throw new Error('Ledger integrity failed; preserve files and restore from backup');
+    // A legacy crash may have saved the chain before clearing its second file.
+    // Compare exact transaction fingerprints to avoid re-mining those records.
+    const recorded=new Set(this.chain.flatMap(b=>Array.isArray(b.data)?b.data:[]).map(t=>JSON.stringify(t)));
+    this.pendingTransactions=this.pendingTransactions.filter(t=>!recorded.has(JSON.stringify(t)));
   }
-
-  // Verify blockchain integrity (hashes, links, and proof-of-work)
-  isChainValid() {
-    const target = Array(this.difficulty + 1).join('0');
-    for (let i = 1; i < this.chain.length; i++) {
-      const currentBlock = this.chain[i];
-      const previousBlock = this.chain[i - 1];
-
-      if (currentBlock.hash !== currentBlock.calculateHash()) {
-        console.log('❌ Invalid hash at block', i);
-        return false;
-      }
-
-      if (currentBlock.previousHash !== previousBlock.hash) {
-        console.log('❌ Invalid previous hash at block', i);
-        return false;
-      }
-
-      if (currentBlock.hash.substring(0, this.difficulty) !== target) {
-        console.log('❌ Invalid proof-of-work at block', i);
-        return false;
-      }
-    }
-
-    console.log('✅ Blockchain is valid');
-    return true;
+  serialize(operation) { const result=this.queue.then(operation); this.queue=result.catch(()=>{}); return result; }
+  async persist(chain,pending) {
+    await fsAsync.mkdir(this.directory,{recursive:true});
+    const temporary=`${this.stateFile}.${process.pid}.${crypto.randomUUID()}.tmp`;
+    try { await this.writeFile(temporary,JSON.stringify({version:1,chain,pending}),{mode:0o600}); await this.rename(temporary,this.stateFile); }
+    finally { await fsAsync.rm(temporary,{force:true}); }
   }
-
-  // Get donation history for a donor
-  getDonorHistory(donorId) {
-    const history = [];
-    
-    for (const block of this.chain) {
-      if (block.data && Array.isArray(block.data)) {
-        for (const transaction of block.data) {
-          // Loose equality: ids are stored as numbers in some records and strings in others
-          if (transaction.type === 'donation' && transaction.donorId == donorId) {
-            history.push({
-              blockIndex: block.index,
-              timestamp: transaction.timestamp,
-              data: transaction.data,
-              blockHash: block.hash
-            });
-          }
-        }
-      }
-    }
-    
-    return history;
+  addRecord(record) { return this.serialize(async()=>{ const next=[...this.pendingTransactions,record]; await this.persist(this.chain,next); this.pendingTransactions=next; return record; }); }
+  async addDonationRecord(donorId,data) {
+    if (!Number.isInteger(Number(data.units)) || Number(data.units)<=0) throw new Error('Only actual positive-unit donations are donation records');
+    return this.addRecord({type:'donation',donorId,timestamp:Date.now(),data:{bloodType:data.bloodType,units:Number(data.units)}});
   }
-
-  // Get request fulfillment chain
-  getRequestChain(requestId) {
-    const chain = [];
-    
-    for (const block of this.chain) {
-      if (block.data && Array.isArray(block.data)) {
-        for (const transaction of block.data) {
-          // Loose equality: ids are stored as numbers in some records and strings in others
-          if (transaction.requestId == requestId) {
-            chain.push({
-              type: transaction.type,
-              blockIndex: block.index,
-              timestamp: transaction.timestamp,
-              data: transaction.data,
-              blockHash: block.hash
-            });
-          }
-        }
-      }
-    }
-    
-    return chain.sort((a, b) => a.timestamp - b.timestamp);
+  async addRequestRecord(requestId,data) { return this.addRecord({type:'request',requestId,timestamp:Date.now(),data:{bloodType:data.bloodType,units:data.unitsRequired,urgency:data.urgency,status:data.status}}); }
+  async addFulfillmentRecord(requestId,donorId,data) {
+    if (!Number.isInteger(Number(data.units)) || Number(data.units)<=0) throw new Error('Invalid actual fulfillment units');
+    return this.addRecord({type:'fulfillment',requestId,donorId,timestamp:Date.now(),data:{unitsProvided:Number(data.units)}});
   }
-
-  // Utility functions
-  hashDonationData(data) {
-    return crypto
-      .createHash('sha256')
-      .update(JSON.stringify(data))
-      .digest('hex');
-  }
-
-  hashFulfillmentData(data) {
-    return crypto
-      .createHash('sha256')
-      .update(JSON.stringify(data))
-      .digest('hex');
-  }
-
-  // Persistence (atomic: write temp file + rename, so a crash mid-write can
-  // never leave a half-written ledger behind)
-  saveBlockchain() {
-    try {
-      const tmpFile = this.blockchainFile + '.tmp';
-      fs.writeFileSync(tmpFile, JSON.stringify(this.chain, null, 2));
-      fs.renameSync(tmpFile, this.blockchainFile);
-      console.log('💾 Blockchain saved to file');
-    } catch (error) {
-      console.error('❌ Error saving blockchain:', error);
-    }
-  }
-
-  loadBlockchain() {
-    try {
-      if (fs.existsSync(this.blockchainFile)) {
-        const data = fs.readFileSync(this.blockchainFile, 'utf8');
-        const loadedChain = JSON.parse(data);
-        
-        // Reconstruct Block objects
-        this.chain = loadedChain.map(blockData => {
-          const block = new Block(
-            blockData.index,
-            blockData.timestamp,
-            blockData.data,
-            blockData.previousHash
-          );
-          block.hash = blockData.hash;
-          block.nonce = blockData.nonce;
-          return block;
-        });
-        
-        console.log('📂 Blockchain loaded from file');
-      }
-    } catch (error) {
-      console.error('❌ Error loading blockchain:', error);
-      // Preserve the corrupt file for forensics instead of letting the next
-      // save silently overwrite ledger history.
-      try {
-        if (fs.existsSync(this.blockchainFile)) {
-          const backup = `${this.blockchainFile}.corrupt-${Date.now()}`;
-          fs.renameSync(this.blockchainFile, backup);
-          console.log('💾 Corrupt blockchain preserved at', backup);
-        }
-      } catch (backupError) {
-        console.error('❌ Could not preserve corrupt blockchain file:', backupError.message);
-      }
-      console.log('🔄 Starting with genesis block');
-    }
-  }
-
-  // Pending transactions are persisted so unmined records survive restarts
-  savePending() {
-    try {
-      const tmpFile = this.pendingFile + '.tmp';
-      fs.writeFileSync(tmpFile, JSON.stringify(this.pendingTransactions));
-      fs.renameSync(tmpFile, this.pendingFile);
-    } catch (error) {
-      console.error('❌ Error saving pending transactions:', error.message);
-    }
-  }
-
-  loadPending() {
-    try {
-      if (fs.existsSync(this.pendingFile)) {
-        const data = JSON.parse(fs.readFileSync(this.pendingFile, 'utf8'));
-        if (Array.isArray(data) && data.length > 0) {
-          this.pendingTransactions = data;
-          console.log(`📥 Restored ${data.length} pending transaction(s)`);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading pending transactions:', error.message);
-    }
-  }
-
-  // Get blockchain statistics
-  getStats() {
-    let donations = 0;
-    let requests = 0;
-    let fulfillments = 0;
-
-    for (const block of this.chain) {
-      if (block.data && Array.isArray(block.data)) {
-        for (const transaction of block.data) {
-          switch (transaction.type) {
-            case 'donation': donations++; break;
-            case 'request': requests++; break;
-            case 'fulfillment': fulfillments++; break;
-          }
-        }
-      }
-    }
-
-    return {
-      totalBlocks: this.chain.length,
-      pendingTransactions: this.pendingTransactions.length,
-      donations,
-      requests,
-      fulfillments,
-      isValid: this.isChainValid()
-    };
-  }
+  minePendingTransactions() { return this.serialize(async()=>{
+    if (!this.pendingTransactions.length) return false;
+    const block=new Block(this.chain.length,Date.now(),structuredClone(this.pendingTransactions),this.getLatestBlock().hash);
+    await block.mineBlock(this.difficulty);
+    const chain=[...this.chain,block];
+    // Chain and pending are committed in one file. Memory only advances when
+    // durable persistence succeeds; errors reach the caller for visible retry.
+    await this.persist(chain,[]); this.chain=chain; this.pendingTransactions=[]; return true;
+  }); }
+  getLatestBlock() { return this.chain.at(-1); }
+  isChainValid() { return this.chain.length > 0 && this.chain.every((b,i)=>b.index===i && b.hash===b.calculateHash() && (i===0 ? b.previousHash==='0' : b.previousHash===this.chain[i-1].hash && b.hash.startsWith('0'.repeat(this.difficulty)))); }
+  getDonorHistory(id) { return this.chain.flatMap(b=>Array.isArray(b.data)?b.data.filter(t=>t.type==='donation'&&String(t.donorId)===String(id)).map(t=>({blockIndex:b.index,timestamp:t.timestamp,data:t.data,blockHash:b.hash})):[]); }
+  getRequestChain(id) { return this.chain.flatMap(b=>Array.isArray(b.data)?b.data.filter(t=>String(t.requestId)===String(id)).map(t=>({type:t.type,blockIndex:b.index,timestamp:t.timestamp,data:t.data,blockHash:b.hash})):[]).sort((a,b)=>a.timestamp-b.timestamp); }
+  getStats() { const data=this.chain.flatMap(b=>Array.isArray(b.data)?b.data:[]); return {totalBlocks:this.chain.length,pendingTransactions:this.pendingTransactions.length,donations:data.filter(t=>t.type==='donation').length,requests:data.filter(t=>t.type==='request').length,fulfillments:data.filter(t=>t.type==='fulfillment').length,isValid:this.isChainValid(),mode:'single-node historical ledger; current outcomes are recorded in the database'}; }
 }
-
-// Export singleton instance
-export const vitalMatchBlockchain = new VitalMatchBlockchain();
-export { VitalMatchBlockchain };
+export const vitalMatchBlockchain=new VitalMatchBlockchain();

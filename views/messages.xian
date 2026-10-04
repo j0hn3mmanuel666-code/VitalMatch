@@ -4,34 +4,11 @@
 {{> head}}
 {{/if}}
 
-<style>
-  .chat-container {
-    height: calc(100vh - 80px);
-  }
-  
-  .messages-list {
-    height: calc(100vh - 240px);
-    overflow-y: auto;
-  }
-  
-  .conversation-list {
-    height: calc(100vh - 160px);
-    overflow-y: auto;
-  }
-  
-  /* Voice Waveform Styling */
-  .voice-waveform {
-    width: 150px;
-    height: 30px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.3) 100%);
-    border-radius: 4px;
-    position: relative;
-    overflow: hidden;
-  }
-</style>
+
 
 {{#if isAdmin}}
 {{> admin-sidebar}}
+{{> internal-header}}
 
 
 {{else}}
@@ -39,58 +16,31 @@
 {{> user-sidebar}}
 
 <!-- Single Top Navigation Bar -->
-<nav class="bg-white dark:bg-[#18181b] shadow-md dark:shadow-none sticky top-0 z-50">
-  <div class="container mx-auto px-4 py-4">
-    <div class="flex items-center justify-between">
-      <!-- Left: Hamburger + Logo -->
-      <div class="flex items-center space-x-4">
-        <!-- Hamburger Button -->
-        <label for="sidebar-toggle" class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg transition" title="Menu">
-          <svg class="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-          </svg>
-        </label>
-
-        <!-- Logo -->
-        <div class="flex items-center space-x-2">
-          <svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-          </svg>
-          <span class="text-2xl font-bold text-gray-800 dark:text-gray-200">VitalMatch</span>
-        </div>
-      </div>
-
-      <!-- Right: User Menu -->
-      <div class="flex items-center space-x-4">
-        <span class="text-gray-700 dark:text-gray-300 hidden sm:inline">Welcome, <span class="font-semibold">{{userName}}</span></span>
-        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Logout</a>
-      </div>
-    </div>
-  </div>
-</nav>
+{{> internal-header}}
 
 {{/if}}
 
 <!-- Messages Content -->
-<div class="flex bg-gray-50 dark:bg-[#27272a] chat-container">
+<main id="main-content" tabindex="-1" class="vm-messages vm-page flex chat-container" data-has-conversation="{{#if selectedUser}}true{{else}}false{{/if}}">
   
   <!-- Conversations List (Left Panel) -->
-  <div class="w-full md:w-1/3 bg-white dark:bg-[#18181b] border-r">
+  <div class="vm-conversation-pane bg-white dark:bg-[#18181b] border-r">
     <div class="p-4 border-b">
-      <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Messages</h2>
+      <div class="vm-messages__list-heading"><div><h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">Messages</h1><p>{{conversations.length}} conversations</p></div><span aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg></span></div>
       <input 
         type="text" 
+        id="conversationSearch"
         placeholder="Search conversations..." 
         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-      />
+      aria-label="Search conversations...">
     </div>
     
     <div class="conversation-list">
       {{#if conversations.length}}
         {{#each conversations}}
-          <a href="/messages?userId={{otherUserId}}" class="block p-4 border-b hover:bg-gray-50 dark:bg-[#27272a] transition {{#if isActive}}bg-red-50{{/if}}">
+          <a href="/messages?userId={{otherUserId}}" data-conversation-search="{{otherUserName}} {{lastMessage}}" {{#if isActive}}aria-current="page"{{/if}} class="vm-conversation-link hover:bg-gray-50 dark:bg-[#27272a] transition {{#if isActive}}bg-red-50{{/if}}">
             <div class="flex items-center space-x-3">
-              <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+              <div class="vm-surface-muted w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                 {{otherUserInitial}}
               </div>
               <div class="flex-1 min-w-0">
@@ -100,7 +50,7 @@
                 </div>
                 <p class="text-sm text-gray-600 dark:text-gray-400 truncate">{{lastMessage}}</p>
                 {{#if unreadCount}}
-                  <span class="inline-block mt-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{{unreadCount}} new</span>
+                  <span class="vm-status vm-status--info inline-block mt-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{{unreadCount}} new</span>
                 {{/if}}
               </div>
             </div>
@@ -119,12 +69,13 @@
   </div>
   
   <!-- Chat Area (Right Panel) -->
-  <div class="flex-1 flex flex-col">
+  <div class="vm-chat-pane flex-1 flex flex-col">
     {{#if selectedUser}}
       <!-- Chat Header -->
-      <div class="p-4 bg-white dark:bg-[#18181b] border-b flex items-center justify-between">
+      <a href="/messages" class="vm-button vm-button--small vm-chat-back m-3 self-start">Back to conversations</a>
+      <div class="vm-panel p-4 bg-white dark:bg-[#18181b] border-b flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+          <div class="vm-surface-muted w-10 h-10 rounded-full flex items-center justify-center text-white font-bold">
             {{selectedUser.selectedUserInitial}}
           </div>
           <div>
@@ -133,14 +84,14 @@
         </div>
         <div class="flex items-center space-x-2">
           <!-- Audio Call Button -->
-          <button onclick="initiateAudioCall()" class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#09090b] rounded-lg transition" title="Audio Call">
+          <button onclick="initiateAudioCall()" class="vm-button p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#09090b] rounded-lg transition" title="Audio Call" aria-label="Start audio call">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
             </svg>
           </button>
           
           <!-- Video Call Button -->
-          <button onclick="initiateVideoCall()" class="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#09090b] rounded-lg transition" title="Video Call">
+          <button onclick="initiateVideoCall()" class="vm-button p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#09090b] rounded-lg transition" title="Video Call" aria-label="Start video call">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
@@ -148,29 +99,29 @@
           
           <div class="relative">
             <button onclick="toggleThreadMenu(event)" title="Conversation options"
-              class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
+              class="vm-button p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition" aria-label="Conversation options">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
               </svg>
             </button>
             <div id="threadMenu"
-              class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-[#18181b] border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden">
+              class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-[#18181b] border border-gray-200 dark:border-gray-800 rounded-md z-50 overflow-hidden">
               <button onclick="toggleThreadSearch();toggleThreadMenu();"
-                class="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                class="vm-button vm-button--small w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 Search in conversation
               </button>
               <button onclick="window.location.reload();"
-                class="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                class="vm-button vm-button--small w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Refresh conversation
               </button>
               <a href="/messages"
-                class="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                class="vm-button vm-button--small flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -185,7 +136,7 @@
       <div id="threadSearchBar" class="hidden px-4 py-2 bg-white dark:bg-[#18181b] border-b">
         <div class="relative">
           <input type="text" id="threadSearchInput" placeholder="Search messages..."
-            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-[#27272a] text-gray-800 dark:text-gray-200 text-sm">
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-[#27272a] text-gray-800 dark:text-gray-200 text-sm" aria-label="Search messages...">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -204,9 +155,9 @@
               <div class="max-w-xs lg:max-w-md">
                 {{#if (eq messageType 'voice')}}
                   <!-- Voice Message (Sent) -->
-                  <div class="bg-red-600 text-white rounded-lg rounded-tr-none px-4 py-3">
+                  <div class="vm-message-sent bg-red-600 text-white rounded-lg rounded-tr-none px-4 py-3">
                     <div class="flex items-center space-x-3">
-                      <button onclick="playVoiceMessage('{{audioFilePath}}', this)" class="flex-shrink-0">
+                      <button onclick="playVoiceMessage('{{audioFilePath}}', this)" class="vm-button flex-shrink-0">
                         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
                         </svg>
@@ -221,7 +172,7 @@
                   </div>
                 {{else}}
                   <!-- Text Message (Sent) -->
-                  <div class="bg-red-600 text-white rounded-lg rounded-tr-none px-4 py-2">
+                  <div class="vm-message-sent bg-red-600 text-white rounded-lg rounded-tr-none px-4 py-2">
                     <p class="whitespace-pre-wrap">{{message}}</p>
                   </div>
                 {{/if}}
@@ -234,9 +185,9 @@
               <div class="max-w-xs lg:max-w-md">
                 {{#if (eq messageType 'voice')}}
                   <!-- Voice Message (Received) -->
-                  <div class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg rounded-tl-none px-4 py-3">
+                  <div class="vm-message-received bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg rounded-tl-none px-4 py-3">
                     <div class="flex items-center space-x-3">
-                      <button onclick="playVoiceMessage('{{audioFilePath}}', this)" class="flex-shrink-0">
+                      <button onclick="playVoiceMessage('{{audioFilePath}}', this)" class="vm-button flex-shrink-0">
                         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
                         </svg>
@@ -251,7 +202,7 @@
                   </div>
                 {{else}}
                   <!-- Text Message (Received) -->
-                  <div class="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg rounded-tl-none px-4 py-2">
+                  <div class="vm-message-received bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg rounded-tl-none px-4 py-2">
                     <p class="whitespace-pre-wrap">{{message}}</p>
                   </div>
                 {{/if}}
@@ -262,15 +213,16 @@
         {{/each}}
       </div>
       
+      <p id="callAvailability" class="vm-muted text-xs px-4" aria-live="polite">Connecting calling service...</p>
       <!-- Message Input -->
-      <div class="p-4 bg-white dark:bg-[#18181b] border-t">
+      <div class="vm-panel p-4 bg-white dark:bg-[#18181b] border-t">
         <!-- Normal Message Input -->
         <form id="text-message-form" action="/messages/send" method="POST" class="flex items-center space-x-2">
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
           <input type="hidden" name="recipientId" value="{{selectedUser.selectedUserId}}" />
           
           <!-- Microphone Button -->
-          <button type="button" id="mic-btn" onclick="startVoiceRecording()" class="p-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#09090b] rounded-lg transition">
+          <button type="button" aria-label="Record a voice message" id="mic-btn" onclick="startVoiceRecording()" class="vm-button p-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-[#09090b] rounded-lg transition">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
             </svg>
@@ -283,8 +235,8 @@
             placeholder="Type a message..." 
             class="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             required
-          />
-          <button type="submit" class="bg-red-600 text-white p-3 rounded-lg hover:bg-red-700 transition">
+          aria-label="Type a message...">
+          <button type="submit" aria-label="Send message" class="vm-button vm-button--primary bg-red-600 text-white p-3 rounded-lg hover:bg-red-700 transition">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
             </svg>
@@ -305,15 +257,15 @@
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Recording...</p>
               <div class="flex items-center space-x-2">
                 <canvas id="recording-waveform" width="200" height="40" class="bg-white dark:bg-[#18181b] rounded"></canvas>
-                <span id="recording-time" class="text-lg font-mono text-red-600">0:00</span>
+                <span id="recording-time" class="text-lg tabular-nums text-red-600">0:00</span>
               </div>
             </div>
-            <button onclick="cancelVoiceRecording()" class="p-2 text-gray-600 dark:text-gray-400 hover:bg-white dark:bg-[#18181b] rounded-lg transition">
+            <button onclick="cancelVoiceRecording()" class="vm-button p-2 text-gray-600 dark:text-gray-400 hover:bg-white dark:bg-[#18181b] rounded-lg transition" aria-label="Record voice message">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
-            <button onclick="stopVoiceRecording()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+            <button onclick="stopVoiceRecording()" class="vm-button vm-button--primary bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
               Send
             </button>
           </div>
@@ -333,61 +285,22 @@
     {{/if}}
   </div>
   
-</div>
-
-{{> footer}}
+</main>
 
 
-<!-- Load Socket.io Client -->
-<script src="/socket.io/socket.io.js"></script>
-
-<!-- Load Call System Scripts -->
-<script src="/js/webrtcManager.js"></script>
-<script src="/js/signalingClient.js"></script>
-<script src="/js/callManager.js"></script>
-<script src="/js/callUI.js"></script>
 
 <script>
-  // Initialize call system
-  let callManager = null;
-  const currentUserId = {{currentUserId}};
-  {{#if selectedUser}}
-  const otherUserId = {{selectedUser.selectedUserId}};
-  {{else}}
-  const otherUserId = null;
-  {{/if}}
-  
-  if (currentUserId) {
-    // Initialize components
-    const signalingClient = new SignalingClient(currentUserId);
-    const webrtcManager = new WebRTCManager(signalingClient);
-    const callUI = new CallUI('call-container', null);
-    callManager = new CallManager(currentUserId, signalingClient, webrtcManager, callUI);
-    
-    // Set callManager reference in callUI
-    callUI.callManager = callManager;
-    
-    // Make callManager globally accessible for button clicks
-    window.callManager = callManager;
-    
-    // Connect to signaling server
-    signalingClient.connect().then(() => {
-      console.log('✅ Call system initialized');
-    }).catch(error => {
-      console.error('❌ Failed to initialize call system:', error);
-    });
-  }
-  
+  {{#if selectedUser}}const otherUserId = {{selectedUser.selectedUserId}};{{else}}const otherUserId = null;{{/if}}
   // Call initiation functions
   function initiateAudioCall() {
-    if (callManager && otherUserId) {
-      callManager.initiateCall(otherUserId, 'audio');
+    if (window.callManager && otherUserId) {
+      window.callManager.initiateCall(otherUserId, 'audio');
     }
   }
   
   function initiateVideoCall() {
-    if (callManager && otherUserId) {
-      callManager.initiateCall(otherUserId, 'video');
+    if (window.callManager && otherUserId) {
+      window.callManager.initiateCall(otherUserId, 'video');
     }
   }
   
@@ -400,10 +313,13 @@
   let analyser = null;
   let dataArray = null;
   
+  let recordingCancelled = false;
   async function startVoiceRecording() {
+    recordingCancelled = false;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
+      if (!window.MediaRecorder || !MediaRecorder.isTypeSupported('audio/webm')) { stream.getTracks().forEach(track => track.stop()); alert('Voice recording is not supported by this browser. Use text messaging.'); return; }
       mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       audioChunks = [];
       
@@ -421,8 +337,7 @@
       
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        await sendVoiceMessage(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
+        try { if (!recordingCancelled && audioBlob.size > 0) await sendVoiceMessage(audioBlob); } finally { stream.getTracks().forEach(track => track.stop()); if (audioContext) audioContext.close(); }
       };
       
       mediaRecorder.start();
@@ -454,6 +369,7 @@
   }
   
   function cancelVoiceRecording() {
+    recordingCancelled = true;
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       mediaRecorder.stop();
       mediaRecorder.stream.getTracks().forEach(track => track.stop());
@@ -609,6 +525,26 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    const conversationSearch = document.getElementById('conversationSearch');
+    const conversationList = document.querySelector('.conversation-list');
+    if (conversationSearch && conversationList) {
+      const conversations = Array.from(conversationList.querySelectorAll('.vm-conversation-link'));
+      const noMatches = document.createElement('p');
+      noMatches.className = 'vm-empty-state p-6 text-center';
+      noMatches.textContent = 'No conversations match your search.';
+      noMatches.hidden = true;
+      conversationList.append(noMatches);
+      conversationSearch.addEventListener('input', function () {
+        const query = conversationSearch.value.trim().toLowerCase();
+        let visible = 0;
+        conversations.forEach(function (conversation) {
+          const matches = (conversation.dataset.conversationSearch || conversation.textContent).toLowerCase().includes(query);
+          conversation.hidden = !matches;
+          if (matches) visible++;
+        });
+        noMatches.hidden = visible > 0 || conversations.length === 0;
+      });
+    }
     const threadInput = document.getElementById('threadSearchInput');
     if (threadInput) {
       threadInput.addEventListener('input', function () { filterThreadMessages(threadInput.value); });
@@ -666,3 +602,5 @@
 
 <!-- Call Container (for UI elements) -->
 <div id="call-container"></div>
+
+{{> footer}}
