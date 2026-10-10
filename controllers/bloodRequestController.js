@@ -7,11 +7,12 @@ import { Pledge, isCompatible } from '../models/pledgeModel.js';
 import { Appointment } from '../models/appointmentModel.js';
 import { WorkflowEvent } from '../models/workflowEventModel.js';
 import { listFacilities } from '../services/facilityService.js';
-import { createRequest, correctRequest, canViewRequest, pledgeRequest, WorkflowError } from '../services/requestLifecycleService.js';
+import { createRequest, correctRequest, canViewRequest, pledgeRequest, dispatchCriticalEmailsNow, notifyEmergency, WorkflowError } from '../services/requestLifecycleService.js';
 import { normalizeRequestInput } from '../services/requestInputService.js';
 import { isDonorReady, unitsRemaining } from '../services/coordinationPolicy.js';
 import { queueCoordination } from '../services/coordinationJobService.js';
 import { isHospitalAccount } from '../services/accountPolicy.js';
+import { findNearestDonors } from '../services/matchingService.js';
 import { retryTransaction } from '../services/transactionService.js';
 
 async function requestForm(req, res, view = 'request-blood') {
@@ -70,9 +71,33 @@ export const viewBloodRequestPage = async (req, res) => {
       // Donor invitations disclose coordination details, not patient clinical records.
       for (const field of ['patientName', 'patientAge', 'indicationOfTransfusion', 'notes', 'fulfillmentNotes', 'email', 'contactPerson', 'contactNumber']) data[field] = null;
     }
+    // Compatible-donor matches for private viewers (owner/admin/matched facility).
+    // Privacy-safe: blood type, city and distance only - no donor identities.
+    let matchingDonors = [];
+    if (privateView && request.status === 'active' && request.hospitalStatus === 'approved') {
+      try {
+        const matches = await findNearestDonors(request, 10);
+        matchingDonors = matches.map(({ donor, distanceKm }) => ({
+          bloodType: donor.bloodType,
+          city: donor.city || null,
+          distanceText: distanceKm === null ? 'Distance not confirmed' : `${distanceKm.toFixed(1)} km away`
+        }));
+      } catch (e) { console.error('Matching donors failed:', e.message); }
+    }
+    // Unified lifecycle display: Pending, Under Review, Approved,
+    // Donor Matching in Progress, Donor Confirmed, Fulfilled, Rejected, Cancelled.
+    let displayStatus = 'Pending';
+    let displayStep = 0;
+    if (request.status === 'cancelled') { displayStatus = 'Cancelled'; displayStep = -1; }
+    else if (request.status === 'fulfilled') { displayStatus = 'Fulfilled'; displayStep = 5; }
+    else if (request.status === 'scheduled') { displayStatus = 'Donor Confirmed'; displayStep = 4; }
+    else if (request.status === 'pending' && request.hospitalStatus === 'declined') { displayStatus = 'Rejected'; displayStep = -1; }
+    else if (request.status === 'pending') { displayStatus = 'Under Review'; displayStep = 1; }
+    else if (request.hospitalStatus === 'approved' && pledgeCount > 0) { displayStatus = 'Donor Matching in Progress'; displayStep = 3; }
+    else if (request.hospitalStatus === 'approved') { displayStatus = 'Approved'; displayStep = 2; }
     const latestDecline = rawHistory.find(e => e.action === 'facility_declined');
     const nextAction = request.status === 'pending' ? request.hospitalStatus === 'declined' ? 'Correct the returned request and submit it for a fresh review, or cancel it if blood is no longer needed.' : 'The assigned facility or coordinator must review this request before donor outreach starts.' : request.status === 'scheduled' ? 'Both parties must confirm the current appointment. A coordinator records completion after it occurs.' : request.status === 'active' ? 'Donors may offer to donate. A coordinator reviews offers and arranges an appointment.' : 'The coordination workflow is closed. Its history is retained.';
-    res.render('view-blood-request', { title: 'Blood Request Details - VitalMatch', request: data, isAdmin, isOwner, canReviewHospital, pledgeState, pledgeCount, pledges, history, nextAction, hospitalDeclineReason: privateView ? latestDecline?.reason : null, emergencyActive: isEmergencyActive(request), canManageEmergency: (isAdmin || isOwner) && request.status === 'active' && request.hospitalStatus === 'approved', unverifiedFacility: !request.facilityId });
+    res.render('view-blood-request', { title: 'Blood Request Details - VitalMatch', request: data, isAdmin, isOwner, canReviewHospital, pledgeState, pledgeCount, pledges, matchingDonors, displayStatus, displayStep, history, nextAction, hospitalDeclineReason: privateView ? latestDecline?.reason : null, emergencyActive: isEmergencyActive(request), canManageEmergency: (isAdmin || isOwner) && request.status === 'active' && request.hospitalStatus === 'approved', unverifiedFacility: !request.facilityId });
   } catch (error) {
     console.error('Request detail failed:', error.name);
     res.status(503).render('error', { title: 'Request unavailable', message: 'The request could not be loaded. Please retry.' });
@@ -97,11 +122,13 @@ async function setEmergency(req, res, enabled) {
       if (enabled && isEmergencyActive(request)) throw new WorkflowError('An escalation is already active');
       if (!enabled && !request.isEmergency) throw new WorkflowError('There is no escalation to clear');
       await request.update({ isEmergency: enabled, emergencyAt: enabled ? new Date() : null, emergencyExpiresAt: enabled ? new Date(Date.now() + 6 * 3600000) : null, version: request.version + 1 }, { transaction });
+      if (enabled) await notifyEmergency(request, transaction);
       await WorkflowEvent.create({ requestId: request.id, actorId: req.session.userId, action: enabled ? 'emergency_escalated' : 'emergency_cleared', details: { expiresAt: request.emergencyExpiresAt } }, { transaction });
       if (enabled) await queueCoordination(request, { transaction, mode: 'emergency' });
       return request;
     });
     req.flash('success_msg', enabled ? 'Escalation saved. Up to 1,000 coordination invitations are queued.' : 'Escalation cleared.');
+    if (enabled) dispatchCriticalEmailsNow();
     res.redirect('/view-blood-request/' + request.id);
   } catch (error) { req.flash('error_msg', error.status ? error.message : 'Could not save the escalation.'); res.redirect('/dashboard'); }
 }
@@ -112,6 +139,9 @@ export const submitBloodRequest = async (req, res) => {
   try {
     const data = normalizeRequestInput(req.body);
     const result = await createRequest(data, req.session.userId, req.body.submissionKey || req.session.requestSubmissionKey);
+    // Critical requests need action now: push queued emails out immediately
+    // instead of waiting for the worker's next tick.
+    if (!result.duplicate && (result.request.urgency || '').toLowerCase() === 'critical') dispatchCriticalEmailsNow();
     delete req.session.requestSubmissionKey;
     delete req.session.requestFormValues;
     req.flash('success_msg', result.request.status === 'pending' ? 'Request saved for facility or coordinator review. Donor outreach begins after approval.' : 'Request saved. Donor invitations are queued.');

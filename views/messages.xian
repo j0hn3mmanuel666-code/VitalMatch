@@ -524,7 +524,24 @@
     }
   }
 
+  // Jump straight to the latest message instead of the top of the thread
+  function scrollToLatestMessage() {
+    var list = document.querySelector('.messages-list');
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
+    var parent = list.parentElement;
+    while (parent && parent !== document.body) {
+      var style = window.getComputedStyle(parent);
+      if (/(auto|scroll)/.test(style.overflowY) && parent.scrollHeight > parent.clientHeight) {
+        parent.scrollTop = parent.scrollHeight;
+        break;
+      }
+      parent = parent.parentElement;
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    scrollToLatestMessage();
     const conversationSearch = document.getElementById('conversationSearch');
     const conversationList = document.querySelector('.conversation-list');
     if (conversationSearch && conversationList) {

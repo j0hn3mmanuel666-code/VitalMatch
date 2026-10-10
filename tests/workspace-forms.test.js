@@ -8,6 +8,8 @@ import hbs from 'hbs';
 const handlebars = hbs.handlebars;
 handlebars.registerHelper('eq', (a, b) => a === b);
 handlebars.registerHelper('formatDate', () => '3 Oct 2026');
+handlebars.registerHelper('formatDateTime', () => '3 Oct 2026, 10:00');
+handlebars.registerHelper('lifecycleSteps', (current) => ['Pending', 'Under Review', 'Approved', 'Donor Matching in Progress', 'Donor Confirmed', 'Fulfilled'].map((label, i) => ({ label, index: i + 1, last: i === 5, done: i < Number(current), current: i === Number(current) })));
 handlebars.registerHelper('formatTime', () => '10:00');
 for (const name of ['head', 'admin-head', 'user-sidebar', 'admin-sidebar', 'internal-header', 'footer', 'pagination', 'record-search', 'status-badge']) handlebars.registerPartial(name, '');
 handlebars.registerPartial('facility-selector', readFileSync(new URL('../views/partials/facility-selector.xian', import.meta.url), 'utf8'));
@@ -79,7 +81,7 @@ test('actual request form and server parser agree on unit and component quantity
   const parser = readFileSync(new URL('../services/requestInputService.js', import.meta.url), 'utf8').replace(/^import .*;\r?\n/gm, '').replace('export function normalizeRequestInput', 'function normalizeRequestInput');
   const context = { WorkflowError: class extends Error {}, Date };
   runInNewContext(parser, context);
-  const fixture = { patientName: 'Synthetic patient', patientAge: 40, bloodType: 'O+', unitsRequired: 1, bloodComponents: ['wholeBlood'], wholeBloodVolume: '2 units',
+  const fixture = { patientName: 'Synthetic patient', patientAge: 40, patientReference: 'PX-2026-0041', bloodType: 'O+', unitsRequired: 1, bloodComponents: ['wholeBlood'], wholeBloodVolume: '2 units',
     indicationOfTransfusion: 'Synthetic transfusion indication', facilityId: 'external', hospitalName: 'Synthetic external hospital', hospitalAddress: 'Synthetic address',
     city: 'Calapan City', province: 'Oriental Mindoro', contactPerson: 'Synthetic requester', contactNumber: '09171234567', email: 'synthetic@example.test', urgency: 'moderate', requiredByDate: '2030-10-03' };
   const cases = [

@@ -129,13 +129,13 @@
             </div>
           </div>
 
-          <p class="text-sm text-gray-600 mb-3 truncate">{{patientName}} · {{hospitalName}} · {{city}}</p>
+          <p class="text-sm text-gray-600 mb-3 truncate">{{#if patientReference}}Ref {{patientReference}} · {{/if}}{{patientName}} · {{hospitalName}} · {{city}}</p>
 
           <div id="more-{{id}}" class="hidden">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <p class="text-gray-600 text-sm mb-1">Patient</p>
-              <p class="font-semibold text-gray-800">{{patientName}}</p>
+              <p class="font-semibold text-gray-800">{{patientName}}{{#if patientReference}} <span class="text-xs font-normal text-gray-500">(Ref {{patientReference}})</span>{{/if}}</p>
             </div>
             <div>
               <p class="text-gray-600 text-sm mb-1">Hospital</p>

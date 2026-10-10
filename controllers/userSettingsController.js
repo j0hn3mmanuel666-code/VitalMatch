@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { User } from "../models/userModel.js";
+import { Facility } from "../models/facilityModel.js";
 import { Donor } from "../models/donorModel.js";
 import { PasswordReset } from '../models/passwordResetModel.js';
 import { getUserSettings, UserSetting } from "../models/userSettingModel.js";
@@ -31,13 +32,15 @@ export const settingsPage = async (req, res) => {
     const prefs = await getUserSettings(user.id);
     const allowedTabs = ["profile", "donor", "notifications", "security"];
     const activeTab = allowedTabs.includes(req.query.tab) ? req.query.tab : "profile";
+    const facility = user.facilityId ? await Facility.findByPk(user.facilityId) : null;
     res.render("settings", {
       title: "Settings - VitalMatch",
       user,
       donor,
       prefs,
       activeTab,
-      isDonor: !!donor
+      isDonor: !!donor,
+      facility: facility ? facility.toJSON() : null
     });
   } catch (error) {
     console.error("Settings page error:");

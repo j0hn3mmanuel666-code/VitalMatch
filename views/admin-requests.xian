@@ -19,14 +19,23 @@
     </div>
       {{> record-search label="Search blood requests" placeholder="Patient, facility, blood type, location or ID"}}
 
+    <!-- Live critical banner: polls for critical-urgency requests needing immediate action -->
+    <div id="critical-banner" class="hidden mb-4 p-4 border-2 border-red-600 rounded-md bg-red-50 dark:bg-red-900/20 flex items-center justify-between" role="alert">
+      <div class="flex items-center gap-3">
+        <span class="inline-block w-3 h-3 bg-red-600 rounded-full animate-pulse"></span>
+        <p class="text-sm font-bold text-red-700 dark:text-red-300" id="critical-banner-text"></p>
+      </div>
+      <a href="/admin/requests?filter=pending" id="critical-review-link" class="vm-button vm-button--small vm-button--danger">Review now</a>
+    </div>
+
     <!-- Filter Tabs -->
     <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none mb-6">
       <div class="vm-tabs flex border-b overflow-x-auto">
         <a href="/admin/requests" class="px-6 py-4 font-semibold {{#unless filter}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/unless}}">
           All Requests
         </a>
-        <a href="/admin/requests?filter=pending" class="px-6 py-4 font-semibold" {{#if (eq filter 'pending')}}aria-current="page"{{/if}}>Awaiting review</a>
-        <a href="/admin/requests?filter=scheduled" class="px-6 py-4 font-semibold" {{#if (eq filter 'scheduled')}}aria-current="page"{{/if}}>Scheduled</a>
+        <a href="/admin/requests?filter=pending" class="px-6 py-4 font-semibold {{#if (eq filter 'pending')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}" {{#if (eq filter 'pending')}}aria-current="page"{{/if}}>Awaiting review</a>
+        <a href="/admin/requests?filter=scheduled" class="px-6 py-4 font-semibold {{#if (eq filter 'scheduled')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}" {{#if (eq filter 'scheduled')}}aria-current="page"{{/if}}>Scheduled</a>
         <a href="/admin/requests?filter=active" class="px-6 py-4 font-semibold {{#if (eq filter 'active')}}text-blue-600 border-b-2 border-blue-600{{else}}text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300{{/if}}">
           Active
         </a>
@@ -99,7 +108,7 @@
           </thead>
           <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-100 dark:divide-gray-800">
             {{#each requests}}
-            <tr class="hover:bg-blue-50/30 transition-colors duration-200 group">
+            <tr id="request-row-{{id}}" class="hover:bg-blue-50/30 transition-colors duration-200 group">
               <td class="px-4 py-3 whitespace-nowrap">
                 <input type="checkbox" name="selectedRequests" value="{{id}}" {{#unless (eq status "fulfilled")}}{{#unless (eq status "cancelled")}}disabled{{/unless}}{{/unless}} onchange="updateBulkActionsVisibility()"
                   class="rounded border-gray-300 text-red-600 focus:ring-red-500 shadow-sm dark:shadow-none transition" aria-label="Select this row">
@@ -204,7 +213,15 @@
                   {{#if (eq status 'active')}}
                   <button type="button" class="vm-button vm-button--small fulfill-btn" data-request-id="{{id}}" title="Coordinate donation">Coordinate</button>
                   {{else if (eq status 'scheduled')}}<a class="vm-button vm-button--small" href="/admin/appointments">Manage appointment</a>
-                  {{else if (eq status 'pending')}}{{#unless facilityId}}<a class="vm-button vm-button--small" href="/view-blood-request/{{id}}">Review request</a>{{/unless}}{{/if}}
+                  {{else if (eq status 'pending')}}{{#unless facilityId}}<button type="button" class="vm-button vm-button--small review-toggle" data-request-id="{{id}}">Review request</button>
+                  <div class="review-panel hidden mt-2 p-3 border rounded-md bg-gray-50 dark:bg-[#27272a] text-left whitespace-normal w-64" id="review-panel-{{id}}">
+                    <input type="text" class="review-reason w-full px-2 py-1 text-xs border rounded-md mb-2" placeholder="Reason (required to return)" maxlength="200" />
+                    <div class="flex gap-2">
+                      <button type="button" class="vm-button vm-button--small review-approve" data-request-id="{{id}}">Approve</button>
+                      <button type="button" class="vm-button vm-button--small vm-button--danger review-return" data-request-id="{{id}}">Return</button>
+                    </div>
+                    <p class="review-error text-xs text-red-600 mt-1"></p>
+                  </div>{{/unless}}{{/if}}
                   {{#if (eq status 'fulfilled')}}
                   <button type="button" onclick="deleteRequest('{{id}}')"
                     class="vm-button vm-button--small p-1.5 text-red-600 bg-red-50 rounded-md hover:bg-red-100 hover:text-red-800 transition delete-btn tooltip-trigger vm-button--danger"
@@ -554,6 +571,95 @@
       location.reload();
     } catch (error) { feedback.textContent = error.message + ' Your entered details are retained; retry the same action.'; button.disabled = false; }
   }
+
+  // Review workflow: approve activates the request, return sends it back with a reason
+  async function reviewDecision(requestId, approved) {
+    const panel = document.getElementById('review-panel-' + requestId);
+    const reasonInput = panel ? panel.querySelector('.review-reason') : null;
+    const errorEl = panel ? panel.querySelector('.review-error') : null;
+    const reason = reasonInput ? reasonInput.value.trim() : '';
+    if (!approved && !reason) {
+      if (errorEl) errorEl.textContent = 'A reason is required to return a request.';
+      if (reasonInput) reasonInput.focus();
+      return;
+    }
+    if (errorEl) errorEl.textContent = 'Saving...';
+    try {
+      const response = await fetch(`/admin/requests/${requestId}/review`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.getCsrfToken() },
+        body: JSON.stringify({ action: approved ? 'approve' : 'decline', reason })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Could not save the review decision.');
+      location.reload();
+    } catch (error) {
+      if (errorEl) errorEl.textContent = error.message;
+    }
+  }
+  // Critical alert polling: every 20s so critical requests get immediate attention
+  async function pollCriticalAlerts() {
+    try {
+      const response = await fetch('/api/admin/critical-alerts', { credentials: 'same-origin', headers: { 'X-CSRF-Token': window.getCsrfToken() } });
+      const data = await response.json();
+      const banner = document.getElementById('critical-banner');
+      const text = document.getElementById('critical-banner-text');
+      if (banner && text && data.success && data.count > 0) {
+        const latest = data.criticals[0];
+        text.textContent = `${data.count} CRITICAL request${data.count > 1 ? 's need' : ' needs'} immediate action (latest: #${latest.id}, ${latest.bloodType} at ${latest.hospitalName || latest.city || 'unknown facility'})`;
+        banner.classList.remove('hidden');
+      } else if (banner) {
+        banner.classList.add('hidden');
+      }
+    } catch (e) { /* next poll will retry */ }
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    pollCriticalAlerts();
+    setInterval(pollCriticalAlerts, 20000);
+    // Review now: filter to pending, then scroll to and flash the critical row
+    var reviewLink = document.getElementById('critical-review-link');
+    if (reviewLink) {
+      reviewLink.addEventListener('click', function (e) {
+        var text = document.getElementById('critical-banner-text');
+        var match = text ? text.textContent.match(/#(\d+)/) : null;
+        if (match) reviewLink.href = '/admin/requests?filter=pending&highlight=' + match[1];
+      });
+    }
+    try {
+      var highlight = new URLSearchParams(window.location.search).get('highlight');
+      if (highlight) {
+        var row = document.getElementById('request-row-' + highlight);
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          row.classList.add('bg-red-50');
+          setTimeout(function () { row.classList.remove('bg-red-50'); }, 4000);
+        }
+      }
+    } catch (e) { /* highlight is decorative */ }
+    document.querySelectorAll('.review-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById('review-panel-' + btn.getAttribute('data-request-id'));
+        if (panel) panel.classList.toggle('hidden');
+      });
+    });
+    document.querySelectorAll('.review-approve').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-request-id');
+        openConfirmModal({
+          title: 'Approve request?',
+          message: 'This request will become active for donor coordination.',
+          button: 'Approve',
+          buttonClass: 'bg-green-600 hover:bg-green-700',
+          icon: 'success',
+          onSubmit: function () { reviewDecision(id, true); }
+        });
+      });
+    });
+    document.querySelectorAll('.review-return').forEach(btn => {
+      btn.addEventListener('click', () => reviewDecision(btn.getAttribute('data-request-id'), false));
+    });
+  });
 
   function deleteRequest(requestId) {
 

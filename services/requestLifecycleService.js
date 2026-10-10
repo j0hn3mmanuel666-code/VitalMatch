@@ -51,8 +51,31 @@ async function replay(key, transaction) { return key && WorkflowEvent.findOne({ 
 export async function notifyCoordinators(request, title, message, transaction) {
   const where = { isActive: true, [Op.or]: [{ role: 'admin' }] };
   if (request.facilityId) where[Op.or].push({ role: { [Op.in]: ['hospital', 'hospital_admin'] }, facilityId: request.facilityId });
+  // Critical urgency jumps the queue: unmissable title + critical type so admin
+  // UIs can banner it, and the caller triggers an immediate outbox run.
+  const critical = (request.urgency || '').toLowerCase() === 'critical';
   const accounts = await User.findAll({ where, attributes: ['id'], transaction });
-  for (const account of accounts) await queueNotification({ userId: account.id, title, message, type: 'info', link: `/view-blood-request/${request.id}` }, { transaction });
+  for (const account of accounts) await queueNotification({ userId: account.id, title: critical ? `CRITICAL: ${title}` : title, message, type: critical ? 'critical' : 'info', link: `/view-blood-request/${request.id}` }, { transaction });
+}
+// Emergency escalation must ping staff directly: urgent in-app notice plus
+// email to every admin and same-facility hospital account (honors each
+// account's email preferences at send time).
+export async function notifyEmergency(request, transaction) {
+  const where = { isActive: true, [Op.or]: [{ role: 'admin' }] };
+  if (request.facilityId) where[Op.or].push({ role: { [Op.in]: ['hospital', 'hospital_admin'] }, facilityId: request.facilityId });
+  const accounts = await User.findAll({ where, attributes: ['id', 'email', 'firstName'], transaction });
+  const message = `EMERGENCY: request #${request.id} (${request.bloodType}, ${request.unitsRequired} unit(s)) at ${request.hospitalName || request.city || 'unknown facility'} needs immediate action.`;
+  for (const account of accounts) {
+    await queueNotification({ userId: account.id, title: 'EMERGENCY escalation', message, type: 'critical', link: `/view-blood-request/${request.id}` }, { transaction });
+    if (account.email) await queueEmail({ kind: 'request-update', recipient: account.email, dedupeKey: `emergency:${request.id}:${request.version}`, payload: { recipientName: account.firstName, title: 'EMERGENCY escalation', message, requestId: request.id, request: { id: request.id, actionPath: `/view-blood-request/${request.id}` } } }, { transaction });
+  }
+}
+// Fire-and-forget immediate email dispatch for critical requests (the worker's
+// normal 30s tick is too slow when blood is needed now). Safe to call after commit.
+export function dispatchCriticalEmailsNow() {
+  import('./emailOutboxWorker.js')
+    .then(({ processEmailOutbox }) => processEmailOutbox({ maximum: 50 }))
+    .catch((error) => console.error('Immediate critical email dispatch failed:', error.message));
 }
 async function informUser(userId, request, title, message, transaction, category = 'notifyAppointments', linkOverride = null) {
   if (!userId) return;

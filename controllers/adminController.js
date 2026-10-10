@@ -249,14 +249,14 @@ export const adminDonorsPage = async (req, res) => {
       { dateOfBirth: null }, { dateOfBirth: { [Op.lte]: ages.after } }, { dateOfBirth: { [Op.gt]: ages.through } },
       { lastDonationDate: { [Op.gt]: new Date(Date.now() - donationIntervalDays() * 86400000) } },
       { '$User.isActive$': false }, { '$User.emailVerified$': false }, { '$User.archivedAt$': { [Op.ne]: null } },
-      sequelize.literal("EXISTS (SELECT 1 FROM Appointments occupied WHERE occupied.donorId = Donor.id AND occupied.status = 'scheduled')")
+      sequelize.literal("EXISTS (SELECT 1 FROM Appointments occupied WHERE occupied.donorId = Donor.id AND occupied.status = 'scheduled' AND occupied.scheduledDate >= NOW())")
     ] }];
     if (['O-','O+','A-','A+','B-','B+','AB-','AB+'].includes(bloodType)) where.bloodType = bloodType;
     const search = searchTerm(req.query);
     const searchedWhere = withTextSearch(where, search, ['fullName','city','province','bloodType','mobileNumber','email']);
     const { rows, pagination } = await recordPage(Donor, { where: searchedWhere, include: [{ model: User, required: true, attributes: ['isActive','emailVerified','archivedAt'], ...(filter === 'available' ? { where: readyAccount } : {}) }], order: [['createdAt','DESC']] }, req.query, req.path);
     const donorIds = rows.map(d => d.id);
-    const scheduled = donorIds.length ? await Appointment.findAll({ where: { donorId: donorIds, status: 'scheduled' }, attributes: ['donorId'], raw: true }) : [];
+    const scheduled = donorIds.length ? await Appointment.findAll({ where: { donorId: donorIds, status: 'scheduled', scheduledDate: { [Op.gte]: new Date() } }, attributes: ['donorId'], raw: true }) : [];
     const occupied = new Set(scheduled.map(a => a.donorId));
     const donors = rows.map(d => ({ ...d.toJSON(), coordinationReady: isDonorReady(d) && d.User?.isActive && d.User?.emailVerified && !d.User?.archivedAt && !occupied.has(d.id), age: donorAge(d.dateOfBirth), accountActive: d.User?.isActive }));
     res.render('admin-donors', { layout: 'admin', title: 'Manage Donors - VitalMatch Admin', isDonors: true, donors, filter, bloodType, search, error: null, pagination });
@@ -523,6 +523,21 @@ export const reviewBloodRequest = async (req, res) => {
     const request = await reviewRequest(req.params.id, req.session.userId, req.body.action === 'approve', req.body.reason);
     res.json({ success: true, message: 'Review decision saved.' });
   } catch (error) { res.status(error.status || 500).json({ success: false, message: error.status ? error.message : 'Could not review request' }); }
+};
+export const criticalAlerts = async (req, res) => {
+  try {
+    const criticals = await BloodRequest.findAll({
+      where: {
+        urgency: 'critical',
+        status: { [Op.in]: ['active', 'pending'] },
+        archivedAt: null
+      },
+      attributes: ['id', 'bloodType', 'unitsRequired', 'hospitalName', 'city', 'status', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+      limit: 10
+    });
+    res.json({ success: true, count: criticals.length, criticals });
+  } catch (error) { res.status(500).json({ success: false, message: 'Could not load critical alerts' }); }
 };
 export const deleteRequest = async (req, res) => {
   try {

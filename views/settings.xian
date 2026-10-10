@@ -70,6 +70,8 @@
             <label class="block text-sm font-semibold text-gray-700 mb-2" for="vm-settings-63">Official Hospital Name</label>
             <input type="text" name="hospitalName" value="{{user.hospitalName}}" readonly placeholder="e.g. Calapan City Hospital" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500" id="vm-settings-63">
             <p class="text-xs text-gray-500 mt-1">Facility identity is managed by a chapter administrator. Contact the coordination team to request a correction.</p>
+            <p class="text-xs font-semibold mt-2">Account verification: {{#if user.emailVerified}}email verified{{else}}email NOT verified{{/if}} · {{#if user.isActive}}active{{else}}suspended{{/if}}</p>
+            <p class="text-xs font-semibold mt-1">Facility verification: {{#if facility}}{{#if facility.verifiedAt}}verified{{else}}pending administrator verification{{/if}}{{#unless facility.isActive}} (facility suspended){{/unless}}{{else}}no verified facility assigned yet{{/if}}</p>
           </div>
           {{/if}}
           <button type="submit" class="vm-button vm-button--primary bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition">Save Profile</button>
@@ -88,9 +90,10 @@
               <p class="text-sm text-gray-500">When on, hospitals can match you to blood requests</p>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" name="isAvailable" class="sr-only peer" {{#if donor.isAvailable}}checked{{/if}}>
-              <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-red-600 transition-colors"></div>
+              <input type="checkbox" name="isAvailable" id="availabilityToggle" class="sr-only peer" {{#if donor.isAvailable}}checked{{/if}}>
+              <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-red-600 transition-colors relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-5"></div>
             </label>
+            <p id="availabilitySaved" class="text-xs text-green-600 mt-1 hidden">Availability saved ✓</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
@@ -200,6 +203,27 @@
     b.addEventListener("click", function() { showTab(b.getAttribute("data-tab")); });
   });
   showTab(activeTab);
+
+  // Availability toggle saves immediately (no need to press Save Donor Settings)
+  var availabilityToggle = document.getElementById("availabilityToggle");
+  if (availabilityToggle) {
+    availabilityToggle.addEventListener("change", function () {
+      var saved = document.getElementById("availabilitySaved");
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      var body = new FormData();
+      body.append("_csrf", meta ? meta.content : "");
+      if (availabilityToggle.checked) body.append("isAvailable", "on");
+      var form = availabilityToggle.closest("form");
+      if (form) {
+        new FormData(form).forEach(function (value, key) {
+          if (key !== "isAvailable" && key !== "_csrf") body.append(key, value);
+        });
+      }
+      fetch("/settings/donor", { method: "POST", body: body, credentials: "same-origin" })
+        .then(function () { if (saved) saved.classList.remove("hidden"); })
+        .catch(function () { availabilityToggle.checked = !availabilityToggle.checked; });
+    });
+  }
 
   function resendVerification() {
     var status = document.getElementById("resendStatus");

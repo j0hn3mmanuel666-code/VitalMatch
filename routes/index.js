@@ -67,6 +67,7 @@ router.use([
   "/donor-profile", "/cancel-request/:id",
   "/settings/profile", "/settings/donor", "/settings/notifications", "/settings/password",
   "/hospital/requests/:id/approve", "/hospital/requests/:id/decline",
+  "/hospital/staff/invite", "/hospital/staff/:id/deactivate",
   "/admin/new-blood-request", "/admin/hospitals/:id/:action",
   "/admin/fulfill-request/:id", "/admin/delete-request/:id",
   "/admin/appointments/:id/reschedule", "/admin/appointments/:id/cancel",
@@ -189,14 +190,17 @@ router.post("/settings/notifications", isAuthenticated, updateNotificationPrefs)
 router.post("/settings/password", isAuthenticated, changePassword);
 
 // Admin Routes (Protected - Admin Only)
-import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsPage, adminReportsPage, adminBlockchainPage, adminNewBloodRequestPage, createBloodRequest, fulfillRequest, deleteRequest, getUserManagementPage, getUserList, getUserDetails, createUser, updateUser, deleteUser, bulkUpdateUsers, exportUsers, adminAppointmentsPage, setHospitalStatus, exportReports, rescheduleAppointment, cancelAppointment, reviewBloodRequest } from "../controllers/adminController.js";
+import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsPage, adminReportsPage, adminBlockchainPage, adminNewBloodRequestPage, createBloodRequest, fulfillRequest, deleteRequest, getUserManagementPage, getUserList, getUserDetails, createUser, updateUser, deleteUser, bulkUpdateUsers, exportUsers, adminAppointmentsPage, setHospitalStatus, exportReports, rescheduleAppointment, cancelAppointment, reviewBloodRequest, criticalAlerts } from "../controllers/adminController.js";
 
 router.get("/hospital/dashboard", isAuthenticated, isHospital, hospitalDashboardPage);
 
 // Hospital patient records
-import { patientRecordsPage, approveRequest, declineRequest } from "../controllers/hospitalController.js";
+import { patientRecordsPage, approveRequest, declineRequest, exportPatientRecords, inviteStaff, deactivateStaff } from "../controllers/hospitalController.js";
 
+router.get("/hospital/patients/export", isAuthenticated, isHospital, exportPatientRecords);
 router.get("/hospital/patients", isAuthenticated, isHospital, patientRecordsPage);
+router.post("/hospital/staff/invite", isAuthenticated, isHospital, inviteStaff);
+router.post("/hospital/staff/:id/deactivate", isAuthenticated, isHospital, deactivateStaff);
 router.post("/hospital/requests/:id/approve", isAuthenticated, isHospital, approveRequest);
 router.post("/hospital/requests/:id/decline", isAuthenticated, isHospital, declineRequest);
 router.get("/admin/dashboard", isAdmin, adminDashboardPage);
@@ -205,6 +209,7 @@ router.get("/admin/appointments", isAdmin, adminAppointmentsPage);
 router.post("/admin/appointments/:id/reschedule", isAdmin, rescheduleAppointment);
 router.post("/admin/appointments/:id/cancel", isAdmin, cancelAppointment);
 router.post("/admin/requests/:id/review", isAdmin, reviewBloodRequest);
+router.get("/api/admin/critical-alerts", isAdmin, criticalAlerts);
 router.get("/admin/new-blood-request", isAdmin, adminNewBloodRequestPage);
 router.post("/admin/new-blood-request", isAdmin, validateBloodRequest, createBloodRequest);
 router.get("/admin/donors", isAdmin, adminDonorsPage);

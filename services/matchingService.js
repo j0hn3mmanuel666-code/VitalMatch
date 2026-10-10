@@ -24,7 +24,7 @@ export async function findNearestDonors(request, limit = 10, excludeUserIds = []
   const types = ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'].filter(type => isCompatible(type, request.bloodType));
   const cutoff = new Date(Date.now() - donationIntervalDays() * 86400000);
   const ageBounds = donorAgeBounds();
-  const where = { bloodType: types, isAvailable: true, dateOfBirth: { [Op.gt]: ageBounds.after, [Op.lte]: ageBounds.through }, [Op.or]: [{ lastDonationDate: null }, { lastDonationDate: { [Op.lte]: cutoff } }], [Op.and]: [sequelize.literal("NOT EXISTS (SELECT 1 FROM Appointments occupied WHERE occupied.donorId = Donor.id AND occupied.status = 'scheduled')")] };
+  const where = { bloodType: types, isAvailable: true, dateOfBirth: { [Op.gt]: ageBounds.after, [Op.lte]: ageBounds.through }, [Op.or]: [{ lastDonationDate: null }, { lastDonationDate: { [Op.lte]: cutoff } }], [Op.and]: [sequelize.literal("NOT EXISTS (SELECT 1 FROM Appointments occupied WHERE occupied.donorId = Donor.id AND occupied.status = 'scheduled' AND occupied.scheduledDate >= NOW())")] };
   const excluded = [...new Set([request.userId, ...excludeUserIds].filter(id => Number.isInteger(Number(id)) && Number(id) > 0).map(Number))];
   if (excluded.length) where.userId = { [Op.notIn]: excluded };
   const city = sequelize.escape(String(request.city || '').trim().toLowerCase()), province = sequelize.escape(String(request.province || '').trim().toLowerCase());

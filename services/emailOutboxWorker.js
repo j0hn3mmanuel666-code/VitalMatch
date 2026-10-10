@@ -41,7 +41,7 @@ export async function processEmailOutbox({ service = emailService, maximum = 20 
     if (!result && row.kind === 'nearby-request') {
       const request = await BloodRequest.findByPk(row.payload.request?.id);
       const donor = await Donor.findOne({where:{userId:user.id}});
-      const occupied = donor && await Appointment.count({where:{donorId:donor.id,status:'scheduled'}});
+      const occupied = donor && await Appointment.count({where:{donorId:donor.id,status:'scheduled',scheduledDate:{[Op.gte]:new Date()}}});
       if (!request || request.status !== 'active' || request.hospitalStatus !== 'approved' || request.archivedAt || request.version !== row.payload.request?.version || !isDonorReady(donor) || !isCompatible(donor.bloodType,request.bloodType) || occupied) result = { superseded:true };
     }
     if (!result && row.payload.appointmentId) {

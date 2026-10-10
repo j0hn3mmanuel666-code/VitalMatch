@@ -25,6 +25,25 @@
       {{#if request}}
 <section class="vm-panel p-6 mb-6" aria-labelledby="request-progress-heading">
   <h2 id="request-progress-heading">Coordination progress</h2>
+  <p class="text-sm text-gray-500 mt-1">Request #{{request.id}} &middot; <strong>{{displayStatus}}</strong></p>
+  {{#if (eq displayStep -1)}}
+  <p class="vm-alert {{#if (eq displayStatus 'Cancelled')}}vm-alert--danger{{else}}vm-alert--warning{{/if}} mt-3">This request ended as <strong>{{displayStatus}}</strong>. See the activity history below for details.</p>
+  {{else}}
+  <ol class="mt-4 space-y-0">
+    {{#each (lifecycleSteps displayStep)}}
+    <li class="flex gap-3">
+      <div class="flex flex-col items-center">
+        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold {{#if done}}bg-green-600 text-white{{else}}{{#if current}}bg-red-600 text-white{{else}}bg-gray-200 text-gray-500{{/if}}{{/if}}">{{#if done}}✓{{else}}{{index}}{{/if}}</span>
+        {{#unless last}}<span class="w-0.5 flex-1 {{#if done}}bg-green-600{{else}}bg-gray-200{{/if}}"></span>{{/unless}}
+      </div>
+      <div class="pb-5">
+        <p class="text-sm font-semibold {{#if current}}text-gray-900{{else}}text-gray-500{{/if}}">{{label}}</p>
+        {{#if current}}<p class="text-xs text-gray-500">Current stage</p>{{/if}}
+      </div>
+    </li>
+    {{/each}}
+  </ol>
+  {{/if}}
   <dl class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3"><div><dt>Facility review</dt><dd>{{> status-badge value=request.hospitalStatus}}</dd></div><div><dt>Units collected</dt><dd>{{request.unitsFulfilled}} of {{request.unitsRequired}}</dd></div><div><dt>Units remaining</dt><dd>{{request.unitsRemaining}}</dd></div></dl>
   <p class="vm-muted mt-3">{{nextAction}}</p>
   {{#if isOwner}}{{#if (eq request.status 'pending')}}{{#if (eq request.hospitalStatus 'declined')}}<a class="vm-button mt-3" href="/requests/{{request.id}}/edit">Correct returned request</a>{{/if}}{{/if}}{{/if}}
@@ -67,7 +86,7 @@
           </svg>
           <div>
             <p class="font-semibold text-orange-800 capitalize">Urgency: {{request.urgency}}</p>
-            <p class="text-sm text-orange-700">Required by: {{formatDate request.requiredByDate}}</p>
+            <p class="text-sm text-orange-700">Required by: {{formatDateTime request.requiredByDate}}</p>
           </div>
         </div>
       </div>
@@ -96,6 +115,13 @@
             <p class="text-sm text-gray-600 mb-1">Patient Age</p>
             <p class="text-lg font-semibold text-gray-800">{{request.patientAge}} years old</p>
           </div>
+
+          {{#if request.patientReference}}
+          <div>
+            <p class="text-sm text-gray-600 mb-1">Patient Reference No.</p>
+            <p class="text-lg font-semibold text-gray-800">{{request.patientReference}}</p>
+          </div>
+          {{/if}}
 
           <div>
             <p class="text-sm text-gray-600 mb-1">Blood Type Needed</p>
@@ -342,6 +368,23 @@
         <p class="text-sm text-gray-500 mt-4">Schedule one of these donors from the admin Requests page.</p>
       </div>
       {{/if}}
+      {{/if}}
+      {{#if matchingDonors.length}}
+      <div class="vm-panel bg-white rounded-md p-6 mb-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Matching Donors ({{matchingDonors.length}})</h3>
+        <div class="space-y-3">
+          {{#each matchingDonors}}
+          <div class="flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3">
+            <div>
+              <p class="font-semibold text-gray-800">Compatible donor</p>
+              <p class="text-xs text-gray-500">{{#if city}}{{city}} · {{/if}}{{distanceText}}</p>
+            </div>
+            <span class="vm-status bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">{{bloodType}}</span>
+          </div>
+          {{/each}}
+        </div>
+        <p class="text-xs text-gray-500 mt-4">Matching uses standard blood-type compatibility, availability, donation interval, age and distance. Donor eligibility and final blood suitability must still be verified by qualified healthcare personnel.</p>
+      </div>
       {{/if}}
       <!-- Action Buttons -->
       <div class="flex justify-center space-x-4">

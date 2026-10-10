@@ -130,14 +130,17 @@ export const deletePublicContent=(req,res)=>mutateContent(req,res,'deactivate');
 // Admin page to view and manage all public content
 export const adminPublicContentPage = async (req, res) => {
   try {
-    const content = await PublicContent.findAll({
+    const allContent = await PublicContent.findAll({
       order: [["section", "ASC"]]
     });
+    const content = allContent.filter(c => c.isActive !== false);
+    const inactiveContent = allContent.filter(c => c.isActive === false);
 
     res.render("admin-public-cms", {
       layout: "admin",
       title: "Public CMS Management",
       content,
+      inactiveContent,
       user: req.user
     });
   } catch (error) {

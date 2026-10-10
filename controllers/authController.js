@@ -114,10 +114,19 @@ const buildDashboardData = async (userId) => {
     const totalUnits = allRequests.reduce((sum, r) => sum + (r.unitsRequired || 0), 0);
     pendingReviewCount = userProfile.facilityId ? allRequests.filter(r => r.status === 'pending' && r.hospitalStatus === 'pending').length : 0;
 
+    const emergencyCount = await BloodRequest.count({
+      where: {
+        ...(userProfile.facilityId ? { facilityId: userProfile.facilityId } : { userId }),
+        status: 'active',
+        [Op.or]: [{ urgency: 'critical' }, { isEmergency: true }]
+      }
+    });
+
     hospitalStats = {
       totalRequests: totalCount,
       activeRequests: activeCount,
       fulfilledRequests: fulfilledCount,
+      emergencyRequests: emergencyCount,
       totalUnitsRequested: totalUnits,
       unitsCollected: allRequests.reduce((sum, request) => sum + Number(request.unitsFulfilled || 0), 0)
     };

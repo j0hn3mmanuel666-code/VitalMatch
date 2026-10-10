@@ -302,6 +302,30 @@ hbs.registerHelper('formatDate', function (date) {
   });
 });
 
+hbs.registerHelper('lifecycleSteps', function (current) {
+  const labels = ['Pending', 'Under Review', 'Approved', 'Donor Matching in Progress', 'Donor Confirmed', 'Fulfilled'];
+  const step = Number(current);
+  return labels.map((label, i) => ({
+    label,
+    index: i + 1,
+    last: i === labels.length - 1,
+    done: i < step,
+    current: i === step
+  }));
+});
+
+hbs.registerHelper('formatDateTime', function (date) {
+  if (!date) return '';
+  return new Date(date).toLocaleString('en-US', {
+    timeZone: getRuntimeSettings().general.timeZone,
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+});
+
 hbs.registerHelper('formatTime', function (date) {
   if (!date) return '';
   return new Date(date).toLocaleTimeString('en-US', {

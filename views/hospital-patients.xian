@@ -25,6 +25,27 @@
         </div>
       </div>
       {{> record-search label="Search patient records" placeholder="Patient, blood type, facility, location or ID"}}
+      <form method="GET" action="/hospital/patients" class="flex flex-wrap items-center gap-3 mt-4 mb-2">
+        <label class="text-sm text-gray-600">Status
+          <select name="filter" class="ml-1 px-3 py-2 text-sm border border-gray-300 rounded-lg" onchange="this.form.submit()">
+            <option value="">All statuses</option>
+            <option value="pending"{{#if (eq filter 'pending')}} selected{{/if}}>Pending</option>
+            <option value="active"{{#if (eq filter 'active')}} selected{{/if}}>Active</option>
+            <option value="scheduled"{{#if (eq filter 'scheduled')}} selected{{/if}}>Scheduled</option>
+            <option value="fulfilled"{{#if (eq filter 'fulfilled')}} selected{{/if}}>Fulfilled</option>
+            <option value="cancelled"{{#if (eq filter 'cancelled')}} selected{{/if}}>Cancelled</option>
+          </select>
+        </label>
+        <label class="text-sm text-gray-600">Urgency
+          <select name="urgency" class="ml-1 px-3 py-2 text-sm border border-gray-300 rounded-lg" onchange="this.form.submit()">
+            <option value="">All urgencies</option>
+            <option value="critical"{{#if (eq urgency 'critical')}} selected{{/if}}>Emergency</option>
+            <option value="urgent"{{#if (eq urgency 'urgent')}} selected{{/if}}>Urgent</option>
+            <option value="moderate"{{#if (eq urgency 'moderate')}} selected{{/if}}>Normal</option>
+          </select>
+        </label>
+        <a href="/hospital/patients/export" class="vm-button vm-button--small ml-auto px-4 py-2 text-sm border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition">Export CSV</a>
+      </form>
 
       {{#if success_msg}}
       <div class="vm-alert vm-alert--success bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">{{success_msg}}</div>
@@ -60,6 +81,42 @@
           </div>
           {{/each}}
         </div>
+      </div>
+      {{/if}}
+
+      {{#if facilityAssigned}}
+      <div class="vm-panel bg-white rounded-md p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Facility Staff</h2>
+        <p class="text-sm text-gray-500 mb-4">Invite staff to your facility. Invited accounts stay inactive until a chapter administrator activates them; staff then set a password via Forgot Password.</p>
+        <form method="POST" action="/hospital/staff/invite" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
+          <input type="text" name="firstName" required placeholder="First name" maxlength="100" class="px-3 py-2 text-sm border border-gray-300 rounded-lg" />
+          <input type="text" name="lastName" required placeholder="Last name" maxlength="100" class="px-3 py-2 text-sm border border-gray-300 rounded-lg" />
+          <input type="email" name="email" required placeholder="Staff email" maxlength="255" class="px-3 py-2 text-sm border border-gray-300 rounded-lg" />
+          <button type="submit" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">Invite Staff</button>
+        </form>
+        {{#if staff.length}}
+        <ul class="divide-y divide-gray-200">
+          {{#each staff}}
+          <li class="py-3 flex items-center justify-between gap-4">
+            <div class="min-w-0">
+              <p class="font-semibold text-gray-800">{{firstName}} {{lastName}}{{#if (eq id ../myUserId)}} (you){{/if}}</p>
+              <p class="text-xs text-gray-500">{{email}} · {{#if isActive}}{{#if emailVerified}}active{{else}}email unverified{{/if}}{{else}}inactive{{/if}}</p>
+            </div>
+            {{#unless (eq id ../myUserId)}}
+            {{#if isActive}}
+            <form method="POST" action="/hospital/staff/{{id}}/deactivate" class="shrink-0">
+              <input type="hidden" name="_csrf" value="{{../csrfToken}}">
+              <button type="submit" class="px-3 py-1 text-xs border border-red-300 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition">Remove</button>
+            </form>
+            {{/if}}
+            {{/unless}}
+          </li>
+          {{/each}}
+        </ul>
+        {{else}}
+        <p class="text-sm text-gray-500">No staff accounts linked to this facility yet.</p>
+        {{/if}}
       </div>
       {{/if}}
 

@@ -8,7 +8,7 @@
 .landing-hero__note { border-top: 1px solid var(--vm-line); padding-top: 1rem; margin-top: 1.8rem !important; font-size: .79rem; color: var(--vm-muted); max-width: 51ch; }
 .landing-hero__image { margin: 0; min-width: 0; }
 .landing-hero__image img { width: 100%; height: auto; aspect-ratio: 1.12; object-fit: cover; object-position: 50% 57%; border-radius: 2px; background: var(--vm-soft); }
-.landing-hero__image img.landing-hero__photo { aspect-ratio: 1000 / 667; object-position: center; }
+.landing-hero__image img.landing-hero__photo { aspect-ratio: auto; object-fit: contain; max-height: 30rem; }
 .landing-hero__image figcaption { display: flex; gap: 1rem; justify-content: space-between; margin-top: .75rem; font-size: .69rem; color: var(--vm-muted); line-height: 1.5; }
 .landing-hero__image figcaption a { text-decoration: underline; text-underline-offset: .2em; flex-shrink: 0; }
 .landing-context { padding-bottom: 3rem; }
@@ -45,9 +45,10 @@
 .landing-story__grid--image { grid-template-columns: 1fr 1fr; }
 .landing-story__lead, .landing-cms-section__lead { color: var(--vm-muted); font-size: 1.1rem; margin-top: 1.1rem !important; }
 .landing-story__body, .landing-cms-section__body { color: var(--vm-muted); line-height: 1.75; margin-top: 1rem; max-width: 65ch; overflow-wrap: anywhere; }
-.landing-story__image, .landing-cms-section__image { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--vm-soft); }
+.landing-story__image, .landing-cms-section__image { width: 100%; height: auto; max-height: 26rem; object-fit: contain; background: var(--vm-soft); }
 .landing-cms-section { display: grid; gap: 2.5rem; }
 .landing-cms-section--image { grid-template-columns: .85fr 1fr; align-items: center; }
+.landing-cms-section--flip .landing-cms-section__image { order: 2; }
 .landing-cms-section + .landing-cms-section { border-top: 1px solid var(--vm-line); padding-top: 3.5rem; margin-top: 3.5rem; }
 .landing-cms-section__actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.5rem; }
 .landing-guidance__grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 4rem; }

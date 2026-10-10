@@ -15,7 +15,9 @@
     </div>
     {{#unless error}}<dl class="vm-dashboard-summary">
       {{#if (eq user.role 'hospital')}}
+      <div><dt>Total requests</dt><dd>{{#if hospitalStats}}{{hospitalStats.totalRequests}}{{else}}0{{/if}}</dd><p><a href="/my-requests" class="vm-text-link">All submitted requests</a></p></div>
       <div><dt>Active requests</dt><dd>{{#if hospitalStats}}{{hospitalStats.activeRequests}}{{else}}0{{/if}}</dd><p><a href="/my-requests" class="vm-text-link">Review your requests</a></p></div>
+      <div><dt>Emergency needs attention</dt><dd>{{#if hospitalStats}}{{hospitalStats.emergencyRequests}}{{else}}0{{/if}}</dd><p>Critical and escalated requests</p></div>
       <div><dt>Fulfilled requests</dt><dd>{{#if hospitalStats}}{{hospitalStats.fulfilledRequests}}{{else}}0{{/if}}</dd><p>Completed coordination</p></div>
       <div><dt>Facility reviews needed</dt><dd>{{pendingReviewCount}}</dd><p><a href="/hospital/patients" class="vm-text-link">Open review inbox</a></p></div>
       {{else}}
