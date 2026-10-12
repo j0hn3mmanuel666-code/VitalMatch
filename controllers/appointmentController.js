@@ -2,6 +2,7 @@ import { searchTerm, withTextSearch, recordPage } from '../services/recordSearch
 import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 import { BloodRequest } from '../models/bloodRequestModel.js';
+import { User } from '../models/userModel.js';
 import { Appointment } from '../models/appointmentModel.js';
 import { Donor } from '../models/donorModel.js';
 import { ScheduleToken } from '../models/scheduleTokenModel.js';
@@ -47,6 +48,16 @@ export const donorAppointmentsPage = async (req, res) => {
     const appointments = rows.map(a => ({ ...a.BloodRequest.toJSON(), patientName: null, patientAge: null, indicationOfTransfusion: null, notes: null, fulfillmentNotes: null, email: null, contactPerson: null, contactNumber: null, reason: null, id: a.requestId, appointmentId: a.id, version: a.version, scheduledDate: a.scheduledDate, donorConfirmed: a.donorConfirmed, requesterConfirmed: a.requesterConfirmed, unitsRemaining: unitsRemaining(a.BloodRequest) }));
     res.render('my-appointments', { title: 'My Appointments - VitalMatch', donor: donor.toJSON(), appointments, pagination, search, error: null });
   } catch (error) { res.status(503).render('my-appointments', { title: 'Appointments unavailable', appointments: [], error: 'Appointments could not be loaded. Please retry.' }); }
+};
+export const hospitalAppointmentsPage = async (req, res) => {
+  try {
+    const account = await User.findByPk(req.session.userId);
+    if (!account.facilityId) { req.flash('error_msg', 'An administrator must assign your verified facility first.'); return res.redirect('/hospital/patients'); }
+    const search = searchTerm(req.query);
+    const { rows, pagination } = await recordPage(Appointment, { where: withTextSearch({ status: 'scheduled' }, search, ['$BloodRequest.hospitalName$', '$BloodRequest.bloodType$', '$BloodRequest.city$', '$Donor.fullName$'], 'requestId'), include: [{ model: BloodRequest, required: true, where: { facilityId: account.facilityId, archivedAt: null } }, { model: Donor, attributes: ['id', 'fullName', 'bloodType'] }], order: [['scheduledDate', 'ASC']] }, req.query, req.path);
+    const appointments = rows.map(a => ({ id: a.requestId, appointmentId: a.id, version: a.version, scheduledDate: a.scheduledDate, donorConfirmed: a.donorConfirmed, requesterConfirmed: a.requesterConfirmed, donorName: a.Donor ? a.Donor.fullName : 'Unassigned', donorBloodType: a.Donor ? a.Donor.bloodType : null, bloodType: a.BloodRequest.bloodType, hospitalName: a.BloodRequest.hospitalName, city: a.BloodRequest.city, unitsRequired: a.BloodRequest.unitsRequired }));
+    res.render('hospital-appointments', { title: 'Facility Appointments - VitalMatch', appointments, pagination, search, error: null });
+  } catch (error) { res.status(503).render('hospital-appointments', { title: 'Appointments unavailable', appointments: [], error: 'Appointments could not be loaded. Please retry.' }); }
 };
 export const declineAppointment = async (req, res) => {
   try {

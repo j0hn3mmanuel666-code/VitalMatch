@@ -52,7 +52,26 @@ export const authLimiter = rateLimit({
   // budget. Registration/reset/resend requests remain counted for abuse control.
   requestWasSuccessful: (req, res) => req.path === '/login' && Boolean(req.session?.userId) && res.statusCode < 400,
   handler: (req, res) => {
-    if (typeof req.flash === 'function') req.flash('error_msg', 'Too many login attempts. Please try again after 15 minutes.');
+    const message = 'Too many attempts. Please wait 15 minutes and try again.';
+    // Form posts re-render their page with a visible warning instead of raw JSON.
+    const formViews = {
+      '/login': 'login',
+      '/register': 'register',
+      '/forgot-password': 'forgotpassword'
+    };
+    const view = formViews[req.path];
+    if (view) {
+      if (typeof req.flash === 'function') req.flash('error_msg', message);
+      return res.status(429).render(view, {
+        title: view === 'login' ? 'Login' : view === 'register' ? 'Register' : 'Forgot Password',
+        error: message,
+        error_msg: message
+      });
+    }
+    if (req.path.startsWith('/reset-password')) {
+      if (typeof req.flash === 'function') req.flash('error_msg', message);
+      return res.status(429).render('reset-password', { title: 'Reset Password', tokenValid: false, error_msg: message });
+    }
     res.status(429).json({ error: 'Too many authentication attempts. Please try again after 15 minutes.' });
   }
 });

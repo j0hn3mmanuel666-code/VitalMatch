@@ -84,42 +84,6 @@
       </div>
       {{/if}}
 
-      {{#if facilityAssigned}}
-      <div class="vm-panel bg-white rounded-md p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-2">Facility Staff</h2>
-        <p class="text-sm text-gray-500 mb-4">Invite staff to your facility. Invited accounts stay inactive until a chapter administrator activates them; staff then set a password via Forgot Password.</p>
-        <form method="POST" action="/hospital/staff/invite" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-          <input type="hidden" name="_csrf" value="{{csrfToken}}">
-          <input type="text" name="firstName" required placeholder="First name" maxlength="100" class="px-3 py-2 text-sm border border-gray-300 rounded-lg" />
-          <input type="text" name="lastName" required placeholder="Last name" maxlength="100" class="px-3 py-2 text-sm border border-gray-300 rounded-lg" />
-          <input type="email" name="email" required placeholder="Staff email" maxlength="255" class="px-3 py-2 text-sm border border-gray-300 rounded-lg" />
-          <button type="submit" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">Invite Staff</button>
-        </form>
-        {{#if staff.length}}
-        <ul class="divide-y divide-gray-200">
-          {{#each staff}}
-          <li class="py-3 flex items-center justify-between gap-4">
-            <div class="min-w-0">
-              <p class="font-semibold text-gray-800">{{firstName}} {{lastName}}{{#if (eq id ../myUserId)}} (you){{/if}}</p>
-              <p class="text-xs text-gray-500">{{email}} · {{#if isActive}}{{#if emailVerified}}active{{else}}email unverified{{/if}}{{else}}inactive{{/if}}</p>
-            </div>
-            {{#unless (eq id ../myUserId)}}
-            {{#if isActive}}
-            <form method="POST" action="/hospital/staff/{{id}}/deactivate" class="shrink-0">
-              <input type="hidden" name="_csrf" value="{{../csrfToken}}">
-              <button type="submit" class="px-3 py-1 text-xs border border-red-300 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition">Remove</button>
-            </form>
-            {{/if}}
-            {{/unless}}
-          </li>
-          {{/each}}
-        </ul>
-        {{else}}
-        <p class="text-sm text-gray-500">No staff accounts linked to this facility yet.</p>
-        {{/if}}
-      </div>
-      {{/if}}
-
       <div class="vm-metric-grid grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="vm-panel bg-white rounded-md p-4 text-center">
           <p class="text-2xl font-bold text-gray-800">{{summary.total}}</p>

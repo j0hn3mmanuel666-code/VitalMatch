@@ -67,7 +67,6 @@ router.use([
   "/donor-profile", "/cancel-request/:id",
   "/settings/profile", "/settings/donor", "/settings/notifications", "/settings/password",
   "/hospital/requests/:id/approve", "/hospital/requests/:id/decline",
-  "/hospital/staff/invite", "/hospital/staff/:id/deactivate",
   "/admin/new-blood-request", "/admin/hospitals/:id/:action",
   "/admin/fulfill-request/:id", "/admin/delete-request/:id",
   "/admin/appointments/:id/reschedule", "/admin/appointments/:id/cancel",
@@ -153,12 +152,13 @@ router.post("/blood-request", isAuthenticated, validateBloodRequest, submitBlood
 router.post("/request-blood", isAuthenticated, validateBloodRequest, submitBloodRequest);
 
 // Appointment / Schedule Routes (GET shows the page, POST performs the confirmation)
-import { confirmSchedulePage, confirmScheduleSubmit, confirmByTokenPage, confirmByTokenSubmit, donorAppointmentsPage, declineAppointment } from "../controllers/appointmentController.js";
+import { confirmSchedulePage, confirmScheduleSubmit, confirmByTokenPage, confirmByTokenSubmit, donorAppointmentsPage, hospitalAppointmentsPage, declineAppointment } from "../controllers/appointmentController.js";
 router.get("/confirm-schedule/:id/:role", isAuthenticated, confirmSchedulePage);
 router.post("/confirm-schedule/:id/:role", isAuthenticated, confirmScheduleSubmit);
 router.get("/schedule-confirm/:token", confirmByTokenPage);
 router.post("/schedule-confirm/:token", confirmByTokenSubmit);
 router.get("/my-appointments", isAuthenticated, donorAppointmentsPage);
+router.get("/hospital/appointments", isAuthenticated, isHospital, hospitalAppointmentsPage);
 router.post("/appointments/:id/decline", isAuthenticated, declineAppointment);
 
 // Notification Routes (Protected)
@@ -195,12 +195,10 @@ import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsP
 router.get("/hospital/dashboard", isAuthenticated, isHospital, hospitalDashboardPage);
 
 // Hospital patient records
-import { patientRecordsPage, approveRequest, declineRequest, exportPatientRecords, inviteStaff, deactivateStaff } from "../controllers/hospitalController.js";
+import { patientRecordsPage, approveRequest, declineRequest, exportPatientRecords } from "../controllers/hospitalController.js";
 
 router.get("/hospital/patients/export", isAuthenticated, isHospital, exportPatientRecords);
 router.get("/hospital/patients", isAuthenticated, isHospital, patientRecordsPage);
-router.post("/hospital/staff/invite", isAuthenticated, isHospital, inviteStaff);
-router.post("/hospital/staff/:id/deactivate", isAuthenticated, isHospital, deactivateStaff);
 router.post("/hospital/requests/:id/approve", isAuthenticated, isHospital, approveRequest);
 router.post("/hospital/requests/:id/decline", isAuthenticated, isHospital, declineRequest);
 router.get("/admin/dashboard", isAdmin, adminDashboardPage);
