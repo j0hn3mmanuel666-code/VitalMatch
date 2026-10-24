@@ -79,6 +79,7 @@ export const updateDonorSettings = async (req, res) => {
   try {
     const { mobileNumber, emergencyContactName, emergencyContactNumber } = req.body;
     if (!validatePhoneNumber(mobileNumber) || (emergencyContactName && typeof emergencyContactName !== 'string') || (emergencyContactNumber && !validatePhoneNumber(emergencyContactNumber))) {
+      if (req.get?.('Accept')?.includes('application/json')) return res.status(400).json({ success: false, error: 'Provide valid mobile and emergency contact numbers.' });
       req.flash("error_msg", "Contact number is required");
       return res.redirect("/settings?tab=donor");
     }
@@ -100,16 +101,20 @@ export const updateDonorSettings = async (req, res) => {
       return available;
     });
     if (isAvailable === null) {
+      if (req.get?.('Accept')?.includes('application/json')) return res.status(404).json({ success: false, error: 'Create a donor profile before changing availability.' });
       req.flash('error_msg', 'You do not have a donor profile yet. Please register as a donor first.');
       return res.redirect('/donor-profile');
     }
     if (isAvailable) {
+      if (req.get?.('Accept')?.includes('application/json')) { res.set('Cache-Control', 'private, no-store'); return res.json({ success: true, isAvailable: true, message: 'Availability preference saved.' }); }
       req.flash("success_msg", "Donor settings saved. You are now visible for matching.");
     } else {
+      if (req.get?.('Accept')?.includes('application/json')) { res.set('Cache-Control', 'private, no-store'); return res.json({ success: true, isAvailable: false, message: 'Availability preference saved.' }); }
       req.flash("success_msg", "Donor settings saved. You are now hidden from matching.");
     }
     res.redirect("/settings?tab=donor");
   } catch (error) {
+    if (req.get?.('Accept')?.includes('application/json')) return res.status(error.status || 503).json({ success: false, error: error.status ? error.message : 'Could not update donor settings.' });
     console.error("Update donor settings error:");
     req.flash("error_msg", "Could not update donor settings");
     res.redirect("/settings?tab=donor");
@@ -131,9 +136,11 @@ export const updateNotificationPrefs = async (req, res) => {
       await prefs.update(updates, { transaction });
       await AuditService.logAction(account.id, 'NOTIFICATION_PREFERENCES_UPDATE', 'UserSettings', prefs.id, oldValues, updates, auditContext(req, transaction, account));
     });
+    if (req.get?.('Accept')?.includes('application/json')) return res.json({ success: true, preferences: updates, message: 'Notification preferences saved.' });
     req.flash("success_msg", "Notification preferences saved");
     res.redirect("/settings?tab=notifications");
   } catch (error) {
+    if (req.get?.('Accept')?.includes('application/json')) return res.status(503).json({ success: false, error: 'Could not save notification preferences.' });
     console.error("Update notification prefs error:");
     req.flash("error_msg", "Could not save notification preferences");
     res.redirect("/settings?tab=notifications");

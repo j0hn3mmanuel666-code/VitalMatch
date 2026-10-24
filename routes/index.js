@@ -27,7 +27,9 @@
 import express from "express";
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { canonicalRole } from '../services/accountPolicy.js';
+import { User } from '../models/userModel.js';
 import { homePage } from "../controllers/homeController.js";
+import { cancelMobileRequest, confirmMobileAppointment, createMobileRequest, declineMobileAppointment, fulfillMobileRequest, getMobileWorkspace, pledgeMobileRequest, reviewMobileRequest, scheduleMobileRequest, withdrawMobilePledge } from '../controllers/mobileController.js';
 import { isAuthenticated, isAdmin, isHospital } from "../middleware/adminAuth.js";
 
 // Import security and validation middleware
@@ -64,6 +66,7 @@ router.use([
   "/confirm-schedule/:id/:role", "/schedule-confirm/:token",
   "/appointments/:id/decline",
   "/api/notifications/:id/read", "/api/notifications/read-all", "/api/notifications/clear-all",
+  "/api/mobile/requests", "/api/mobile/requests/:id/pledge", "/api/mobile/requests/:id/pledge/withdraw", "/api/mobile/requests/:id/cancel", "/api/mobile/requests/:id/review", "/api/mobile/requests/:id/schedule", "/api/mobile/requests/:id/fulfill", "/api/mobile/appointments/:id/confirm", "/api/mobile/appointments/:id/decline", "/api/mobile/donor-profile", "/api/mobile/donor-settings", "/api/mobile/notification-settings",
   "/donor-profile", "/cancel-request/:id",
   "/settings/profile", "/settings/donor", "/settings/notifications", "/settings/password",
   "/hospital/requests/:id/approve", "/hospital/requests/:id/decline",
@@ -108,11 +111,44 @@ router.get("/login", loginPage);
 router.post("/login", authLimiter, validateLogin, loginUser);
 router.get("/register", registerPage);
 router.post("/register", authLimiter, validateRegistration, registerUser);
+router.post('/api/mobile/register', authLimiter, validateRegistration, registerUser);
 router.get("/forgot-password", forgotPasswordPage);
 router.post("/forgot-password", authLimiter, requestPasswordReset);
+router.post('/api/mobile/password-reset', authLimiter, requestPasswordReset);
 router.get("/reset-password/:token", resetPasswordPage);
 router.post("/reset-password/:token", authLimiter, resetPassword);
 router.get("/dashboard", isAuthenticated, dashboardPage);
+// Minimal account identity for native clients. The role is always read from the
+// current authenticated database account, never from client-provided data.
+router.get("/api/mobile/session", isAuthenticated, async (req, res) => {
+  const account = await User.findByPk(req.authAccount.id, {
+    attributes: ["id", "firstName", "lastName", "email", "role", "hospitalName", "facilityId"]
+  });
+  if (!account) return res.status(401).json({ success: false, error: "Authentication required" });
+  res.set("Cache-Control", "private, no-store");
+  res.json({
+    success: true,
+    account: {
+      id: account.id,
+      firstName: account.firstName,
+      lastName: account.lastName,
+      email: account.email,
+      role: canonicalRole(account.role),
+      hospitalName: account.hospitalName,
+      facilityId: account.facilityId
+    }
+  });
+});
+router.get('/api/mobile/workspace', isAuthenticated, getMobileWorkspace);
+router.post('/api/mobile/requests', isAuthenticated, createMobileRequest);
+router.post('/api/mobile/requests/:id/pledge', isAuthenticated, pledgeMobileRequest);
+router.post('/api/mobile/requests/:id/pledge/withdraw', isAuthenticated, withdrawMobilePledge);
+router.post('/api/mobile/requests/:id/cancel', isAuthenticated, cancelMobileRequest);
+router.post('/api/mobile/requests/:id/review', isAuthenticated, reviewMobileRequest);
+router.post('/api/mobile/requests/:id/schedule', isAuthenticated, scheduleMobileRequest);
+router.post('/api/mobile/requests/:id/fulfill', isAuthenticated, fulfillMobileRequest);
+router.post('/api/mobile/appointments/:id/confirm', isAuthenticated, confirmMobileAppointment);
+router.post('/api/mobile/appointments/:id/decline', isAuthenticated, declineMobileAppointment);
 router.get("/api/search", isAuthenticated, searchDashboard);
   router.post("/logout", logoutUser);
 
@@ -177,11 +213,14 @@ import { donorProfilePage, viewDonorProfilePage, updateDonorProfile, myRequestsP
 router.get("/donor-profile", isAuthenticated, donorProfilePage);
 router.get("/view-donor-profile", isAuthenticated, viewDonorProfilePage);
 router.post("/donor-profile", isAuthenticated, validateProfileUpdate, updateDonorProfile);
+router.post('/api/mobile/donor-profile', isAuthenticated, updateDonorProfile);
 router.get("/my-requests", isAuthenticated, myRequestsPage);
 router.post("/cancel-request/:id", isAuthenticated, cancelRequest);
 
 // User Settings Routes (Protected)
 import { settingsPage as userSettingsPage, updateProfile, updateDonorSettings, updateNotificationPrefs, changePassword } from "../controllers/userSettingsController.js";
+router.post('/api/mobile/donor-settings', isAuthenticated, updateDonorSettings);
+router.post('/api/mobile/notification-settings', isAuthenticated, updateNotificationPrefs);
 
 router.get("/settings", isAuthenticated, userSettingsPage);
 router.post("/settings/profile", isAuthenticated, updateProfile);

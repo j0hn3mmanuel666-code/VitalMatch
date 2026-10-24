@@ -118,6 +118,7 @@ export const validateRegistration = (req, res, next) => {
   }
 
   if (errors.length > 0) {
+    if (req.get?.('Accept')?.includes('application/json')) return res.status(400).json({ success: false, error: errors.join('. ') });
     return res.render('register', { error: errors.join('. ') });
   }
 

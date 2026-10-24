@@ -140,9 +140,17 @@ export const updateDonorProfile = async (req, res) => {
       await AuditService.logAction(account.id, donor ? 'donor_profile_updated' : 'donor_profile_created', 'Donor', saved.id, null, { isAvailable: saved.isAvailable, bloodType: saved.bloodType }, { ...AuditService.getRequestContext(req), transaction });
     });
     delete req.session.donorFormValues;
+    if (req.get?.('Accept')?.includes('application/json')) {
+      res.set('Cache-Control', 'private, no-store');
+      return res.json({ success: true, message: 'Donor profile saved. Availability is subject to the coordination interval and staff screening.' });
+    }
     req.flash('success_msg', 'Donor profile saved. Availability is subject to the coordination interval and staff screening.');
     res.redirect('/view-donor-profile');
   } catch (error) {
+    if (req.get?.('Accept')?.includes('application/json')) {
+      const status = error instanceof WorkflowError ? error.status : 503;
+      return res.status(status).json({ success: false, error: error instanceof WorkflowError ? error.message : 'The profile could not be saved. Please retry.' });
+    }
     const fields = ['fullName','dateOfBirth','gender','bloodType','weight','height','mobileNumber','address','city','province','zipCode','emergencyContactName','emergencyContactNumber','emergencyContactRelationship','latitude','longitude','lastDonationDate','medicalConditions'];
     req.session.donorFormValues = Object.fromEntries(fields.filter(field => typeof req.body[field] === 'string').map(field => [field, req.body[field].slice(0,2000)]));
     req.session.donorFormValues.isAvailable = req.body.isAvailable === 'on';

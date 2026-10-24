@@ -54,6 +54,20 @@ npm audit --omit=dev
 
 Integration tests create uniquely named `vitalmatch_audit_test_*` databases, apply migrations twice, use synthetic accounts and disable real delivery workers. They remove only the database they created. The browser suite uses installed Chrome in headless mode. It does not require private demo credentials. Test results, traces and snapshots are ignored under `.local/test-results`.
 
+## Mobile app
+
+The Expo/React Native client lives in `mobile/`. It supports requester, donor, hospital, and administrator accounts with role-filtered request lists, native request and donor-profile forms, review actions, appointment confirmations, and notifications. Start the web server first, then run the client from the `mobile` directory. During Expo development the API host is inferred from the Expo bundle URL, so a physical phone on the same Wi-Fi can reach the computer. Android emulator builds use `http://10.0.2.2:3000` as a fallback. Set `EXPO_PUBLIC_API_BASE_URL` to override the address; use the deployed HTTPS address for production builds.
+
+```powershell
+cd mobile
+npm ci
+npm start
+```
+
+Open the project with Expo Go to preview it during development. A standalone Android install requires building an APK with the production API URL configured.
+
+Requester, donor, hospital, and administrator permissions are enforced by the server. Donor availability is a coordination preference; it does not establish medical eligibility.
+
 ## Coordination rules
 
 Ordinary requests start pending review. An assigned facility or coordinator can approve them for donor outreach. Hospital-owned and administrator-created requests use the same creation service. A scheduled appointment is distinct from a recorded fulfillment. Scheduled completion requires current confirmations and a past appointment date; collected units are recorded transactionally, partial collections leave outstanding demand open, and duplicate operation keys cannot double count. Walk-in completion requires a staff note. Cancelling or rescheduling invalidates old links and queues recovery notices.

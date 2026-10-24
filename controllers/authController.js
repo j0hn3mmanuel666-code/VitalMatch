@@ -395,6 +395,7 @@ export const registerUser = async (req, res) => {
 
   // Validate password match
   if (password !== confirmPassword) {
+    if (req.get?.('Accept')?.includes('application/json')) return res.status(400).json({ success: false, error: 'Passwords do not match.' });
     return res.render("register", { error: "Passwords do not match." });
   }
 
@@ -411,6 +412,7 @@ export const registerUser = async (req, res) => {
         console.error("Resend on duplicate registration:");
       }
     }
+    if (req.get?.('Accept')?.includes('application/json')) return res.json({ success: true, message: 'If the account can be registered, a verification email has been sent.', email });
     return res.render("register-success", {
       title: "Registration Successful",
       email: email,
@@ -453,6 +455,7 @@ export const registerUser = async (req, res) => {
     const result = await emailService.sendVerificationEmail(email, firstName, verificationToken);
 
     if (result.success) {
+      if (req.get?.('Accept')?.includes('application/json')) return res.status(201).json({ success: true, message: 'Account created. Verify your email before signing in.', email });
       res.render("register-success", {
         title: "Registration Successful",
         email: email,
@@ -461,11 +464,13 @@ export const registerUser = async (req, res) => {
       });
     } else {
       // If email fails, still create account but show warning
+      if (req.get?.('Accept')?.includes('application/json')) return res.status(201).json({ success: true, message: 'Account created, but the verification email could not be sent. Contact support before signing in.' });
       res.send("Account created successfully, but we couldn't send the verification email. Please contact support.");
     }
 
   } catch (error) {
     console.error("Registration error:");
+    if (req.get?.('Accept')?.includes('application/json')) return res.status(503).json({ success: false, error: 'Registration failed. Please try again later.' });
     res.render("register", { error: "Registration failed due to a server error. Please try again." });
   }
 };
@@ -560,9 +565,11 @@ export const resendVerification = async (req, res) => {
 
 // Request a password reset link (always shows success to prevent email enumeration)
 export const requestPasswordReset = async (req, res) => {
+  const uniformMessage = 'If an active account with that email exists, a password reset link has been sent.';
   try {
     const { email } = req.body;
     if (!validateEmail(email)) {
+      if (req.get?.('Accept')?.includes('application/json')) return res.json({ success: true, message: uniformMessage });
       req.flash("error_msg", "Please enter your email address");
       return res.redirect("/forgot-password");
     }
@@ -587,12 +594,14 @@ export const requestPasswordReset = async (req, res) => {
       }
     }
 
+    if (req.get?.('Accept')?.includes('application/json')) return res.json({ success: true, message: uniformMessage });
     res.render("forgotpassword", {
       title: "Forgot Password",
       resetSent: true
     });
   } catch (error) {
     console.error("Request password reset error:");
+    if (req.get?.('Accept')?.includes('application/json')) return res.json({ success: true, message: uniformMessage });
     req.flash("error_msg", "Something went wrong. Please try again.");
     res.redirect("/forgot-password");
   }
