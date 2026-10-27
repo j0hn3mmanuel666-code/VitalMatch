@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { getMobileWorkspace, saveMobileDonorProfile, saveNotificationPreferences } from '../api';
+import { getMobileWorkspace, saveMobileDonorProfile, saveNotificationPreferences, submitMobileFeedback } from '../api';
 import type { MobileAccount, MobileWorkspace } from '../api';
 import { colors, radius } from '../theme';
 
@@ -29,6 +29,12 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
   const [preferences, setPreferences] = useState<MobileWorkspace['preferences']>({ notifyMatches: true, notifyAppointments: true, emailUpdates: true });
   const [preferencesError, setPreferencesError] = useState('');
   const [savingPreference, setSavingPreference] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(5);
+  const [feedbackCategory, setFeedbackCategory] = useState('general');
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [feedbackError, setFeedbackError] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [sendingFeedback, setSendingFeedback] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -72,6 +78,15 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
       setPreferences(previous);
       setPreferencesError(caught instanceof Error ? caught.message : 'Could not save preferences.');
     } finally { setSavingPreference(false); }
+  };
+
+  const sendFeedback = async () => {
+    setFeedbackError(''); setFeedbackMessage(''); setSendingFeedback(true);
+    try {
+      const result = await submitMobileFeedback({ rating: feedbackRating, category: feedbackCategory, comment: feedbackComment });
+      setFeedbackComment(''); setFeedbackMessage(result.message);
+    } catch (caught) { setFeedbackError(caught instanceof Error ? caught.message : 'Could not send your feedback.'); }
+    finally { setSendingFeedback(false); }
   };
 
   return (
@@ -126,6 +141,22 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
         </View>
       ) : null}
 
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Review VitalMatch</Text>
+        <Text style={styles.note}>Your feedback is sent privately to the administrators and helps improve the system for every role.</Text>
+        {feedbackError ? <Text style={styles.error}>{feedbackError}</Text> : null}
+        {feedbackMessage ? <Text style={styles.success}>{feedbackMessage}</Text> : null}
+        <Text style={styles.label}>Overall rating</Text>
+        <View style={styles.feedbackRow}>
+          {[1, 2, 3, 4, 5].map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={`Rate ${value} out of 5 stars`} onPress={() => setFeedbackRating(value)} style={[styles.starButton, value <= feedbackRating && styles.starButtonActive]}><Text style={[styles.starText, value <= feedbackRating && styles.starTextActive]}>★</Text></Pressable>)}
+        </View>
+        <Text style={styles.label}>Feedback type</Text>
+        <View style={styles.chips}>{[['general', 'General'], ['ease_of_use', 'Ease of use'], ['accessibility', 'Accessibility'], ['bug', 'Problem'], ['feature', 'Idea']].map(([value, label]) => <Pressable key={value} style={[styles.chip, feedbackCategory === value && styles.chipActive]} onPress={() => setFeedbackCategory(value)}><Text style={[styles.chipText, feedbackCategory === value && styles.chipTextActive]}>{label}</Text></Pressable>)}</View>
+        <Field label="Comment (optional)" value={feedbackComment} onChange={setFeedbackComment} multiline />
+        <Text style={styles.note}>Please do not include patient names or private medical details.</Text>
+        <Pressable style={styles.saveButton} disabled={sendingFeedback} onPress={() => void sendFeedback()}>{sendingFeedback ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Send feedback</Text>}</Pressable>
+      </View>
+
       <Pressable style={styles.signOut} onPress={onSignOut} disabled={busy}>{busy ? <ActivityIndicator color={colors.brand} /> : <Text style={styles.signOutText}>Sign out</Text>}</Pressable>
     </ScrollView>
   );
@@ -147,5 +178,6 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '800' }, note: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 5, marginBottom: 8 }, loader: { margin: 20 }, error: { color: colors.danger, marginVertical: 8, fontSize: 13 }, success: { color: colors.success, marginVertical: 8, fontSize: 13, fontWeight: '700' },
   field: { marginTop: 10 }, input: { minHeight: 43, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 9, color: colors.text, fontSize: 14 }, multiline: { minHeight: 75, textAlignVertical: 'top' }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginVertical: 5 }, chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 11, paddingVertical: 7 }, chipActive: { borderColor: colors.brand, backgroundColor: '#fdecec' }, chipText: { color: colors.muted, fontSize: 12, fontWeight: '600' }, chipTextActive: { color: colors.brand },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.border, marginTop: 16, paddingTop: 13 }, switchCopy: { flex: 1, paddingRight: 10 }, saveButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.brand, borderRadius: 9, marginTop: 16 }, saveText: { color: '#fff', fontWeight: '800' }, signOut: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.brand, borderRadius: 9, marginTop: 8 }, signOutText: { color: colors.brand, fontWeight: '800' },
+  feedbackRow: { flexDirection: 'row', gap: 8, marginVertical: 8 }, starButton: { width: 42, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: colors.border }, starButtonActive: { borderColor: colors.brand, backgroundColor: '#fdecec' }, starText: { fontSize: 22, color: colors.border }, starTextActive: { color: colors.brand },
   preferenceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 7 }, preferenceLabel: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600', marginRight: 10 },
 });

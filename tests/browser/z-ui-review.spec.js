@@ -76,7 +76,7 @@ test('desktop and mobile workspace render with purposeful colors and searchable 
   test.setTimeout(120000);
   const errors=[];page.on('pageerror',e=>errors.push(e.message)); await login(page);
   await page.setViewportSize({width:1440,height:1000});
-  for(const path of ['/admin/dashboard','/admin/requests','/admin/donors','/admin/hospitals','/admin/appointments','/admin/reports','/admin/users','/admin/calls','/admin/settings','/admin/new-blood-request','/admin/cms','/admin/blockchain']) {
+  for(const path of ['/admin/dashboard','/admin/requests','/admin/donors','/admin/hospitals','/admin/appointments','/admin/reports','/admin/users','/admin/calls','/admin/settings','/admin/new-blood-request','/admin/cms']) {
     const response=await page.goto(path);expect(response.status(),path).toBe(200);
     await expect.poll(async()=>Math.round((await page.locator('#workspace-navigation').boundingBox()).x)).toBe(0);
     await page.screenshot({path:'.local/ui-review/'+path.slice(1).replaceAll('/','-')+'-desktop.png',fullPage:true,animations:'disabled'});

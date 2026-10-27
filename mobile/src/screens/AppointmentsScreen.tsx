@@ -38,9 +38,9 @@ export default function AppointmentsScreen({ role }: { role: AccountRole }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={colors.brand} />}>
       <Text style={styles.title}>Appointments</Text>
-      <Text style={styles.subtitle}>Review the schedule and confirm when you are available.</Text>
+      <Text style={styles.subtitle}>Confirm upcoming appointments and review completed donations.</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {!items.length ? <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No scheduled appointments</Text><Text style={styles.emptyText}>New appointments will appear here when coordination is complete.</Text></View> : null}
+      {!items.length ? <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No appointments yet</Text><Text style={styles.emptyText}>Appointments and completed donations will appear here after a donor is assigned.</Text></View> : null}
       {items.map(item => {
         const myRole = item.role === 'donor' || item.role === 'requester';
         const confirmed = item.role === 'donor' ? item.donorConfirmed : item.requesterConfirmed;
@@ -49,13 +49,15 @@ export default function AppointmentsScreen({ role }: { role: AccountRole }) {
             <View style={styles.cardTop}><Text style={styles.bloodType}>{item.bloodType}</Text><Text style={styles.units}>{item.unitsRemaining} unit(s) outstanding</Text></View>
             <Text style={styles.hospital}>{item.hospitalName}</Text>
             <Text style={styles.detail}>{item.city} · Request #{item.requestId}</Text>
-            <Text style={styles.date}>{new Date(item.scheduledDate).toLocaleString()}</Text>
+            <Text style={styles.date}>{item.status === 'completed' ? 'Donation recorded' : 'Appointment'} · {new Date(item.scheduledDate).toLocaleString()}</Text>
             {role === 'admin' || role === 'hospital' ? <Text style={styles.detail}>Donor: {item.donorName || 'Assigned donor'}</Text> : null}
             <View style={styles.confirmations}>
               <Text style={item.donorConfirmed ? styles.confirmed : styles.waiting}>Donor {item.donorConfirmed ? 'confirmed' : 'pending'}</Text>
               <Text style={item.requesterConfirmed ? styles.confirmed : styles.waiting}>Requester {item.requesterConfirmed ? 'confirmed' : 'pending'}</Text>
             </View>
-            {myRole ? (
+            {item.status === 'completed' ? (
+              <Text style={styles.confirmedNotice}>Donation completion was recorded by the coordination team.</Text>
+            ) : myRole ? (
               confirmed ? <Text style={styles.confirmedNotice}>You have confirmed this appointment.</Text> : (
                 <View style={styles.actions}>
                   <Pressable style={styles.primaryButton} onPress={() => void confirm(item)} disabled={busyId === item.id}>

@@ -15,7 +15,7 @@ The redesign covers 27 internal page templates, the administration layout, and b
 | Area | Pages and changes |
 | --- | --- |
 | Account workspace | Dashboard, donor profile, donor detail, help, history, hospital patients, map, messages, appointments, requests, notifications, settings, blood-request forms, and request detail |
-| Administration | Dashboard, requests, request creation, appointments, donors, hospitals, reports, users, settings, public content management, calls, and blockchain records |
+| Administration | Dashboard, requests, request creation, appointments, donors, hospitals, reports, users, settings, public content management, and calls |
 | Shared shell | 232px desktop sidebar, 66px header, clear active navigation, consistent page context, profile/notification controls, appearance preference, and a simpler footer |
 | Content hierarchy | Compact real-data summaries, open activity/request lists, dividers, clearly grouped forms, and single table scroll regions; fewer nested panels and decorative statistics |
 | Actions and statuses | Charcoal primary actions; neutral view/edit/export controls; red destructive actions and confirmations; amber attention; labeled neutral, information, success, warning, and danger statuses |

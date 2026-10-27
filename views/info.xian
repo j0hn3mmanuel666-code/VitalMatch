@@ -10,7 +10,7 @@
       <div class="journey-contact">
         <p>For help with your account, donor registration, or hospital access, contact the VitalMatch coordination team.</p>
         <section><h2>Platform support</h2><a class="journey-text-link" href="mailto:support@vitalmatch.ph">support@vitalmatch.ph</a><address>Calapan City, Oriental Mindoro<br>Philippines 5200</address></section>
-        <section><h2>Blood services information</h2><p>For current Philippine Red Cross blood service information and chapter details, use the official organization website.</p><a class="journey-text-link" href="https://redcross.org.ph/give-blood/" target="_blank" rel="noopener">Visit Philippine Red Cross blood services <span aria-hidden="true">↗</span></a></section>
+        <section><h2>Blood services information</h2><p>For current blood service information and donation guidelines, use the official blood service website.</p><a class="journey-text-link" href="https://redcross.org.ph/give-blood/" target="_blank" rel="noopener">Visit official blood services <span aria-hidden="true">↗</span></a></section>
         <p class="journey-alert">For a medical emergency, seek immediate care from your hospital or local emergency service. Do not wait for an online response.</p>
       </div>
       {{else}}<div class="journey-info__body">{{body}}</div>{{/if}}

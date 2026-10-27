@@ -1,5 +1,4 @@
 <header class="journey-header" data-public-header>
-  <div class="journey-context"><div class="journey-container"><span>Philippine Red Cross  <span aria-hidden="true">&middot;</span> Mindoro Chapter</span><span class="journey-context__location">Serving Oriental Mindoro</span></div></div>
   <nav class="journey-nav" aria-label="Main navigation">
     <div class="journey-container journey-nav__inner">
       <a href="/" class="journey-nav__brand" aria-label="VitalMatch home">

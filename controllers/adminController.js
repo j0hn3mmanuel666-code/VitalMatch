@@ -27,7 +27,6 @@ SOFTWARE.
 import { BloodRequest } from "../models/bloodRequestModel.js";
 import { Donor } from "../models/donorModel.js";
 import { sequelize } from "../models/db.js";
-import { vitalMatchBlockchain } from "../services/blockchainService.js";
 import { Op } from "sequelize";
 import { findNearestDonors } from "../services/matchingService.js";
 import crypto from "node:crypto";
@@ -199,7 +198,12 @@ export const adminRequestsPage = async (req, res) => {
     if (['active', 'scheduled', 'fulfilled', 'cancelled', 'pending'].includes(filter)) where.status = filter;
     if (/^\d+$/.test(String(req.query.schedule || ''))) where.id = Number(req.query.schedule);
     const search = searchTerm(req.query);
-    const searchedWhere = withTextSearch(where, search, ['patientName','hospitalName','city','bloodType','contactPerson','contactNumber']);
+    // Reference codes are searchable by full code (VM5200-2600001) or by the
+    // last 5 digits the requester reads out (00001). A bare 5-digit code
+    // matches the reference suffix only, so phone numbers cannot collide.
+    const searchedWhere = /^\d{5}$/.test(search)
+      ? { [Op.and]: [where, { patientReference: { [Op.like]: `%${search}` } }] }
+      : withTextSearch(where, search, ['patientName','patientReference','hospitalName','city','bloodType','contactPerson','contactNumber']);
     const { rows, pagination } = await recordPage(BloodRequest, { where: searchedWhere, order: [['createdAt', 'DESC']] }, req.query, req.path);
     const ids = rows.map(r => r.id);
     const { Pledge } = await import('../models/pledgeModel.js');
@@ -459,15 +463,6 @@ export const exportReports = async (req, res) => {
     console.error("Report export failed:", error.name);
     res.status(500).json({ success: false, message: "Error exporting reports" });
   }
-};
-
-// Display admin blockchain dashboard
-export const adminBlockchainPage = (req, res) => {
-  res.render("admin-blockchain", {
-    layout: "admin",
-    title: "Blockchain Dashboard - VitalMatch Admin",
-    isBlockchain: true
-  });
 };
 
 // Display admin new blood request form

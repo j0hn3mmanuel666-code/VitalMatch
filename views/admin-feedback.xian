@@ -1,0 +1,54 @@
+<main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
+  <div class="vm-page-container container mx-auto px-4">
+    <div class="vm-page-heading mb-8">
+      <p class="vm-eyebrow">Administration</p>
+      <h1>System feedback</h1>
+      <p>Review ratings and comments submitted by users across every system role.</p>
+    </div>
+
+    {{#if success_msg}}<div class="vm-alert vm-alert--success mb-5" role="status">{{success_msg}}</div>{{/if}}
+    {{#if error_msg}}<div class="vm-alert vm-alert--danger mb-5" role="alert">{{error_msg}}</div>{{/if}}
+    {{#if error}}<div class="vm-alert vm-alert--danger mb-5" role="alert">{{error}} <a class="vm-text-link" href="/admin/feedback">Retry</a></div>{{/if}}
+
+    {{#unless error}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <section class="vm-panel bg-white dark:bg-[#18181b] rounded-md p-5"><p class="text-sm text-gray-500">All submissions</p><p class="text-2xl font-bold mt-1">{{totalFeedback}}</p></section>
+      <section class="vm-panel bg-white dark:bg-[#18181b] rounded-md p-5"><p class="text-sm text-gray-500">Needs review</p><p class="text-2xl font-bold mt-1">{{newFeedback}}</p></section>
+      <section class="vm-panel bg-white dark:bg-[#18181b] rounded-md p-5"><p class="text-sm text-gray-500">Average rating</p><p class="text-2xl font-bold mt-1">{{averageRating}} / 5</p></section>
+    </div>
+
+    <section class="vm-panel bg-white dark:bg-[#18181b] rounded-md overflow-hidden" aria-labelledby="feedback-list-title">
+      <div class="p-5 border-b border-gray-200 dark:border-gray-800"><h2 id="feedback-list-title" class="text-lg font-bold">Latest feedback</h2><p class="text-sm text-gray-500 mt-1">Showing up to 200 most recent submissions. Comments are private to administrators and the submitter.</p></div>
+      {{#if feedbackEntries.length}}
+      <div class="divide-y divide-gray-200 dark:divide-gray-800">
+        {{#each feedbackEntries}}
+        <article class="p-5">
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <strong class="text-lg">{{rating}} / 5 ★</strong>
+                <span class="text-xs rounded-full px-2 py-1 bg-gray-100 dark:bg-gray-800">{{category}}</span>
+                <span class="text-xs rounded-full px-2 py-1 {{#if (eq status 'new')}}bg-amber-100 text-amber-900{{else}}bg-green-100 text-green-900{{/if}}">{{status}}</span>
+              </div>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">{{author.firstName}} {{author.lastName}} · {{author.email}} · {{role}} · {{formatDate createdAt}}</p>
+            </div>
+            {{#if (eq status 'new')}}
+            <form action="/admin/feedback/{{id}}/review" method="POST">
+              <input type="hidden" name="_csrf" value="{{@root.csrfToken}}">
+              <button type="submit" class="vm-button vm-button--small px-3 py-2">Mark reviewed</button>
+            </form>
+            {{else}}
+            <span class="text-xs text-gray-500">Reviewed {{formatDate reviewedAt}}</span>
+            {{/if}}
+          </div>
+          {{#if comment}}<p class="mt-4 text-sm whitespace-pre-wrap">{{comment}}</p>{{else}}<p class="mt-4 text-sm text-gray-500 italic">No comment provided.</p>{{/if}}
+        </article>
+        {{/each}}
+      </div>
+      {{else}}
+      <div class="p-8 text-center"><h3 class="font-semibold">No feedback yet</h3><p class="text-sm text-gray-500 mt-1">Submissions will appear here after users share a rating.</p></div>
+      {{/if}}
+    </section>
+    {{/unless}}
+  </div>
+</main>

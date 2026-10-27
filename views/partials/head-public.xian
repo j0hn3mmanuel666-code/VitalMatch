@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="VitalMatch connects blood requests, donors, and Philippine Red Cross coordinators in Oriental Mindoro. Find a clear way to request support or become a donor.">
+  <meta name="description" content="VitalMatch connects blood requests, donors, and coordinators in Oriental Mindoro. Find a clear way to request support or become a donor.">
   <meta name="csrf-token" content="{{csrfToken}}">
   <meta name="theme-color" content="#b82025">
   <title>{{#if title}}{{title}}{{else}}VitalMatch | Blood donation coordination{{/if}}</title>
   {{> typography}}
   <link rel="stylesheet" href="/css/public-journey.css?v=5">
-  {{#if isLanding}}<link rel="stylesheet" href="/css/landing.css?v=4">{{/if}}
+  {{#if isLanding}}<link rel="stylesheet" href="/css/landing.css?v=5">{{/if}}
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">

@@ -70,7 +70,7 @@ export const homePage = async (req, res) => {
     const otherSections = publicContent.filter(s => !excluded.includes(s.section));
 
     res.render("home", { 
-      title: "VitalMatch - Digital Blood Request Platform | Philippine Red Cross",
+      title: "VitalMatch - Digital Blood Request Platform",
       isLanding: true,
       content: contentBySection,
       sections: publicContent,
@@ -83,7 +83,7 @@ export const homePage = async (req, res) => {
     console.error("Error loading home page:", error);
     // Fallback render if database unavailable
     res.render("home", { 
-      title: "VitalMatch - Digital Blood Request Platform | Philippine Red Cross",
+      title: "VitalMatch - Digital Blood Request Platform",
       isLanding: true,
       content: {},
       sections: []

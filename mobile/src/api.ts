@@ -67,16 +67,6 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-export interface BlockchainStats {
-  totalBlocks: number;
-  pendingTransactions: number;
-  donations: number;
-  requests: number;
-  fulfillments: number;
-  isValid: boolean;
-  mode: string;
-}
-
 export interface SearchResult {
   type: string;
   title: string;
@@ -105,6 +95,7 @@ export interface MobileRequest {
   unitsRequired: number;
   unitsFulfilled: number;
   unitsRemaining: number;
+  offerCount: number;
   hospitalName: string;
   city: string;
   urgency: string;
@@ -116,6 +107,7 @@ export interface MobileRequest {
   scheduledDate: string | null;
   requesterConfirmed: boolean;
   donorConfirmed: boolean;
+  fulfilledAt: string | null;
   version: number;
   hasPledged: boolean;
   canReview: boolean;
@@ -127,6 +119,7 @@ export interface MobileRequest {
 export interface MobileAppointment {
   id: number;
   requestId: number;
+  status: 'scheduled' | 'completed';
   version: number;
   scheduledDate: string;
   donorConfirmed: boolean;
@@ -208,6 +201,7 @@ export const saveMobileDonorProfile = (body: Record<string, unknown>) => postMob
 export const saveNotificationPreferences = (preferences: { notifyMatches: boolean; notifyAppointments: boolean; emailUpdates: boolean }) => postMobile<{ success: boolean; preferences: MobileWorkspace['preferences']; message: string }>('/api/mobile/notification-settings', Object.fromEntries(Object.entries(preferences).map(([key, value]) => [key, value ? 'on' : 'off'])));
 export const registerDonor = (body: Record<string, unknown>) => postMobile<{ success: boolean; message: string; email?: string }>('/api/mobile/register', body);
 export const requestMobilePasswordReset = (email: string) => postMobile<{ success: boolean; message: string }>('/api/mobile/password-reset', { email });
+export const submitMobileFeedback = (body: { rating: number; category: string; comment: string }) => postMobile<{ success: boolean; message: string }>('/api/mobile/feedback', body);
 
 export async function login(email: string, password: string): Promise<MobileAccount> {
   const token = await refreshCsrf();
@@ -242,10 +236,6 @@ export async function getNotifications() {
   return request<{ success: boolean; notifications: NotificationItem[]; unreadCount: number }>(
     '/api/notifications',
   );
-}
-
-export async function getBlockchainStats() {
-  return request<{ success: boolean; data: BlockchainStats }>('/api/blockchain/stats');
 }
 
 export async function searchRequests(query: string) {

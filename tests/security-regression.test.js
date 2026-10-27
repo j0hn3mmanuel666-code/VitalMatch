@@ -350,7 +350,7 @@ test('service worker never reads or writes cache for private APIs, recordings or
   const self = { location: { origin: 'http://localhost:3000' }, skipWaiting() {}, clients: { claim() {} }, addEventListener(name, handler) { handlers[name] = handler; } };
   const context = { self, caches, URL, Response, fetch: async () => new Response('private body') };
   vm.runInNewContext(fs.readFileSync('public/sw.js', 'utf8'), context);
-  for (const path of ['/admin/users/api', '/api/blockchain/recent', '/messages/voice/1', '/uploads/voice-messages/voice_1.webm']) {
+  for (const path of ['/admin/users/api', '/messages/voice/1', '/uploads/voice-messages/voice_1.webm']) {
     let reply;
     handlers.fetch({ request: { method: 'GET', mode: 'cors', url: path.startsWith('https:') ? path : self.location.origin + path }, respondWith(promise) { reply = promise; } });
     assert.equal(await (await reply).text(), 'private body');

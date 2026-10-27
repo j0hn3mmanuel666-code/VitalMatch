@@ -1,7 +1,6 @@
 // PM2 process file for VitalMatch production deployment.
-// Single instance (fork): the file ledger, in-memory caches and Socket.io rooms
-// are per-process, so clustering would split state. Sessions live in MySQL and
-// survive restarts.
+// Single instance (fork): in-memory caches and Socket.io rooms are per-process,
+// so clustering would split state. Sessions live in MySQL and survive restarts.
 module.exports = {
   apps: [
     {

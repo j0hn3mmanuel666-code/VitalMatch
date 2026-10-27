@@ -1,4 +1,4 @@
-<footer class="vm-footer"><span>{{#if appName}}{{appName}}{{else}}VitalMatch{{/if}} · Philippine Red Cross – Mindoro Chapter</span><nav aria-label="Workspace support"><a href="/help">Help & support</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/">Public website</a></nav></footer>
+<footer class="vm-footer"><span>{{#if appName}}{{appName}}{{else}}VitalMatch{{/if}} · Oriental Mindoro</span><nav aria-label="Workspace support"><a href="/help">Help & support</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/">Public website</a></nav></footer>
 {{#if navUser}}<script src="/js/workspace-notifications.js?v=3"></script>{{/if}}
 {{#if navUser}}<span id="workspace-call-user" data-user-id="{{navUser.id}}" hidden></span><script src="/socket.io/socket.io.js" defer></script><script src="/js/webrtcManager.js?v=2" defer></script><script src="/js/signalingClient.js?v=2" defer></script><script src="/js/callManager.js?v=2" defer></script><script src="/js/callUI.js?v=3" defer></script><script src="/js/call-bootstrap.js?v=1" defer></script>{{/if}}
 </body>

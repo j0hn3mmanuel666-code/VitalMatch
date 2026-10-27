@@ -11,7 +11,7 @@
   var layers = {
     "Hospitals": L.layerGroup().addTo(map),
     "Urgent requests": L.layerGroup().addTo(map),
-    "Red Cross": L.layerGroup().addTo(map),
+    "Donation centers": L.layerGroup().addTo(map),
     "Donors": L.layerGroup().addTo(map),
     "Your location": L.layerGroup().addTo(map)
   };
@@ -34,7 +34,7 @@
 
       pins.hospitals.forEach(function (h) {
         L.marker([h.lat, h.lng], { icon: dot("#2563eb", "H") })
-          .bindPopup("<strong>" + esc(h.name) + "</strong><br>" + esc(h.city || "") + ", " + esc(h.province || "") + "<br>" + (data.hospitalCountsAreLimited ? "Displayed open requests: " : "Open requests: ") + h.openRequests + (h.approximate ? "<br><em>Approximate location</em>" : ""))
+          .bindPopup("<strong>" + esc(h.name) + "</strong>" + (h.verified ? " ✓" : "") + "<br>" + esc(h.city || "") + ", " + esc(h.province || "") + "<br>" + (data.hospitalCountsAreLimited ? "Displayed open requests: " : "Open requests: ") + h.openRequests + (h.verified ? "<br><em>Verified facility</em>" : "") + (h.approximate ? "<br><em>Approximate location</em>" : ""))
           .addTo(layers["Hospitals"]);
       });
 
@@ -50,7 +50,7 @@
       pins.redcross.forEach(function (c) {
         L.marker([c.lat, c.lng], { icon: dot("#ffffff", "+", "color:#dc2626 !important;border-color:#dc2626 !important;") })
           .bindPopup("<strong>" + esc(c.name) + "</strong><br>" + esc(c.address) + "<br>" + esc(c.phone || ""))
-          .addTo(layers["Red Cross"]);
+          .addTo(layers["Donation centers"]);
       });
 
       pins.donors.forEach(function (d) {

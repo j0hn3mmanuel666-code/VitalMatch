@@ -1,4 +1,5 @@
 ﻿import { BloodRequest } from '../models/bloodRequestModel.js';
+import { Facility } from '../models/facilityModel.js';
 import { Donor } from '../models/donorModel.js';
 import { User } from '../models/userModel.js';
 import { Notification } from '../models/notificationModel.js';
@@ -26,6 +27,11 @@ export const mapPins = async (req, res) => {
       for (const n of notices) allowed.add(Number(n.link.split('/').pop()));
       for (const a of access) allowed.add(a.requestId);
     }
+    // Verified facilities always appear (even with no active requests) so a
+    // newly converted hospital account shows on the map with its details.
+    // Request-derived pins for the same facility are folded in, not duplicated.
+    const verifiedFacilities = await Facility.findAll({ where: { isActive: true, verifiedAt: { [Op.ne]: null } }, attributes: ['id', 'hospitalName', 'latitude', 'longitude'] });
+    const facilityBuckets = new Map(verifiedFacilities.map(f => [String(f.hospitalName || '').trim().toLowerCase(), { name: f.hospitalName, city: null, province: null, openRequests: 0, verified: true, latitude: f.latitude === null ? null : Number(f.latitude), longitude: f.longitude === null ? null : Number(f.longitude) }]));
     const hospitals = new Map();
     for (const r of requests) {
       const canViewDetails = role === 'admin' || r.userId === userId || (!!account?.facilityId && account.facilityId === r.facilityId && ['hospital','hospital_admin'].includes(role)) || allowed.has(r.id);
@@ -33,11 +39,22 @@ export const mapPins = async (req, res) => {
       const emergencyActive = !!(r.isEmergency && r.emergencyExpiresAt && new Date(r.emergencyExpiresAt) > new Date());
       pins.requests.push({ id: r.id, bloodType: r.bloodType, units: Math.max(0,r.unitsRequired - (r.unitsFulfilled || 0)), urgency: emergencyActive ? 'emergency' : r.urgency, hospital: r.hospitalName, emergencyActive, city: r.city, ...pos,
         canViewDetails, approximate: !canViewDetails });
+      const facilityBucket = facilityBuckets.get(String(r.hospitalName || '').trim().toLowerCase());
+      if (facilityBucket) {
+        facilityBucket.openRequests++;
+        if (!facilityBucket.city) { facilityBucket.city = r.city; facilityBucket.province = r.province; }
+        continue;
+      }
       const key = `${r.hospitalName}|${r.city}`;
       if (!hospitals.has(key)) hospitals.set(key, { name: r.hospitalName, city: r.city, province: r.province, ...resolveCoords(null,null,r.city), approximate:true, openRequests: 0 });
       hospitals.get(key).openRequests++;
     }
-    pins.hospitals = [...hospitals.values()];
+    pins.hospitals = [...facilityBuckets.values(), ...hospitals.values()].map(h => {
+      const exact = h.latitude !== null && h.latitude !== undefined && h.longitude !== null && h.longitude !== undefined && Number.isFinite(Number(h.latitude)) && Number.isFinite(Number(h.longitude));
+      return exact
+        ? { ...h, lat: Number(h.latitude), lng: Number(h.longitude), approximate: false }
+        : { ...h, ...resolveCoords(null, null, h.city), approximate: true };
+    });
     pins.redcross = RED_CROSS_PINS.map(p => ({ name:p.name,address:p.address,phone:p.phone,lat:p.lat,lng:p.lng }));
     const include = [{ model: User, attributes: [], required: true, where: { isActive:true,emailVerified:true,archivedAt:null } }];
     const ages=donorAgeBounds();

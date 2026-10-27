@@ -1,4 +1,6 @@
 <!-- User Management Content -->
+<link rel="stylesheet" href="/css/vendor/leaflet/leaflet.css?v=1.9.4" />
+<script src="/js/vendor/leaflet/leaflet.js?v=1.9.4" defer></script>
 <main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
   <div class="vm-page-container container mx-auto px-4">
     {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/admin/users">Retry loading accounts</a></div>{{/if}}
@@ -186,6 +188,20 @@
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editHospitalName">Official Hospital Name <span class="text-gray-400 font-normal">(hospital accounts only)</span></label>
           <input type="text" id="editHospitalName" name="hospitalName" placeholder="e.g. Calapan City Hospital" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+        </div>
+        <div class="mb-6 grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editFacilityLatitude">Facility Latitude <span class="text-gray-400 font-normal">(map pin)</span></label>
+            <input type="number" step="any" min="-90" max="90" id="editFacilityLatitude" name="facilityLatitude" placeholder="e.g. 13.4135" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="editFacilityLongitude">Facility Longitude <span class="text-gray-400 font-normal">(map pin)</span></label>
+            <input type="number" step="any" min="-180" max="180" id="editFacilityLongitude" name="facilityLongitude" placeholder="e.g. 121.1808" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500">
+          </div>
+        </div>
+        <div class="mb-6">
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pin on map <span class="text-gray-400 font-normal">(click to set the coordinates above)</span></p>
+          <div id="facilityPinMap" class="w-full rounded-md border border-gray-300" style="height:220px;z-index:0;"></div>
         </div>
         <div class="vm-form-actions flex justify-end gap-3">
           <button type="button" id="cancelEdit" data-dialog-close="true" class="vm-button px-4 py-2 bg-gray-300 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 transition-colors vm-button--danger">
@@ -637,9 +653,12 @@ async function editUser(userId) {
       document.getElementById('editGender').value = user.gender;
       document.getElementById('editRole').value = user.role === 'hospital_admin' ? 'hospital' : user.role;
       document.getElementById('editHospitalName').value = user.hospitalName || '';
+      document.getElementById('editFacilityLatitude').value = user.facilityLatitude ?? '';
+      document.getElementById('editFacilityLongitude').value = user.facilityLongitude ?? '';
 
       // Show the edit modal
       document.getElementById('editUserModal').classList.remove('hidden');
+      initFacilityPinMap();
     } else {
       showError(data.message || 'Failed to load user details');
     }
@@ -649,7 +668,48 @@ async function editUser(userId) {
   }
 }
 
+// Click-to-pin mini map for facility coordinates (lazy init: Leaflet needs a visible container)
+var facilityPinMap = null, facilityPinMarker = null;
+function initFacilityPinMap() {
+  if (typeof L === 'undefined') return;
+  var latInput = document.getElementById('editFacilityLatitude');
+  var lngInput = document.getElementById('editFacilityLongitude');
+  var lat = parseFloat(latInput.value), lng = parseFloat(lngInput.value);
+  var hasPin = Number.isFinite(lat) && Number.isFinite(lng);
+  if (!facilityPinMap) {
+    facilityPinMap = L.map('facilityPinMap', { scrollWheelZoom: false }).setView([hasPin ? lat : 13.0, hasPin ? lng : 121.3], hasPin ? 13 : 9);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri, HERE, Garmin, OpenStreetMap contributors' }).addTo(facilityPinMap);
+    facilityPinMap.on('click', function (e) {
+      latInput.value = e.latlng.lat.toFixed(7);
+      lngInput.value = e.latlng.lng.toFixed(7);
+      if (facilityPinMarker) facilityPinMarker.setLatLng(e.latlng);
+      else facilityPinMarker = L.marker(e.latlng).addTo(facilityPinMap);
+    });
+    facilityPinMap.on('focus', function () { facilityPinMap.scrollWheelZoom.enable(); });
+    facilityPinMap.on('blur', function () { facilityPinMap.scrollWheelZoom.disable(); });
+  } else {
+    facilityPinMap.invalidateSize();
+    if (hasPin) facilityPinMap.setView([lat, lng], 13);
+  }
+  if (facilityPinMarker) { facilityPinMap.removeLayer(facilityPinMarker); facilityPinMarker = null; }
+  if (hasPin) facilityPinMarker = L.marker([lat, lng]).addTo(facilityPinMap);
+}
+
 async function updateUser() {
+  if (typeof openConfirmModal === 'function') {
+    openConfirmModal({
+      title: 'Update user?',
+      message: 'The account will be saved with the values currently in this form.',
+      button: 'Update User',
+      buttonClass: 'bg-red-600 hover:bg-red-700',
+      icon: 'warning',
+      onSubmit: function () { submitUserUpdate(); }
+    });
+    return;
+  }
+  submitUserUpdate();
+}
+async function submitUserUpdate() {
   try {
     const form = document.getElementById('editUserForm');
     const formData = new FormData(form);

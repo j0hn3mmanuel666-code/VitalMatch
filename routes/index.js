@@ -30,6 +30,7 @@ import { canonicalRole } from '../services/accountPolicy.js';
 import { User } from '../models/userModel.js';
 import { homePage } from "../controllers/homeController.js";
 import { cancelMobileRequest, confirmMobileAppointment, createMobileRequest, declineMobileAppointment, fulfillMobileRequest, getMobileWorkspace, pledgeMobileRequest, reviewMobileRequest, scheduleMobileRequest, withdrawMobilePledge } from '../controllers/mobileController.js';
+import { adminFeedbackPage, feedbackPage, markFeedbackReviewed, submitFeedback } from '../controllers/feedbackController.js';
 import { isAuthenticated, isAdmin, isHospital } from "../middleware/adminAuth.js";
 
 // Import security and validation middleware
@@ -67,6 +68,7 @@ router.use([
   "/appointments/:id/decline",
   "/api/notifications/:id/read", "/api/notifications/read-all", "/api/notifications/clear-all",
   "/api/mobile/requests", "/api/mobile/requests/:id/pledge", "/api/mobile/requests/:id/pledge/withdraw", "/api/mobile/requests/:id/cancel", "/api/mobile/requests/:id/review", "/api/mobile/requests/:id/schedule", "/api/mobile/requests/:id/fulfill", "/api/mobile/appointments/:id/confirm", "/api/mobile/appointments/:id/decline", "/api/mobile/donor-profile", "/api/mobile/donor-settings", "/api/mobile/notification-settings",
+  "/api/mobile/feedback", "/admin/feedback/:id/review",
   "/donor-profile", "/cancel-request/:id",
   "/settings/profile", "/settings/donor", "/settings/notifications", "/settings/password",
   "/hospital/requests/:id/approve", "/hospital/requests/:id/decline",
@@ -76,7 +78,7 @@ router.use([
   "/admin/users", "/admin/users/:id", "/admin/users/bulk",
   "/admin/settings/general", "/admin/settings/email", "/admin/settings/notifications",
   "/admin/settings/security", "/admin/settings/test-email", "/admin/settings/retry-email", "/admin/settings/retry-coordination", "/admin/requests/:id/review",
-  "/messages/send", "/api/calls/:callId/seen", "/api/blockchain/mine",
+  "/messages/send", "/api/calls/:callId/seen",
   "/submit-call-for-donation", "/admin/calls/update-status",
   "/api/admin/public-content", "/api/admin/public-content/:section"
 ], mutationLimiter);
@@ -85,7 +87,7 @@ router.use([
 const infoPages = {
   "/about": {
     heading: "About Us",
-    body: "VitalMatch is a digital blood request platform connecting hospitals with qualified donors in real-time.\n\nBuilt in partnership with the Philippine Red Cross - Mindoro Chapter, it helps hospitals post urgent blood requests, automatically matches qualified donors, and sends instant notifications - cutting coordination time across Oriental Mindoro.\n\nEvery donation through VitalMatch brings the community one step closer to a safer, faster emergency response."
+    body: "VitalMatch is a digital blood request platform connecting hospitals with qualified donors in real-time.\n\nIt helps hospitals post urgent blood requests, automatically matches qualified donors, and sends instant notifications - cutting coordination time across Oriental Mindoro.\n\nEvery donation through VitalMatch brings the community one step closer to a safer, faster emergency response."
   },
   "/privacy": {
     heading: "Privacy Policy",
@@ -97,7 +99,7 @@ const infoPages = {
   },
   "/contact": {
     heading: "Contact Us",
-    body: "Philippine Red Cross - Mindoro Chapter\nCalapan City, Oriental Mindoro, Philippines 5200\n\nPhone: +63 43 123 4567\nEmail: support@vitalmatch.ph\n\nFor account issues (including data correction or deletion requests), reach us at the email above."
+    body: "VitalMatch Coordination Team\nCalapan City, Oriental Mindoro, Philippines 5200\n\nPhone: +63 43 123 4567\nEmail: support@vitalmatch.ph\n\nFor account issues (including data correction or deletion requests), reach us at the email above."
   }
 };
 for (const [path, page] of Object.entries(infoPages)) {
@@ -223,13 +225,16 @@ router.post('/api/mobile/donor-settings', isAuthenticated, updateDonorSettings);
 router.post('/api/mobile/notification-settings', isAuthenticated, updateNotificationPrefs);
 
 router.get("/settings", isAuthenticated, userSettingsPage);
+router.get('/feedback', isAuthenticated, feedbackPage);
+router.post('/feedback', isAuthenticated, mutationLimiter, submitFeedback);
+router.post('/api/mobile/feedback', isAuthenticated, submitFeedback);
 router.post("/settings/profile", isAuthenticated, updateProfile);
 router.post("/settings/donor", isAuthenticated, updateDonorSettings);
 router.post("/settings/notifications", isAuthenticated, updateNotificationPrefs);
 router.post("/settings/password", isAuthenticated, changePassword);
 
 // Admin Routes (Protected - Admin Only)
-import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsPage, adminReportsPage, adminBlockchainPage, adminNewBloodRequestPage, createBloodRequest, fulfillRequest, deleteRequest, getUserManagementPage, getUserList, getUserDetails, createUser, updateUser, deleteUser, bulkUpdateUsers, exportUsers, adminAppointmentsPage, setHospitalStatus, exportReports, rescheduleAppointment, cancelAppointment, reviewBloodRequest, criticalAlerts } from "../controllers/adminController.js";
+import { adminDashboardPage, adminRequestsPage, adminDonorsPage, adminHospitalsPage, adminReportsPage, adminNewBloodRequestPage, createBloodRequest, fulfillRequest, deleteRequest, getUserManagementPage, getUserList, getUserDetails, createUser, updateUser, deleteUser, bulkUpdateUsers, exportUsers, adminAppointmentsPage, setHospitalStatus, exportReports, rescheduleAppointment, cancelAppointment, reviewBloodRequest, criticalAlerts } from "../controllers/adminController.js";
 
 router.get("/hospital/dashboard", isAuthenticated, isHospital, hospitalDashboardPage);
 
@@ -241,6 +246,8 @@ router.get("/hospital/patients", isAuthenticated, isHospital, patientRecordsPage
 router.post("/hospital/requests/:id/approve", isAuthenticated, isHospital, approveRequest);
 router.post("/hospital/requests/:id/decline", isAuthenticated, isHospital, declineRequest);
 router.get("/admin/dashboard", isAdmin, adminDashboardPage);
+router.get('/admin/feedback', isAdmin, adminFeedbackPage);
+router.post('/admin/feedback/:id/review', isAdmin, markFeedbackReviewed);
 router.get("/admin/requests", isAdmin, adminRequestsPage);
 router.get("/admin/appointments", isAdmin, adminAppointmentsPage);
 router.post("/admin/appointments/:id/reschedule", isAdmin, rescheduleAppointment);
@@ -254,7 +261,6 @@ router.get("/admin/hospitals", isAdmin, adminHospitalsPage);
 router.post("/admin/hospitals/:id/:action", isAdmin, setHospitalStatus);
 router.get("/admin/reports", isAdmin, adminReportsPage);
 router.get("/admin/reports/export", isAdmin, exportReports);
-router.get("/admin/blockchain", isAdmin, adminBlockchainPage);
 router.post("/admin/fulfill-request/:id", isAdmin, fulfillRequest);
 router.delete("/admin/delete-request/:id", isAdmin, deleteRequest);
 
@@ -264,7 +270,7 @@ router.get("/admin/users/api", isAdmin, getUserList);
 router.get("/admin/users/export", isAdmin, exportUsers);
 router.get("/admin/users/:id", isAdmin, apiLimiter, getUserDetails);
 router.post("/admin/users", isAdmin, validateAdminUserCreation, createUser);
-router.put("/admin/users/:id", isAdmin, validateApiParams(['firstName', 'lastName', 'email', 'role'], ['phone', 'bloodType', 'isActive', 'id', 'address', 'dateOfBirth', 'gender', 'hospitalName', 'facilityId', 'emailVerified']), updateUser);
+router.put("/admin/users/:id", isAdmin, validateApiParams(['firstName', 'lastName', 'email', 'role'], ['phone', 'bloodType', 'isActive', 'id', 'address', 'dateOfBirth', 'gender', 'hospitalName', 'facilityId', 'facilityLatitude', 'facilityLongitude', 'emailVerified']), updateUser);
 router.delete("/admin/users/:id", isAdmin, deleteUser);
 router.post("/admin/users/bulk", isAdmin, bulkUpdateUsers);
 
@@ -300,125 +306,6 @@ router.get("/api/calls/history", isAuthenticated, getCallHistory);
 router.get("/api/calls/history/:conversationId", isAuthenticated, getConversationCallHistory);
 router.post("/api/calls/:callId/seen", isAuthenticated, markCallAsSeen);
 router.get("/api/calls/analytics", isAdmin, getCallAnalytics);
-
-// Blockchain API Routes
-import { vitalMatchBlockchain } from "../services/blockchainService.js";
-
-router.get("/api/blockchain/stats", isAuthenticated, (req, res) => {
-  try {
-    const stats = vitalMatchBlockchain.getStats();
-    res.json({
-      success: true,
-      data: stats
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-router.get("/api/blockchain/donor/:donorId", isAuthenticated, (req, res) => {
-  try {
-    const donorId = req.params.donorId;
-    
-    // Check if user can access this donor's data (admin or own data)
-    if (canonicalRole(req.authAccount?.role) !== 'admin' && req.session.userId != donorId) {
-      return res.status(403).json({
-        success: false,
-        error: "Access denied"
-      });
-    }
-    
-    const history = vitalMatchBlockchain.getDonorHistory(donorId);
-    res.json({
-      success: true,
-      data: history
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-router.get("/api/blockchain/request/:requestId", isAdmin, (req, res) => {
-  try {
-    const requestId = req.params.requestId;
-    const chain = vitalMatchBlockchain.getRequestChain(requestId);
-    
-    res.json({
-      success: true,
-      data: chain
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-router.post("/api/blockchain/mine", isAdmin, async (req, res) => {
-  try {
-    const result = await vitalMatchBlockchain.minePendingTransactions();
-    
-    if (result) {
-      res.json({
-        success: true,
-        message: "Block mined successfully"
-      });
-    } else {
-      res.json({
-        success: false,
-        message: "No pending transactions to mine"
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-router.get("/api/blockchain/verify", isAuthenticated, (req, res) => {
-  try {
-    const isValid = vitalMatchBlockchain.isChainValid();
-    
-    res.json({
-      success: true,
-      isValid: isValid,
-      message: isValid ? "Blockchain is valid" : "Blockchain integrity compromised"
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Get recent blockchain activity
-router.get("/api/blockchain/recent", isAdmin, (req, res) => {
-  try {
-    const chain = vitalMatchBlockchain.chain;
-    const recentBlocks = chain.slice(-5).reverse(); // Get last 5 blocks, most recent first
-    
-    res.json({
-      success: true,
-      blocks: recentBlocks
-    });
-  } catch (error) {
-    console.error("Error getting recent blockchain activity:", error);
-    res.status(500).json({
-      success: false,
-      error: "Failed to get recent blockchain activity"
-    });
-  }
-});
 
 // Call For Donation Routes
 import { submitCall, adminViewCalls, adminUpdateCallStatus } from "../controllers/callForDonationController.js";

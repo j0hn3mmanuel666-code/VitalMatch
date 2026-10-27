@@ -1,7 +1,7 @@
 <footer class="public-footer">
   <div class="journey-container">
     <div class="public-footer__grid">
-      <div class="public-footer__intro"><a class="public-footer__brand" href="/">VitalMatch<span aria-hidden="true">.</span></a><p>A community connected by care.<br>Blood donation coordination for Oriental Mindoro.</p><span class="public-footer__context">Philippine Red Cross &middot; Mindoro Chapter</span></div>
+      <div class="public-footer__intro"><a class="public-footer__brand" href="/">VitalMatch<span aria-hidden="true">.</span></a><p>A community connected by care.<br>Blood donation coordination for Oriental Mindoro.</p></div>
       <div><h2>Find your next step</h2><ul><li><a href="/login">Request blood</a></li><li><a href="/register">Become a donor</a></li><li><a href="/#call-for-donation-section">Call for donation</a></li><li><a href="/help">Account help</a></li></ul></div>
       <div><h2>About the platform</h2><ul><li><a href="/about">About VitalMatch</a></li><li><a href="/contact">Contact &amp; support</a></li><li><a href="/privacy">Privacy policy</a></li><li><a href="/terms">Terms of service</a></li></ul></div>
     </div>

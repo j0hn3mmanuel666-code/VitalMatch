@@ -21,10 +21,10 @@ export const MUNICIPALITY_COORDS = {
 
 export const PROVINCE_CENTER = [12.95, 121.30];
 
-// Philippine Red Cross chapters / centers (static, public information)
+// Blood donation centers (static, public information)
 export const RED_CROSS_PINS = [
   {
-    name: "PRC Oriental Mindoro Chapter",
+    name: "Blood Donation Center - Calapan City",
     address: "Capitol Complex, Camilmil, Calapan City",
     phone: "(043) 286-7173",
     lat: 13.4070,

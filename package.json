@@ -16,6 +16,8 @@
     "start": "node index.js",
     "xian-start": "node --watch index.js",
     "xian": "node --watch index.js",
+    "mobile:url": "node scripts/set-capacitor-url.mjs",
+    "mobile:sync": "npx cap sync android",
     "migrate": "node migrate.js",
     "migrate:public-cms": "node migratePublicContent.js",
     "migrate:nearest-donor": "node migrateNearestDonor.js",
@@ -24,6 +26,8 @@
     "build:ui": "tailwindcss -c tailwind.config.cjs -i public/css/internal-utilities.source.css -o public/css/internal-utilities.css --minify"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "bcrypt": "^6.0.0",
     "compression": "^1.7.4",
     "connect-flash": "^0.1.1",
@@ -52,6 +56,7 @@
     }
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/cli": "^4.3.3",
     "inquirer": "^9.3.8",

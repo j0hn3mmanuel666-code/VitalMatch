@@ -14,7 +14,7 @@ import { Facility } from './facilityModel.js';
 export const BloodRequest = sequelize.define("BloodRequest", {
   patientName: { type: DataTypes.STRING, allowNull: false },
   patientAge: { type: DataTypes.INTEGER, allowNull: false },
-  patientReference: { type: DataTypes.STRING(40), allowNull: true },
+  patientReference: { type: DataTypes.STRING(40), allowNull: true, unique: true },
   bloodType: { type: DataTypes.STRING, allowNull: false },
   unitsRequired: { type: DataTypes.INTEGER, allowNull: false },
   unitsFulfilled: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 }, // null = legacy completion quantity unknown

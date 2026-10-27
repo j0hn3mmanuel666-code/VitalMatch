@@ -128,28 +128,17 @@
               </div>
 
               <div class="form-group">
-                <label class="block text-gray-700 font-semibold mb-2" for="patientReference">
-                  Patient Reference Number *
+                <span class="block text-gray-700 font-semibold mb-2">
+                  Patient Reference Number
                   <span class="tooltip-trigger ml-1 cursor-help"
-                    data-tooltip="Hospital record or chart number for this patient (letters, numbers and dashes, up to 40 characters)">
+                    data-tooltip="Assigned automatically when you submit (for example VM5200-2600001). Share the code or its last 5 digits with your coordinator.">
                     <svg class="w-4 h-4 inline text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </span>
-                </label>
-                <input type="text" name="patientReference" id="patientReference" required maxlength="40" pattern="[A-Za-z0-9-]+"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  placeholder="e.g. PX-2026-0041" data-validate="required">
-                <div class="error-message hidden text-red-600 text-sm mt-1"></div>
-                <div class="success-message hidden text-green-600 text-sm mt-1">
-                  <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd" />
-                  </svg>
-                  Valid reference entered
-                </div>
+                </span>
+                <p class="w-full px-4 py-3 border border-dashed border-gray-300 rounded-lg bg-gray-50 text-gray-600 text-sm">Assigned automatically on submit — e.g. VM5200-2600001. You will see it on the request details.</p>
               </div>
 
               <div class="form-group">
@@ -379,9 +368,9 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-49">Hospital Name *</label>
-                <input type="text" name="hospitalName" required value="{{profile.hospitalName}}"
+                <input type="text" name="hospitalName" required value="{{profile.hospitalName}}" data-hospital-combobox
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Enter hospital name" id="vm-request-blood-49">
+                  placeholder="Type to search or select a hospital" id="vm-request-blood-49">
               </div>
 
               <div>

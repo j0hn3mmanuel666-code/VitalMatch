@@ -1,5 +1,9 @@
 # VitalMatch
 
+## Blockchain-free version
+
+This branch removes the blockchain service, administrator dashboard, and related API. Request, appointment, fulfillment, feedback, and activity records continue to use the existing MySQL database. Any blockchain files from older installs are left untouched and are not used by this version.
+
 ## V 1.5: System Optimization and UI/UX Refinements
 
 This release includes refreshed public and internal screens, local fonts and map assets, improved search and pagination, workflow integrity and authorization updates, durable notification jobs, and migration and verification tools.
@@ -56,7 +60,7 @@ Integration tests create uniquely named `vitalmatch_audit_test_*` databases, app
 
 ## Mobile app
 
-The Expo/React Native client lives in `mobile/`. It supports requester, donor, hospital, and administrator accounts with role-filtered request lists, native request and donor-profile forms, review actions, appointment confirmations, and notifications. Start the web server first, then run the client from the `mobile` directory. During Expo development the API host is inferred from the Expo bundle URL, so a physical phone on the same Wi-Fi can reach the computer. Android emulator builds use `http://10.0.2.2:3000` as a fallback. Set `EXPO_PUBLIC_API_BASE_URL` to override the address; use the deployed HTTPS address for production builds.
+The Expo/React Native client lives in `mobile/`. It supports requester, donor, hospital, and administrator accounts with role-filtered request lists, native request and donor-profile forms, review actions, appointment confirmations, notifications, and private system feedback. Start the web server first, then run the client from the `mobile` directory. During Expo development the API host is inferred from the Expo bundle URL, so a physical phone on the same Wi-Fi can reach the computer. Android emulator builds use `http://10.0.2.2:3000` as a fallback. Set `EXPO_PUBLIC_API_BASE_URL` to override the address; use the deployed HTTPS address for production builds.
 
 ```powershell
 cd mobile

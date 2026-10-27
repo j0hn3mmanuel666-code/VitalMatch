@@ -17,6 +17,7 @@ const connection = await mysql.createConnection({ host: process.env.DB_HOST || '
 await connection.query('SET time_zone = ?', [sequelize.options.timezone]);
 let created = false;
 const signatures = {};
+const originalRowsByTable = {};
 try {
   await connection.query(`CREATE DATABASE \`${database}\``); created = true;
   await connection.query(`USE \`${database}\``);
@@ -25,6 +26,7 @@ try {
     const [[row]] = await connection.query('SELECT COUNT(*) AS count FROM ??', [table]);
     if (Number(row.count) !== count) throw new Error(`Restored row count differs for ${table}`);
     const [data] = await connection.query('SELECT * FROM ??', [table]);
+    originalRowsByTable[table] = data;
     signatures[table] = { columns: data.length ? Object.keys(data[0]) : [], hash: crypto.createHash('sha256').update(JSON.stringify(data.map(r => JSON.stringify(r)).sort())).digest('hex') };
     if (manifest.tableSignatures?.[table] && signatures[table].hash !== manifest.tableSignatures[table]) throw new Error(`Restored original field values differ for ${table}`);
   }
@@ -35,6 +37,15 @@ try {
       child.once('error', reject); child.once('exit', code => code === 0 ? resolve() : reject(new Error('Restored-database migration failed')));
     });
     for (const [table, signature] of Object.entries(signatures)) {
+      if (table.toLowerCase() === 'schema_migrations') {
+        const [rows] = await connection.query('SELECT * FROM ??', [table]);
+        const oldVersions = new Set(originalRowsByTable[table].map(row => row.version));
+        const preserved = rows.filter(row => oldVersions.has(row.version));
+        if (rows.length !== manifest.tables[table] + 1 || !rows.some(row => row.version === '20261024_01_system_feedback')) throw new Error('Migration ledger did not record exactly the expected additive feedback migration');
+        const preservedHash = crypto.createHash('sha256').update(JSON.stringify(preserved.map(r => JSON.stringify(r)).sort())).digest('hex');
+        if (preserved.length !== originalRowsByTable[table].length || preservedHash !== signature.hash) throw new Error('Migration changed historical schema migration records');
+        continue;
+      }
       const [[row]] = await connection.query('SELECT COUNT(*) AS count FROM ??', [table]);
       if (Number(row.count) !== manifest.tables[table]) throw new Error(`Migration changed historic row count: ${table}`);
       if (!signature.columns.length) continue;

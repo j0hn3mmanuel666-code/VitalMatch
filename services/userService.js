@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 import { getBcryptRounds, validateEmail, validatePhoneNumber } from '../middleware/validation.js';
 import { paginationFor } from './pagination.js';
 import { resolveAdminFacility } from './facilityService.js';
+import { Facility } from '../models/facilityModel.js';
 import { getRuntimeSettings } from './runtimeSettings.js';
 import { parseBirthDate } from './coordinationPolicy.js';
 import { retryTransaction } from './transactionService.js';
@@ -47,6 +48,10 @@ export class UserService {
   static async getUserById(id) {
     const user = await User.findByPk(id, { attributes: { exclude: SECRET_FIELDS } });
     if (!user) throw new Error('User not found');
+    if (user.facilityId) {
+      const facility = await Facility.findByPk(user.facilityId, { attributes: ['latitude', 'longitude'] });
+      if (facility) { user.setDataValue('facilityLatitude', facility.latitude); user.setDataValue('facilityLongitude', facility.longitude); }
+    }
     const [donor, requests] = await Promise.all([Donor.findOne({ where: { userId: id } }), BloodRequest.findAll({ where: { userId: id }, order: [['createdAt','DESC']], limit: 10 })]);
     return { ...safeUser(user), donorProfile: donor?.toJSON() || null, recentBloodRequests: requests.map(r => r.toJSON()), isDonor: !!donor };
   }
@@ -105,7 +110,7 @@ export class UserService {
       await this.protectLastAdmin(user, values, transaction);
       const role = values.role || normalizedRole(user.role);
       if (user.role === 'hospital_admin' && values.role === undefined) values.role = 'hospital';
-      if (role === 'hospital' && (values.facilityId !== undefined || values.hospitalName !== undefined || !user.facilityId)) { const facility = await resolveAdminFacility({ facilityId: values.facilityId, hospitalName: values.hospitalName || user.hospitalName, adminId }, transaction); values.facilityId = facility.id; values.hospitalName = facility.hospitalName; }
+      if (role === 'hospital' && (values.facilityId !== undefined || values.hospitalName !== undefined || !user.facilityId)) { const facility = await resolveAdminFacility({ facilityId: values.facilityId, hospitalName: values.hospitalName || user.hospitalName, adminId, latitude: data.facilityLatitude, longitude: data.facilityLongitude }, transaction); values.facilityId = facility.id; values.hospitalName = facility.hospitalName; }
       else if (role !== 'hospital') values.facilityId = null;
       const changes = this.detectChanges(user.toJSON(), values);
       if (!Object.keys(changes).length) return { user: safeUser(user), changes };

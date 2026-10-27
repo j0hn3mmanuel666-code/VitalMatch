@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import hbs from 'hbs';
-const skip = new Set(['node_modules','.git','.local','.impeccable','impeccable','private','uploads']);
+const skip = new Set(['node_modules','.git','.local','.impeccable','impeccable','private','uploads','android']);
 async function files(directory) {
   const result=[];
   for(const entry of await fs.readdir(directory,{withFileTypes:true})){

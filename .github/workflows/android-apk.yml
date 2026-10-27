@@ -1,0 +1,74 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: Public HTTPS URL of the VitalMatch server
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - 'capacitor.config.json'
+      - 'android/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/set-capacitor-url.mjs'
+      - '.github/workflows/android-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Resolve server URL
+        id: server
+        env:
+          INPUT_URL: ${{ inputs.server_url }}
+          VARIABLE_URL: ${{ vars.CAPACITOR_SERVER_URL }}
+        run: |
+          URL="${INPUT_URL:-$VARIABLE_URL}"
+          if [ -z "$URL" ]; then
+            echo "::error::Set the CAPACITOR_SERVER_URL repository variable (or pass server_url) to the public https URL."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Point Capacitor at the deployed server
+        run: node scripts/set-capacitor-url.mjs "${{ steps.server.outputs.url }}"
+
+      - run: npm ci
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Add or sync Android platform
+        run: |
+          if [ -d android ]; then npx cap sync android; else npx cap add android; fi
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vitalmatch-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

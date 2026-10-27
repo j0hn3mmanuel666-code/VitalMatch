@@ -46,7 +46,7 @@
       </div>
 
       <div class="vm-panel bg-white rounded-md p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Red Cross Chapters</h2>
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Donation centers</h2>
         {{#each chapters}}
         <div class="border border-gray-200 rounded-lg p-4 mb-3">
           <p class="font-semibold text-gray-800">{{name}}</p>

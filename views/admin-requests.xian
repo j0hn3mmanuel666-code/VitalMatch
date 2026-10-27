@@ -17,7 +17,7 @@
         <span>New Request</span>
       </a>
     </div>
-      {{> record-search label="Search blood requests" placeholder="Patient, facility, blood type, location or ID"}}
+      {{> record-search label="Search blood requests" placeholder="Patient, reference code or last 5 digits, facility, blood type, location or ID"}}
 
     <!-- Live critical banner: polls for critical-urgency requests needing immediate action -->
     <div id="critical-banner" class="hidden mb-4 p-4 border-2 border-red-600 rounded-md bg-red-50 dark:bg-red-900/20 flex items-center justify-between" role="alert">
@@ -116,7 +116,7 @@
               <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-600 dark:text-gray-400">#{{id}}
               </td>
               <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{patientName}}</td>
+                {{patientName}}<br><span class="vm-muted text-xs">{{#if patientReference}}{{patientReference}}{{else}}No reference yet{{/if}}</span></td>
               <td class="px-4 py-3 whitespace-nowrap">
                 <div class="flex justify-center">
                   <div

@@ -27,10 +27,10 @@ const requestFields = [
   'id', 'userId', 'patientName', 'patientAge', 'bloodType', 'unitsRequired', 'unitsFulfilled',
   'hospitalName', 'hospitalAddress', 'city', 'province', 'contactPerson', 'contactNumber', 'email',
   'urgency', 'requiredByDate', 'notes', 'status', 'hospitalStatus', 'facilityId', 'isEmergency',
-  'scheduledDate', 'requesterConfirmed', 'donorConfirmed', 'createdAt', 'version'
+  'scheduledDate', 'requesterConfirmed', 'donorConfirmed', 'fulfilledAt', 'assignedDonorId', 'createdAt', 'version'
 ];
 
-function requestCard(row, role, accountId, pledgeIds) {
+function requestCard(row, role, accountId, pledgeIds, pledgeCounts) {
   const item = row.toJSON();
   const isOwn = item.userId === accountId;
   const donorView = role === 'donor' && !isOwn;
@@ -63,6 +63,7 @@ function requestCard(row, role, accountId, pledgeIds) {
     createdAt: item.createdAt,
     version: item.version,
     hasPledged: pledgeIds.has(item.id),
+    offerCount: donorView ? 0 : pledgeCounts.get(item.id) || 0,
     canReview: (role === 'admin' || (role === 'hospital' && !!item.facilityId)) && item.status === 'pending' && ['pending', 'declined'].includes(item.hospitalStatus),
     canCancel: role === 'admin' || isOwn,
   };
@@ -92,22 +93,30 @@ export async function getMobileWorkspace(req, res) {
   if (role === 'donor' && !donor) rows = [];
   if (role === 'donor') {
     const ownRows = await BloodRequest.findAll({ where: { userId: accountId, archivedAt: null }, attributes: requestFields, order: [['createdAt', 'DESC']], limit: 20 });
-    const ownIds = new Set(ownRows.map(row => row.id));
-    rows = [...ownRows, ...rows.filter(row => !ownIds.has(row.id))].slice(0, 60);
+    const matchedRows = donor ? await BloodRequest.findAll({
+      where: { assignedDonorId: donor.id, archivedAt: null, status: { [Op.in]: ['scheduled', 'fulfilled'] } },
+      attributes: requestFields,
+      order: [['updatedAt', 'DESC']],
+      limit: 20
+    }) : [];
+    const visibleIds = new Set([...ownRows, ...matchedRows].map(row => row.id));
+    rows = [...ownRows, ...matchedRows, ...rows.filter(row => !visibleIds.has(row.id))].slice(0, 60);
   }
 
-  const pledgeRows = role === 'donor' && rows.length
-    ? await Pledge.findAll({ where: { userId: accountId, requestId: { [Op.in]: rows.map(row => row.id) } }, attributes: ['requestId'] })
+  const pledgeRows = rows.length
+    ? await Pledge.findAll({ where: { requestId: { [Op.in]: rows.map(row => row.id) } }, attributes: ['requestId', 'userId'] })
     : [];
-  const pledgeIds = new Set(pledgeRows.map(row => row.requestId));
+  const pledgeIds = new Set(pledgeRows.filter(row => row.userId === accountId).map(row => row.requestId));
+  const pledgeCounts = new Map();
+  for (const pledge of pledgeRows) pledgeCounts.set(pledge.requestId, (pledgeCounts.get(pledge.requestId) || 0) + 1);
   const requests = rows.map(row => {
-    const item = requestCard(row, role, accountId, pledgeIds);
+    const item = requestCard(row, role, accountId, pledgeIds, pledgeCounts);
     if (role === 'hospital' && !user.facilityId) item.canReview = false;
     return item;
   });
   const requestIds = requests.map(row => row.id);
 
-  let appointmentWhere = { status: 'scheduled' };
+  let appointmentWhere = { status: { [Op.in]: ['scheduled', 'completed'] } };
   if (role === 'donor') appointmentWhere.donorId = donor?.id || -1;
   else appointmentWhere.requestId = { [Op.in]: requestIds.length ? requestIds : [-1] };
   const appointmentRows = await Appointment.findAll({
@@ -122,6 +131,7 @@ export async function getMobileWorkspace(req, res) {
   const appointments = appointmentRows.map(row => ({
     id: row.id,
     requestId: row.requestId,
+    status: row.status,
     version: row.version,
     scheduledDate: row.scheduledDate,
     donorConfirmed: row.donorConfirmed,

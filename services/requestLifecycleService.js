@@ -15,6 +15,7 @@ import { isDonorReady, unitsRemaining } from './coordinationPolicy.js';
 import { queueCoordination } from './coordinationJobService.js';
 import { isHospitalAccount } from './accountPolicy.js';
 import { retryTransaction } from './transactionService.js';
+import { nextPatientReference } from './referenceNumberService.js';
 
 export class WorkflowError extends Error {
   constructor(message, status = 400) { super(message); this.status = status; }
@@ -119,7 +120,7 @@ async function scheduleNotices(request, appointment, donor, transaction) {
   }
 }
 export async function createRequest(data, actorId, submissionKey) {
-  return retryTransaction(async transaction => {
+  const result = await retryTransaction(async transaction => {
     // Serialize submissions for this account so a replay sees the committed row.
     const actor = await actorAccount(actorId, transaction, true);
     const key = submissionKey ? `${actor.id}:${submissionKey}` : null;
@@ -137,12 +138,16 @@ export async function createRequest(data, actorId, submissionKey) {
     const facility = facilityId && await Facility.findByPk(facilityId, { transaction });
     if (facilityId && (!facility?.isActive || !facility?.verifiedAt)) throw new WorkflowError('Select an active verified facility');
     const hospitalApproved = actor.role === 'admin' || (isHospitalAccount(actor) && actor.facilityId === facilityId);
-    const request = await BloodRequest.create({ ...data, facilityId, hospitalName: facility ? facility.hospitalName : data.hospitalName, hospitalId: isHospitalAccount(actor) ? actor.id : null, hospitalStatus: hospitalApproved ? 'approved' : 'pending', status: hospitalApproved ? 'active' : 'pending', userId: actor.id, createdBy: actor.id, submissionKey: key, unitsFulfilled: 0 }, { transaction });
+    // The patient reference number is always system-generated (VM5200-YYNNNNN).
+    // Any submitted value is ignored so requesters cannot pick or reuse codes.
+    const patientReference = await nextPatientReference(transaction);
+    const request = await BloodRequest.create({ ...data, patientReference, facilityId, hospitalName: facility ? facility.hospitalName : data.hospitalName, hospitalId: isHospitalAccount(actor) ? actor.id : null, hospitalStatus: hospitalApproved ? 'approved' : 'pending', status: hospitalApproved ? 'active' : 'pending', userId: actor.id, createdBy: actor.id, submissionKey: key, unitsFulfilled: 0 }, { transaction });
     await event(request, actor, 'request_created', { status: request.status, facilityId, unitsRequired: request.unitsRequired }, null, null, transaction);
     await notifyCoordinators(request, hospitalApproved ? 'New blood request' : 'Request needs review', `Request #${request.id} needs ${hospitalApproved ? 'coordination' : 'facility or coordinator review'}.`, transaction);
     await queueCoordination(request, { transaction });
     return { request, duplicate: false };
   });
+  return result;
 }
 export async function scheduleRequest(requestId, actorId, data) {
   return retryTransaction(async transaction => {
@@ -166,7 +171,7 @@ export async function scheduleRequest(requestId, actorId, data) {
   });
 }
 export async function fulfillRequest(requestId, actorId, data) {
-  return retryTransaction(async transaction => {
+  const result = await retryTransaction(async transaction => {
     const request = await loadRequest(requestId, transaction);
     const actor = await actorAccount(actorId, transaction);
     if (actor.role !== 'admin') throw new WorkflowError('Only coordinators can record completion', 403);
@@ -198,8 +203,9 @@ export async function fulfillRequest(requestId, actorId, data) {
     if (donor) await informUser(donor.userId, request, 'Donation recorded', `Your donation for request #${request.id} was recorded by a coordinator.`, transaction);
     await notifyCoordinators(request, complete ? 'Request fulfilled' : 'Request still needs blood', `Request #${request.id} has ${unitsRemaining(request)} outstanding unit(s).`, transaction);
     await queueCoordination(request, { transaction });
-    return { request, complete };
+    return { request, complete, donorId: donor?.id || null, units, bloodType: request.bloodType };
   });
+  return result.duplicate ? { request: result.request, duplicate: true } : { request: result.request, complete: result.complete };
 }
 export async function changeAppointment(appointmentId, actorId, data, action) {
   return retryTransaction(async transaction => {
@@ -252,7 +258,7 @@ export async function cancelRequest(requestId, actorId, reason) {
   });
 }
 export async function reviewRequest(requestId, actorId, approved, reason) {
-  return retryTransaction(async transaction => {
+  const request = await retryTransaction(async transaction => {
     const request = await loadRequest(requestId, transaction);
     const actor = await actorAccount(actorId, transaction);
     if (actor.role !== 'admin' && !(isHospitalAccount(actor) && actor.facilityId && actor.facilityId === request.facilityId)) throw new WorkflowError('This request is not assigned to your facility', 403);
@@ -265,6 +271,7 @@ export async function reviewRequest(requestId, actorId, approved, reason) {
     if (approved) await queueCoordination(request, { transaction });
     return request;
   });
+  return request;
 }
 export async function correctRequest(requestId, actorId, data, version) {
   return retryTransaction(async transaction => {
@@ -280,8 +287,10 @@ export async function correctRequest(requestId, actorId, data, version) {
     }
     const facility = facilityId && await Facility.findByPk(facilityId, { transaction });
     if (facilityId && (!facility?.isActive || !facility?.verifiedAt)) throw new WorkflowError('Select an active verified facility');
-    const changedFields = Object.keys(data).filter(field => JSON.stringify(request[field]) !== JSON.stringify(data[field]));
-    await request.update({ ...data, hospitalName: facility ? facility.hospitalName : data.hospitalName, facilityId, hospitalId: null, hospitalStatus: 'pending', version: request.version + 1 }, { transaction });
+    // The system-generated reference never changes on correction.
+    const { patientReference: _ignoredReference, submissionKey: _ignoredKey, ...correctable } = data;
+    const changedFields = Object.keys(correctable).filter(field => JSON.stringify(request[field]) !== JSON.stringify(correctable[field]));
+    await request.update({ ...correctable, hospitalName: facility ? facility.hospitalName : data.hospitalName, facilityId, hospitalId: null, hospitalStatus: 'pending', version: request.version + 1 }, { transaction });
     await event(request, actor, 'request_corrected', { changedFields, facilityId }, 'Requester corrected a returned request; fresh review required', null, transaction);
     await notifyCoordinators(request, 'Corrected request needs review', `Request #${request.id} was corrected and needs a fresh review.`, transaction);
     return request;

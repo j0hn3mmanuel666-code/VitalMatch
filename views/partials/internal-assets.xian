@@ -1,8 +1,9 @@
 <script src="/js/theme-bootstrap.js?v=1"></script>
 <link rel="stylesheet" href="/css/internal-utilities.css?v=4">
 {{> typography}}
-<link rel="stylesheet" href="/css/internal.css?v=12">
+<link rel="stylesheet" href="/css/internal.css?v=13">
 <script src="/js/internal-ui.js?v=6" defer></script>
 <script src="/js/workspace-pagination.js?v=2" defer></script>
 <script src="/js/record-search.js?v=1" defer></script>
+<script src="/js/hospital-combobox.js?v=1" defer></script>
 {{#if isDevelopment}}<script src="/js/dev-reload.js?v=1" defer></script>{{/if}}

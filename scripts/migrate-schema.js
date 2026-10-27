@@ -21,6 +21,7 @@ import '../models/workflowEventModel.js';
 import '../models/requestAccessModel.js';
 import '../models/emailOutboxModel.js';
 import '../models/coordinationJobModel.js';
+import '../models/referenceCounterModel.js';
 import '../services/auditService.js';
 
 const SchemaMigration = sequelize.define('SchemaMigration', {
@@ -29,7 +30,8 @@ const SchemaMigration = sequelize.define('SchemaMigration', {
 }, { tableName: 'schema_migrations', timestamps: false });
 if (!sequelize.models.Session) sequelize.define('Session', { sid: { type: DataTypes.STRING(36), primaryKey: true }, expires: DataTypes.DATE, data: DataTypes.TEXT }, { tableName: 'Sessions' });
 
-export const migrationVersions = ['20261003_01_coordination_integrity'];
+export const migrationVersions = ['20261003_01_coordination_integrity', '20261017_01_patient_reference', '20261024_01_system_feedback'];
+const startupRequiredMigrationVersions = ['20261003_01_coordination_integrity', '20261017_01_patient_reference'];
 const indexDefinitions = [
   ['BloodRequests', 'idx_request_state_blood', ['status', 'bloodType', 'createdAt']],
   ['BloodRequests', 'idx_request_owner_date', ['userId', 'createdAt']],
@@ -39,7 +41,10 @@ const indexDefinitions = [
   ['Notifications', 'idx_notification_user_read_date', ['userId', 'isRead', 'createdAt']],
   ['Messages', 'idx_message_conversation_date', ['conversationId', 'createdAt']],
   ['Calls', 'idx_call_conversation_date', ['conversationId', 'initiatedAt']],
-  ['Users', 'idx_user_facility_role_active', ['facilityId', 'role', 'isActive']]
+  ['Users', 'idx_user_facility_role_active', ['facilityId', 'role', 'isActive']],
+  ['UserFeedbacks', 'idx_feedback_status_date', ['status', 'createdAt']],
+  ['UserFeedbacks', 'idx_feedback_rating_date', ['rating', 'createdAt']],
+  ['UserFeedbacks', 'idx_feedback_user_date', ['userId', 'createdAt']]
 ];
 function columnDefinition(attribute, existingTable = false) {
   const definition = { ...attribute };
@@ -57,7 +62,7 @@ export async function inspectSchema() {
 }
 export async function assertCurrentSchema() {
   const state = await inspectSchema();
-  if (!migrationVersions.every(version => state.migrations.includes(version))) throw new Error('Database upgrade required. Review MIGRATION_GUIDE.md and apply the backed-up schema migration before starting VitalMatch.');
+  if (!startupRequiredMigrationVersions.every(version => state.migrations.includes(version))) throw new Error('Database upgrade required. Review MIGRATION_GUIDE.md and apply the backed-up schema migration before starting VitalMatch.');
   const tables = new Map(state.tables.map(table => [String(table).toLowerCase(), table]));
   const qi = sequelize.getQueryInterface();
   const missing = [];
@@ -90,6 +95,9 @@ export async function runMigrations(options = {}) {
   }
 }
 async function applyMigrations({ backupConfirmed = false } = {}) {
+  // Feedback is an optional additive feature. Register its model only while
+  // applying migrations so an older database can keep serving the core app.
+  await import('../models/userFeedbackModel.js');
   if (!process.env.DB_NAME) throw new Error('Set DB_NAME explicitly before migrating');
   const database = sequelize.getDatabaseName();
   const disposable = /^vitalmatch_audit_test_[a-zA-Z0-9_]+$/.test(database) && process.env.NODE_ENV === 'test';
@@ -97,7 +105,7 @@ async function applyMigrations({ backupConfirmed = false } = {}) {
   await sequelize.authenticate();
   const qi = sequelize.getQueryInterface();
   await SchemaMigration.sync();
-  if (await SchemaMigration.findByPk(migrationVersions[0])) { await assertCurrentSchema(); return inspectSchema(); }
+  if (await Promise.all(migrationVersions.map(version => SchemaMigration.findByPk(version))).then(rows => rows.every(Boolean))) { await assertCurrentSchema(); return inspectSchema(); }
   const tables = (await qi.showAllTables()).map(table => typeof table === 'string' ? table : table.tableName);
   const tableMap = new Map(tables.map(table => [table.toLowerCase(), table]));
   if (tableMap.has('donors')) {
@@ -156,7 +164,29 @@ async function applyMigrations({ backupConfirmed = false } = {}) {
     await sequelize.models.ScheduleToken.update({ used: true }, { where: { used: false, [Op.or]: [{ appointmentId: null }, { recipientUserId: null }] } });
   }
   // No name-based facility backfill: an administrator must assign verified IDs.
-  await SchemaMigration.create({ version: migrationVersions[0], appliedAt: new Date() });
+  if (!await SchemaMigration.findByPk(migrationVersions[0])) await SchemaMigration.create({ version: migrationVersions[0], appliedAt: new Date() });
+  if (!await SchemaMigration.findByPk(migrationVersions[1])) {
+    // v2: system-generated patient reference numbers (VM5200-YYNNNNN).
+    // Existing rows are preserved untouched (legacy PX- codes and NULLs stay).
+    const [refDuplicates] = await sequelize.query('SELECT patientReference FROM BloodRequests WHERE patientReference IS NOT NULL GROUP BY patientReference HAVING COUNT(*) > 1 LIMIT 1');
+    if (refDuplicates.length) throw new Error('Duplicate patient references require a reviewed consolidation before migration');
+    await sequelize.models.ReferenceCounter.sync();
+    const requestTable = (await qi.showAllTables()).map(table => typeof table === 'string' ? table : table.tableName).find(name => String(name).toLowerCase() === 'bloodrequests');
+    if (requestTable) {
+      const existingIndexes = await qi.showIndex(requestTable);
+      const hasUniqueOnRef = existingIndexes.some(index => index.unique && JSON.stringify(index.fields || index.attributes || index.columns || []).toLowerCase().includes('patientreference'));
+      if (!hasUniqueOnRef) {
+        try {
+          await qi.addIndex(requestTable, ['patientReference'], { name: 'uq_requests_patient_reference', unique: true });
+        } catch (error) {
+          if (!/duplicate|exists/i.test(error.message)) throw error;
+        }
+      }
+    }
+    await SchemaMigration.create({ version: migrationVersions[1], appliedAt: new Date() });
+  }
+  if (!await SchemaMigration.findByPk(migrationVersions[2])) await SchemaMigration.create({ version: migrationVersions[2], appliedAt: new Date() });
+  await assertCurrentSchema();
   return inspectSchema();
 }
 export async function migrationCli() {

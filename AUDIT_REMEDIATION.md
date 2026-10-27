@@ -1,5 +1,7 @@
 # Audit remediation and final verification
 
+> Historical note: this report documents checks from an earlier blockchain-enabled revision. The blockchain-free branch removes that subsystem; its changes have not yet been covered by the checks recorded below.
+
 The approved comprehensive review remains the baseline. Every actionable group, including medium/low findings, has been revisited. This table separates locally verified implementation from operational acceptance that requires deployment, a provider recipient, relay infrastructure or clinical approval. Existing user work, the approved public design and historical data were preserved.
 
 Verification date: 2026-10-03. All in-repository implementation and final local checks pass. All 50 finding groups were revisited, including independent cross-checks and regression fixes for account-link identity, form consistency, active password guidance and public-asset freshness. The guarded synthetic demo facility repair was applied and verified. Production acceptance is not certified by local checks; the remaining operational requirements are explicit below.

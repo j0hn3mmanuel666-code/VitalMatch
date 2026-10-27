@@ -10,7 +10,6 @@ import { csvCell, UserService } from '../services/userService.js';
 import { safeContentUrl } from '../services/contentSafety.js';
 import { paginationFor, paginationLinks } from '../services/pagination.js';
 import { safeRequestLabel, cacheControl } from '../middleware/performance.js';
-import { VitalMatchBlockchain } from '../services/blockchainService.js';
 import { validatePassword } from '../middleware/validation.js';
 import { User } from '../models/userModel.js';
 import { retryTransaction } from '../services/transactionService.js';
@@ -102,17 +101,4 @@ test('settings restore file and memory when coordinated audit commit fails', asy
     const result=spawnSync(process.execPath,['--input-type=module','-e',`import assert from 'node:assert/strict'; import fs from 'node:fs/promises';import {updateRuntimeSettings,getRuntimeSettings} from './services/runtimeSettings.js'; await updateRuntimeSettings(s=>s); const before=getRuntimeSettings();for(const published of [false,true]){await assert.rejects(updateRuntimeSettings(s=>({...s,general:{...s.general,appName:'Uncommitted'}}),{commit:async(n,p,publish)=>{if(published)await publish();throw new Error('Synthetic audit failure');}}));assert.deepEqual(getRuntimeSettings(),before);assert.deepEqual(JSON.parse(await fs.readFile(process.env.RUNTIME_SETTINGS_FILE,'utf8')),before);}`],{cwd:process.cwd(),env:{...process.env,RUNTIME_SETTINGS_FILE:file},encoding:'utf8'});
     assert.equal(result.status,0,result.stderr);
   } finally {await fs.rm(dir,{recursive:true,force:true});}
-});
-test('ledger mining commits chain and pending together, reopens without duplication and surfaces write failure', async () => {
-  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'vitalmatch-ledger-'));
-  try {
-    const ledger=new VitalMatchBlockchain({directory:dir});
-    await assert.rejects(ledger.addDonationRecord(1,{units:0,bloodType:'O+'}));
-    await ledger.addFulfillmentRecord(2,1,{units:1}); await ledger.minePendingTransactions();
-    assert.equal(ledger.chain.length,2); assert.equal(ledger.pendingTransactions.length,0);
-    const loaded=new VitalMatchBlockchain({directory:dir}); assert.equal(loaded.chain.length,2); assert.equal(loaded.pendingTransactions.length,0); assert.equal(loaded.isChainValid(),true);
-    loaded.chain[0].data.message='Tampered genesis';assert.equal(loaded.isChainValid(),false);
-    const failing=new VitalMatchBlockchain({directory:dir,writeFile:async()=>{throw new Error('disk unavailable');}});
-    await assert.rejects(failing.addRequestRecord(3,{bloodType:'A+',unitsRequired:1,urgency:'urgent',status:'active'})); assert.equal(failing.pendingTransactions.length,0);
-  } finally { await fs.rm(dir,{recursive:true,force:true}); }
 });

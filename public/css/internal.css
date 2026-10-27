@@ -331,20 +331,6 @@
 .vm-internal .vm-analytics > summary { font-weight: 600; cursor: pointer; min-height: 44px; }
 .vm-internal .vm-analytics[open] > summary { margin-bottom: 20px; }
 .vm-internal .vm-analytics .grid { gap: 20px; }
-.vm-internal .blockchain-card { background: var(--vm-paper); background-image: none; color: var(--vm-ink); border: 1px solid var(--vm-line); border-radius: 4px; box-shadow: none; padding: 20px; }
-.vm-internal .stat-card { background: transparent; border: 0; border-bottom: 1px solid var(--vm-line); border-radius: 0; box-shadow: none; text-align: left; padding: 16px 0; }
-.vm-internal .stat-number { font-size: 1.6rem; color: var(--vm-ink); }
-.vm-internal .block-card { background: var(--vm-paper); border: 1px solid var(--vm-line); border-radius: 4px; box-shadow: none; }
-.vm-internal .block-item { padding: 16px; margin-bottom: 8px; background: var(--vm-paper); border: 1px solid var(--vm-line); border-radius: 4px; box-shadow: none; }
-.vm-internal .transaction-badge { display: inline-block; padding: 3px 8px; margin-right: 8px; border-radius: 3px; font-size: .75rem; font-weight: 500; background: var(--vm-soft); color: var(--vm-muted); }
-.vm-internal :is(.badge-donation, .badge-fulfillment) { background: var(--vm-success-wash); color: var(--vm-success); }
-.vm-internal .badge-request { background: var(--vm-info-wash); color: var(--vm-info); }
-.vm-internal .hash-display { font-family: var(--vm-font); font-variant-numeric: tabular-nums; font-size: .8rem; color: var(--vm-muted); overflow-wrap: anywhere; }
-.vm-internal .blockchain-card .status-dot { animation: none; }
-.vm-internal .status-indicator { display: inline-flex; align-items: center; gap: 8px; }
-.vm-internal .status-dot { width: 8px; height: 8px; border-radius: 50%; }
-.vm-internal .status-valid { background: var(--vm-success); }
-.vm-internal .status-invalid { background: var(--vm-danger); }
 .vm-internal .action-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
 .vm-internal .vm-report-summaries { gap: 0; padding-block: 20px; border-block: 1px solid var(--vm-line); }
 .vm-internal .vm-report-summaries > div { border: 0; border-right: 1px solid var(--vm-line); border-radius: 0; padding: 0 20px; background: transparent; }
@@ -578,3 +564,17 @@
   .vm-internal .vm-table-search p { align-self: center; }
   .vm-internal .vm-dashboard-grid > aside { padding: 16px; }
 }
+/* Searchable hospital name field: text entry plus an alphabetical suggestion list. */
+.vm-internal .vm-combobox { position: relative; }
+.vm-internal .vm-combobox__menu {
+  position: absolute; z-index: 60; inset-inline: 0; top: calc(100% + 4px);
+  max-height: 264px; overflow-y: auto; margin: 0; padding: 4px; list-style: none;
+  background: var(--vm-paper); color: var(--vm-ink);
+  border: 1px solid var(--vm-line); border-radius: var(--vm-radius);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .16);
+}
+.vm-internal .vm-combobox__menu[hidden] { display: none; }
+.vm-internal .vm-combobox__option { padding: 8px 10px; border-radius: 3px; cursor: pointer; }
+.vm-internal .vm-combobox__option:hover,
+.vm-internal .vm-combobox__option.is-active { background: var(--vm-soft); }
+.vm-internal .vm-combobox__option mark { background: transparent; color: var(--vm-primary); font-weight: 600; }

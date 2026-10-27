@@ -1,10 +1,10 @@
 # Operating VitalMatch
 
-Use one application process while runtime settings and legacy ledger archives use local files. The database stores current request/appointment/fulfillment history and durable notification/outreach jobs. A multi-instance deployment requires shared private media storage and one controlled settings writer; the historical ledger has no distributed consensus and does not certify a medical outcome.
+The blockchain-free release stores requests, appointments, fulfillment history, audit events, and durable notification/outreach jobs in MySQL. Use one application process for the file-backed settings writer and in-memory caches. A multi-instance deployment requires shared private media storage and a controlled settings writer.
 
 ## Before deployment
 
-1. Restore-test the database backup and archive private media, existing public voice files, legacy `blockchain.json`/`blockchain-pending.json`, the consolidated ledger state, and private runtime settings. Protect backups with OS access controls and retention limits. Preserve valid mutations when planning a rollback.
+1. Restore-test the database backup and archive private media, existing public voice files, and private runtime settings. If legacy blockchain archive files exist, retain them separately as offline historical data; this release does not read or update them. Protect backups with OS access controls and retention limits. Preserve valid mutations when planning a rollback.
 2. Apply the reviewed migration in a maintenance window before deploying code. Startup rejects an older schema. Review and assign historical facility membership explicitly. Resend current appointment links for migrated appointments, whose previous unbound links are invalidated.
 3. Set `NODE_ENV=production`, an HTTPS `BASE_URL`, a long random session secret and a restricted database account. Configure the reverse proxy to preserve HTTPS and specify only its actual IPs/subnets in `TRUST_PROXY`; do not trust arbitrary forwarded headers. Verify cookie security, redirects, rate limiting and WebSocket origin handling through the deployed proxy.
 4. Configure a real encrypted SMTP service using administrator runtime settings or `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_FROM`. An absent or failed provider never falls back to mock/test delivery. The admin connection test checks authentication/connectivity. Separately confirm delivery to controlled recipients and configure the sender's SPF/DKIM/DMARC with the provider. SMTP acceptance is not proof of inbox delivery.
@@ -24,7 +24,7 @@ Private voice media is served only through a message membership check. Historica
 
 The session timeout and password settings are enforced, with new password rules applying when a password is set. MFA and IP-allowlist controls were removed because they were not implemented; introduce either only with a complete recovery, enrollment and deployment design. Audit logging cannot be disabled by a UI toggle. Settings writes are serialized within the application's single writer, coordinated with mandatory database auditing, and compensated if the audit commit fails. A disk failure during compensation requires restoring the private configuration before reopening service. Use private environment/configuration storage in production and do not track populated `settings.json` files.
 
-Existing historical ledger archives are preserved. Mining yields to the event loop and commits chain plus pending entries atomically, and persistence errors remain visible. Current verified donations come from database fulfillment events. A raw archived medical record must remain restricted to authorized staff and subject to the organization's privacy/retention process.
+Donation completion and activity history are stored in relational database records. Legacy blockchain archive files, if present, are not part of runtime operation; preserve or dispose of them under the organization's privacy and retention process.
 
 ## Local audit acceptance (2026-10-03)
 
