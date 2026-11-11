@@ -5,7 +5,7 @@
     <section class="journey-auth__form" aria-labelledby="register-heading">
       <p class="journey-eyebrow">Join the donor community</p>
       <h1 id="register-heading">Be ready to help.</h1>
-      <p class="journey-lead">Create your account to begin. After verifying your email, you can complete your donor profile and share your availability.</p>
+      <p class="journey-lead">Create an account, verify your email, then complete your donor profile.</p>
       {{#if error}}<div id="register-error" class="journey-alert" role="alert">{{error}}</div>{{/if}}
       <form method="POST" action="/register" class="journey-form"{{#if error}} aria-describedby="register-error"{{/if}}>
         <input type="hidden" name="_csrf" value="{{csrfToken}}">

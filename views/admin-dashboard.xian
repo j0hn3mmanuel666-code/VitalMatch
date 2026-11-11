@@ -2,18 +2,18 @@
 <main id="main-content" tabindex="-1" class="vm-page">
   <div class="vm-page-container">
 {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/admin/dashboard">Retry</a></div>{{/if}}
-    <div class="vm-page-heading vm-heading-actions"><div><p class="vm-eyebrow">Chapter coordination</p><h1>Coordination dashboard</h1><p>Follow requests, review the latest activity, and keep donor coordination moving.</p></div><a href="/admin/new-blood-request" class="vm-button vm-button--primary">New blood request</a></div>
+    <div class="vm-page-heading vm-heading-actions"><div><p class="vm-eyebrow">VitalMatch</p><h1>Dashboard</h1><p>Requests, donors, appointments.</p></div><a href="/admin/new-blood-request" class="vm-button vm-button--primary">New request</a></div>
     {{#unless error}}<dl class="vm-dashboard-summary">
-      <div><dt>Ready for coordination</dt><dd>{{stats.activeDonors}}</dd><p><a href="/admin/donors" class="vm-text-link">Review donor readiness</a></p></div>
-      <div><dt>Fulfilled requests</dt><dd>{{stats.successfulMatches}}</dd><p>Completed coordination</p></div>
-      <div><dt>Total requests</dt><dd>{{stats.totalRequests}}</dd><p><a href="/admin/requests" class="vm-text-link">Open request register</a></p></div>
+      <div><dt>Ready donors</dt><dd>{{stats.activeDonors}}</dd><p><a href="/admin/donors" class="vm-text-link">View donors</a></p></div>
+      <div><dt>Fulfilled</dt><dd>{{stats.successfulMatches}}</dd><p>Completed requests</p></div>
+      <div><dt>Requests</dt><dd>{{stats.totalRequests}}</dd><p><a href="/admin/requests" class="vm-text-link">View all</a></p></div>
     </dl>
     <div class="vm-dashboard-grid mb-8">
       <section aria-labelledby="recent-requests-heading">
         <div class="vm-section-heading"><h2 id="recent-requests-heading">Recent blood requests</h2><a href="/admin/requests" class="vm-text-link text-sm">View all requests</a></div>
         {{#if recentRequests.length}}<div class="vm-table-scroll" tabindex="0" role="region" aria-label="Recent blood requests"><table class="vm-table"><caption>Recent blood requests</caption><thead><tr><th scope="col" class="text-left">Patient / facility</th><th scope="col" class="text-left">Blood type</th><th scope="col" class="text-left">Status</th><th scope="col" class="text-right">Action</th></tr></thead><tbody>{{#each recentRequests}}<tr><td><strong class="font-semibold">{{patientName}}</strong><p class="vm-muted text-xs">{{hospitalName}}</p></td><td>{{bloodType}}</td><td>{{> status-badge value=status}}</td><td class="text-right"><a class="vm-button vm-button--small" href="/view-blood-request/{{id}}">View request</a></td></tr>{{/each}}</tbody></table></div>{{else}}<div class="vm-empty-state vm-panel"><h3>No blood requests yet</h3><p>New requests will appear here as they are submitted.</p></div>{{/if}}
       </section>
-      <aside aria-label="Coordination tasks"><h2 class="mb-4">Coordination tasks</h2><div class="vm-action-list"><a href="/admin/requests?filter=active"><span><strong>Review active requests</strong><small>See donor matches and schedule the next step.</small></span><span aria-hidden="true">→</span></a><a href="/admin/appointments"><span><strong>Upcoming appointments</strong><small>Review confirmations and follow through.</small></span><span aria-hidden="true">→</span></a><a href="/admin/calls"><span><strong>Calls for donation</strong><small>Review community submissions.</small></span><span aria-hidden="true">→</span></a><a href="/admin/hospitals"><span><strong>Hospital accounts</strong><small>Review facility verification and access.</small></span><span aria-hidden="true">→</span></a></div></aside>
+      <aside aria-label="Coordination tasks"><h2 class="mb-4">Next steps</h2><div class="vm-action-list"><a href="/admin/requests?filter=active"><span><strong>Active requests</strong><small>Review matches.</small></span><span aria-hidden="true">→</span></a><a href="/admin/appointments"><span><strong>Appointments</strong><small>Check confirmations.</small></span><span aria-hidden="true">→</span></a><a href="/admin/calls"><span><strong>Donation calls</strong><small>Review donor leads.</small></span><span aria-hidden="true">→</span></a><a href="/admin/hospitals"><span><strong>Hospitals</strong><small>Verify access.</small></span><span aria-hidden="true">→</span></a></div></aside>
     </div>
     <section aria-labelledby="analytics-heading" class="vm-analytics"><div class="vm-section-heading"><h2 id="analytics-heading">Coordination overview</h2><a href="/admin/reports" class="vm-text-link text-sm">Open reports</a></div>
 <!-- Charts Row 1 -->

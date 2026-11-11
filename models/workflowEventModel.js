@@ -12,6 +12,7 @@ export const WorkflowEvent = sequelize.define('WorkflowEvent', {
 }, { updatedAt: false, indexes: [{ fields: ['requestId', 'createdAt'] }] });
 
 export const Fulfillment = sequelize.define('Fulfillment', {
+  supplySource: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'donor' },
   requestId: { type: DataTypes.INTEGER, allowNull: false, references: { model: BloodRequest, key: 'id' }, onDelete: 'RESTRICT' },
   appointmentId: { type: DataTypes.INTEGER, allowNull: true, references: { model: 'Appointments', key: 'id' }, onDelete: 'RESTRICT' },
   donorId: { type: DataTypes.INTEGER, allowNull: true, references: { model: 'Donors', key: 'id' }, onDelete: 'RESTRICT' },

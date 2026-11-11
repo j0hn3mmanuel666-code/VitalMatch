@@ -9,7 +9,7 @@
   document.querySelectorAll('[data-appointment-action]').forEach(function (button) {
     button.addEventListener('click', function () {
       selected = button.dataset; action = selected.appointmentAction; operationKey = crypto.randomUUID(); form.reset();
-      var title = { complete: 'Record completed donation', reschedule: 'Reschedule appointment', cancel: 'Cancel appointment' }[action];
+      var title = { complete: 'Record blood supplied', reschedule: 'Reschedule appointment', cancel: 'Cancel appointment' }[action];
       document.getElementById('appointmentActionTitle').textContent = title;
       document.getElementById('appointmentContext').textContent = 'Request #' + selected.requestId + ' · ' + selected.remaining + ' units remaining';
       var submit = form.querySelector('[type="submit"]'); submit.textContent = title;

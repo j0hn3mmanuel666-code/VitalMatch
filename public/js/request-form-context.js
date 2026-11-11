@@ -18,6 +18,7 @@
     } catch (ignore) { /* Server feedback remains visible; no persistent draft is used. */ }
   }
   var facility = form.querySelector('[data-facility-select]'), name = form.querySelector('[name="hospitalName"]');
+  if (!facility || !name) return;
   function updateFacility() {
     var option = facility.options[facility.selectedIndex]; name.readOnly = facility.value !== 'external';
     if (option && option.dataset.facilityName) name.value = option.dataset.facilityName;

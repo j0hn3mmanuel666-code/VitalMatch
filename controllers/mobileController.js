@@ -7,7 +7,13 @@ import { Notification } from '../models/notificationModel.js';
 import { Pledge, isCompatible } from '../models/pledgeModel.js';
 import { getUserSettings } from '../models/userSettingModel.js';
 import { User } from '../models/userModel.js';
+import { UserSetting } from '../models/userSettingModel.js';
+import { PushSubscription } from '../models/pushSubscriptionModel.js';
+import { PushOutbox } from '../models/pushOutboxModel.js';
 import { canonicalRole } from '../services/accountPolicy.js';
+import { isPushSchemaReady } from '../services/pushSchemaStatus.js';
+import { retryTransaction } from '../services/transactionService.js';
+import { AuditService } from '../services/auditService.js';
 import { isDonorReady, unitsRemaining } from '../services/coordinationPolicy.js';
 import {
   cancelRequest,
@@ -86,7 +92,7 @@ export async function getMobileWorkspace(req, res) {
   let donor = null;
   if (role === 'donor') donor = await Donor.findOne({
     where: { userId: accountId },
-    attributes: ['id', 'fullName', 'dateOfBirth', 'gender', 'bloodType', 'weight', 'height', 'mobileNumber', 'address', 'city', 'province', 'zipCode', 'latitude', 'longitude', 'lastDonationDate', 'medicalConditions', 'isAvailable', 'emergencyContactName', 'emergencyContactNumber', 'emergencyContactRelationship']
+    attributes: ['id', 'fullName', 'dateOfBirth', 'gender', 'bloodType', 'weight', 'height', 'mobileNumber', 'address', 'city', 'province', 'zipCode', 'latitude', 'longitude', 'lastDonationDate', 'medicalConditions', 'isAvailable', 'shareOnMap', 'emergencyContactName', 'emergencyContactNumber', 'emergencyContactRelationship']
   });
   let rows = await BloodRequest.findAll({ where: requestWhere, attributes: requestFields, order: [['createdAt', 'DESC']], limit: 60 });
   if (role === 'donor' && donor) rows = rows.filter(row => isCompatible(donor.bloodType, row.bloodType) && unitsRemaining(row) > 0);
@@ -158,6 +164,7 @@ export async function getMobileWorkspace(req, res) {
     limit: 20
   });
   const preferences = await getUserSettings(accountId);
+  const pushEnabled = isPushSchemaReady() && await PushSubscription.count({ where: { userId: accountId, disabledAt: null } }) > 0;
   const metrics = {
     requestCount: requests.length,
     pendingRequests: requests.filter(row => row.status === 'pending').length,
@@ -197,10 +204,55 @@ export async function getMobileWorkspace(req, res) {
     preferences: {
       notifyMatches: preferences.notifyMatches,
       notifyAppointments: preferences.notifyAppointments,
-      emailUpdates: preferences.emailUpdates
+      emailUpdates: preferences.emailUpdates,
+      pushEnabled,
+      pushAvailable: isPushSchemaReady()
     }
   });
 }
+
+export async function getMobilePushStatus(req, res) {
+  res.set('Cache-Control', 'private, no-store');
+  if (!isPushSchemaReady()) return res.json({ success: true, enabled: false, available: false });
+  const enabled = await PushSubscription.count({ where: { userId: req.authAccount.id, disabledAt: null } }) > 0;
+  res.json({ success: true, enabled, available: true });
+}
+
+export async function registerMobilePushDevice(req, res) {
+  if (!isPushSchemaReady()) return res.status(503).json({ success: false, error: 'Phone alerts are not set up on this server yet.' });
+  const token = typeof req.body?.expoPushToken === 'string' ? req.body.expoPushToken.trim() : '';
+  const platform = req.body?.platform;
+  if (token.length > 255 || !/^ExponentPushToken\[[A-Za-z0-9_-]+\]$|^ExpoPushToken\[[A-Za-z0-9_-]+\]$/.test(token) || !['android', 'ios'].includes(platform)) {
+    return res.status(400).json({ success: false, error: 'A valid phone notification token is required.' });
+  }
+  try {
+    await retryTransaction(async transaction => {
+      const accountId = req.authAccount.id;
+      let subscription = await PushSubscription.findOne({ where: { expoPushToken: token }, transaction, lock: transaction.LOCK.UPDATE });
+      const alreadyActive = subscription?.userId === accountId && !subscription.disabledAt;
+      if (subscription) await subscription.update({ userId: accountId, platform, disabledAt: null, lastRegisteredAt: new Date() }, { transaction });
+      else subscription = await PushSubscription.create({ userId: accountId, expoPushToken: token, platform, lastRegisteredAt: new Date() }, { transaction });
+      await UserSetting.findOrCreate({ where: { userId: accountId }, defaults: { userId: accountId }, transaction });
+      if (!alreadyActive) await AuditService.logAction(accountId, 'MOBILE_PUSH_ENABLED', 'UserSettings', accountId, { enabled: false }, { enabled: true }, { transaction, actorRole: canonicalRole(req.authAccount.role), source: 'mobile-app', ipAddress: req.ip || req.socket?.remoteAddress, userAgent: req.get?.('User-Agent') });
+    });
+    res.json({ success: true, enabled: true, message: 'Phone alerts are on for this account.' });
+  } catch (error) { sendActionError(res, error, 'Could not enable phone alerts.'); }
+}
+
+export async function disableMobilePush(req, res) {
+  if (!isPushSchemaReady()) return res.status(503).json({ success: false, error: 'Phone alerts are not set up on this server yet.' });
+  try {
+    await retryTransaction(async transaction => {
+      const accountId = req.authAccount.id;
+      const subscriptions = await PushSubscription.findAll({ where: { userId: accountId, disabledAt: null }, attributes: ['id'], transaction });
+      await PushSubscription.update({ disabledAt: new Date() }, { where: { userId: accountId, disabledAt: null }, transaction });
+      if (subscriptions.length) await PushOutbox.destroy({ where: { subscriptionId: subscriptions.map(row => row.id), status: { [Op.in]: ['pending', 'processing'] } }, transaction });
+      await AuditService.logAction(accountId, 'MOBILE_PUSH_DISABLED', 'UserSettings', accountId, { enabled: subscriptions.length > 0 }, { enabled: false }, { transaction, actorRole: canonicalRole(req.authAccount.role), source: 'mobile-app', ipAddress: req.ip || req.socket?.remoteAddress, userAgent: req.get?.('User-Agent') });
+    });
+    res.json({ success: true, enabled: false, message: 'Phone alerts are off for this account.' });
+  } catch (error) { sendActionError(res, error, 'Could not turn off phone alerts.'); }
+}
+
 
 function sendActionError(res, error, fallback) {
   const status = error instanceof WorkflowError ? error.status : 500;

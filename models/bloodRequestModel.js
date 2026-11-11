@@ -28,6 +28,7 @@ export const BloodRequest = sequelize.define("BloodRequest", {
   // New fields for blood components and transfusion indication
   bloodComponents: { type: DataTypes.JSON, allowNull: true }, // Store array of selected components with volumes
   indicationOfTransfusion: { type: DataTypes.TEXT, allowNull: true },
+  prescriptionImage: { type: DataTypes.STRING(80), allowNull: true },
 
   hospitalName: { type: DataTypes.STRING, allowNull: false },
   hospitalAddress: { type: DataTypes.STRING, allowNull: false },

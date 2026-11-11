@@ -5,8 +5,8 @@
     
     <!-- Header -->
     <div class="vm-page-heading mb-8">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Calls for Blood Donation</h1>
-      <p class="text-gray-600 dark:text-gray-400">Review preliminary, self-reported donor enquiries. A lead is not a verified donor profile or a completed pledge.</p>
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Donation calls</h1>
+      <p class="text-gray-600 dark:text-gray-400">Self-reported leads. Not verified donors.</p>
     </div>
       {{> record-search label="Search donor enquiries" placeholder="Name, blood type, location, contact or notes"}}
     

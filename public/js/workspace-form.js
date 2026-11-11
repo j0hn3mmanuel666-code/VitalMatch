@@ -12,6 +12,24 @@
     summary.className = 'vm-alert vm-alert--danger hidden'; summary.setAttribute('role', 'alert'); summary.tabIndex = -1;
     form.prepend(summary);
     var restored = false;
+    var prescription = form.querySelector('#medicalPrescription');
+    if (prescription) {
+      var preview = document.getElementById('prescription-preview'), feedback = document.getElementById('prescription-feedback'), previewReader;
+      prescription.addEventListener('change', function () {
+        if (previewReader) previewReader.abort();
+        preview.hidden = true; preview.removeAttribute('src'); prescription.setCustomValidity(''); feedback.textContent = '';
+        var file = prescription.files[0];
+        if (!file) return;
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+          feedback.textContent = 'Choose a JPG, PNG, or WebP image up to 5 MB.';
+          prescription.value = ''; return;
+        }
+        previewReader = new FileReader();
+        previewReader.addEventListener('load', function () { preview.src = previewReader.result; preview.hidden = false; });
+        previewReader.readAsDataURL(file);
+        feedback.textContent = 'Prescription image selected. It will upload when you submit your request.';
+      });
+    }
     var saved = document.getElementById(donor ? 'donor-data' : 'request-form-data');
     if (saved && saved.textContent.trim()) {
       try {
@@ -19,7 +37,7 @@
         restored = !donor && Object.keys(values).some(function (key) { return key !== 'submissionKey' && key !== '_csrf' && values[key] !== null && values[key] !== ''; });
         Array.from(form.querySelectorAll('input,select,textarea')).forEach(function (field) {
           var value = values[field.name] === undefined ? values[field.name.replace(/\[\]$/, '')] : values[field.name];
-          if (value === undefined || value === null || field.name === '_csrf') return;
+          if (value === undefined || value === null || field.name === '_csrf' || field.type === 'file') return;
           if (field.type === 'checkbox') field.checked = Array.isArray(value) ? value.includes(field.value) : Boolean(value);
           else if (field.hasAttribute('data-city-select') && !Array.from(field.options).some(function (option) { return option.value === value; })) {
             field.value = '__other'; var other = field.closest('[data-city-wrap]').querySelector('[data-city-other]'); other.value = value; field.dispatchEvent(new window.Event('change', { bubbles: true }));

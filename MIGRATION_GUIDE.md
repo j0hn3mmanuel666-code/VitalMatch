@@ -10,6 +10,8 @@ The first migration adds verified facility IDs, appointment versions, request qu
 
 Migration `20261024_01_system_feedback` adds the `UserFeedbacks` table for signed-in system ratings and administrator review status. It stores the submitting account and role, a 1–5 rating, optional category/comment, and review timestamps. It does not modify existing user or request records.
 
+Migration `20261027_01_mobile_push` adds device push-token subscriptions and a durable push outbox. It also lets users opt in or turn off phone alerts. The migration is additive; it preserves existing requests, users, notifications, and feedback. Existing app releases continue to start before this migration, but phone alerts remain unavailable until it is applied.
+
 Hospital names are display snapshots. Historical account/request facility IDs are not guessed by matching names. An administrator must assign each hospital account to a verified Facility, then explicitly link historical records if justified. Existing active requests without facility IDs remain visible to coordinators as unverified; assigning a facility does not certify a medical outcome. The operational donation interval defaults to 56 days via `DONATION_INTERVAL_DAYS` and is a coordination rule, not clinical clearance.
 
 Account removal now deactivates/archives records. Requests and donation event history must be preserved. Do not run hand-written deletion or old bootstrap scripts on production. A reverse code deployment must continue to understand the new tables and statuses; restoring the backup is the recovery option if schema/data acceptance fails. Do not discard newer valid mutations by restoring over an active database.

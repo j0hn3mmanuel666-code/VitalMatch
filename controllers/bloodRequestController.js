@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import path from 'node:path';
+import { savePrescription, removePrescription, prescriptionDirectory, canReadPrescription } from '../services/prescriptionService.js';
 import { Op } from 'sequelize';
 import { BloodRequest } from '../models/bloodRequestModel.js';
 import { User } from '../models/userModel.js';
@@ -66,7 +68,8 @@ export const viewBloodRequestPage = async (req, res) => {
     const appointment = await Appointment.findOne({ where: { requestId: request.id, status: 'scheduled' }, order: [['id', 'DESC']] });
     const rawHistory = await WorkflowEvent.findAll({ where: { requestId: request.id }, order: [['createdAt', 'DESC']], limit: 100 });
     const history = rawHistory.map(row => ({ label: row.action.replaceAll('_', ' '), description: privateView && row.reason ? row.reason : (row.details?.unitsProvided ? row.details.unitsProvided + ' unit(s) recorded' : ''), createdAt: row.createdAt }));
-    const data = { ...request.toJSON(), unitsRemaining: unitsRemaining(request), appointmentId: appointment?.id, appointmentVersion: appointment?.version };
+    const data = { ...request.toJSON(), unitsRemaining: unitsRemaining(request), appointmentId: appointment?.id, appointmentVersion: appointment?.version, supplySource: appointment?.supplySource };
+    data.prescriptionImage = privateView && request.prescriptionImage ? '/requests/' + request.id + '/prescription' : null;
     if (!isOwner && !isAdmin && !facilityView) {
       // Donor invitations disclose coordination details, not patient clinical records.
       for (const field of ['patientName', 'patientAge', 'indicationOfTransfusion', 'notes', 'fulfillmentNotes', 'email', 'contactPerson', 'contactNumber']) data[field] = null;
@@ -90,13 +93,13 @@ export const viewBloodRequestPage = async (req, res) => {
     let displayStep = 0;
     if (request.status === 'cancelled') { displayStatus = 'Cancelled'; displayStep = -1; }
     else if (request.status === 'fulfilled') { displayStatus = 'Fulfilled'; displayStep = 5; }
-    else if (request.status === 'scheduled') { displayStatus = 'Donor Confirmed'; displayStep = 4; }
+    else if (request.status === 'scheduled') { displayStatus = appointment?.supplySource === 'blood_bank' ? 'Blood bank release scheduled' : 'Donor Confirmed'; displayStep = 4; }
     else if (request.status === 'pending' && request.hospitalStatus === 'declined') { displayStatus = 'Rejected'; displayStep = -1; }
     else if (request.status === 'pending') { displayStatus = 'Under Review'; displayStep = 1; }
     else if (request.hospitalStatus === 'approved' && pledgeCount > 0) { displayStatus = 'Donor Matching in Progress'; displayStep = 3; }
     else if (request.hospitalStatus === 'approved') { displayStatus = 'Approved'; displayStep = 2; }
     const latestDecline = rawHistory.find(e => e.action === 'facility_declined');
-    const nextAction = request.status === 'pending' ? request.hospitalStatus === 'declined' ? 'Correct the returned request and submit it for a fresh review, or cancel it if blood is no longer needed.' : 'The assigned facility or coordinator must review this request before donor outreach starts.' : request.status === 'scheduled' ? 'Both parties must confirm the current appointment. A coordinator records completion after it occurs.' : request.status === 'active' ? 'Donors may offer to donate. A coordinator reviews offers and arranges an appointment.' : 'The coordination workflow is closed. Its history is retained.';
+    const nextAction = request.status === 'pending' ? request.hospitalStatus === 'declined' ? 'Correct the returned request and submit it for a fresh review, or cancel it if blood is no longer needed.' : 'The assigned facility or coordinator must review this request before donor outreach starts.' : request.status === 'scheduled' ? appointment?.supplySource === 'blood_bank' ? 'The requester must confirm the stock pickup/release schedule. A coordinator records only the units actually supplied after release.' : 'Both parties must confirm the current appointment. A coordinator records completion after it occurs.' : request.status === 'active' ? 'Donors may offer to donate. A coordinator reviews offers and arranges an appointment.' : 'The coordination workflow is closed. Its history is retained.';
     res.render('view-blood-request', { title: 'Blood Request Details - VitalMatch', request: data, isAdmin, isOwner, canReviewHospital, pledgeState, pledgeCount, pledges, matchingDonors, displayStatus, displayStep, history, nextAction, hospitalDeclineReason: privateView ? latestDecline?.reason : null, emergencyActive: isEmergencyActive(request), canManageEmergency: (isAdmin || isOwner) && request.status === 'active' && request.hospitalStatus === 'approved', unverifiedFacility: !request.facilityId });
   } catch (error) {
     console.error('Request detail failed:', error.name);
@@ -136,9 +139,14 @@ export const escalateRequest = (req, res) => setEmergency(req, res, true);
 export const clearEmergency = (req, res) => setEmergency(req, res, false);
 
 export const submitBloodRequest = async (req, res) => {
+  let prescriptionImage;
   try {
     const data = normalizeRequestInput(req.body);
+    prescriptionImage = await savePrescription(req.file);
+    if (prescriptionImage) data.prescriptionImage = prescriptionImage;
     const result = await createRequest(data, req.session.userId, req.body.submissionKey || req.session.requestSubmissionKey);
+    if (result.duplicate) await removePrescription(prescriptionImage);
+    prescriptionImage = null;
     // Critical requests need action now: push queued emails out immediately
     // instead of waiting for the worker's next tick.
     if (!result.duplicate && (result.request.urgency || '').toLowerCase() === 'critical') dispatchCriticalEmailsNow();
@@ -147,20 +155,39 @@ export const submitBloodRequest = async (req, res) => {
     req.flash('success_msg', result.request.status === 'pending' ? 'Request saved for facility or coordinator review. Donor outreach begins after approval.' : 'Request saved. Donor invitations are queued.');
     res.redirect('/view-blood-request/' + result.request.id);
   } catch (error) {
+    await removePrescription(prescriptionImage);
     req.session.requestFormValues = req.body;
     req.flash('error_msg', error instanceof WorkflowError ? error.message : 'Could not save the request. Please retry the same form.');
     res.redirect('/new-blood-request');
   }
 };
 export const correctBloodRequest = async (req, res) => {
+  let prescriptionImage;
   try {
-    const request = await correctRequest(req.params.id, req.session.userId, normalizeRequestInput(req.body), req.body.version);
+    const data = normalizeRequestInput(req.body);
+    const previous = req.file ? await BloodRequest.findByPk(req.params.id, { attributes: ['prescriptionImage'] }) : null;
+    prescriptionImage = await savePrescription(req.file);
+    if (prescriptionImage) data.prescriptionImage = prescriptionImage;
+    const request = await correctRequest(req.params.id, req.session.userId, data, req.body.version);
+    if (prescriptionImage) await removePrescription(previous?.prescriptionImage);
+    prescriptionImage = null;
     delete req.session.requestFormValues;
     req.flash('success_msg', 'Correction saved. A fresh facility or coordinator review is required.');
     res.redirect('/view-blood-request/' + request.id);
   } catch (error) {
+    await removePrescription(prescriptionImage);
     req.session.requestFormValues = req.body;
     req.flash('error_msg', error.status ? error.message : 'Could not save the correction. Please retry.');
     res.redirect('/requests/' + req.params.id + '/edit');
   }
+};
+
+export const viewPrescription = async (req, res) => {
+  const [request, account] = await Promise.all([BloodRequest.findByPk(req.params.id), User.findByPk(req.session.userId)]);
+  const key = request?.prescriptionImage;
+  if (!canReadPrescription(request, account) || !key || !/^[a-f0-9-]{36}\.(jpg|png|webp)$/.test(key)) return res.sendStatus(404);
+  res.set({ 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' });
+  res.sendFile(path.join(prescriptionDirectory, key), error => {
+    if (error && !res.headersSent) res.sendStatus(error.statusCode === 404 ? 404 : 500);
+  });
 };

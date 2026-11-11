@@ -27,6 +27,8 @@ export const Donor = sequelize.define("Donor", {
   lastDonationDate: { type: DataTypes.DATE },
   medicalConditions: { type: DataTypes.TEXT },
   isAvailable: { type: DataTypes.BOOLEAN, defaultValue: true },
+  shareOnMap: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  mapConsentUpdatedAt: { type: DataTypes.DATE, allowNull: true },
   emergencyContactName: { type: DataTypes.STRING, allowNull: false },
   emergencyContactNumber: { type: DataTypes.STRING, allowNull: false },
   emergencyContactRelationship: { type: DataTypes.STRING, allowNull: false },

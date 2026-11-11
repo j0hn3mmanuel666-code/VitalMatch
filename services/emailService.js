@@ -37,7 +37,7 @@ export class EmailService {
     if (this.env.NODE_ENV === 'production' && base.protocol !== 'https:') throw new Error('Production BASE_URL must use HTTPS');
     return base.origin;
   }
-  async send(email, subject, html, category = 'system') {
+  async send(email, subject, html, category = 'system', text) {
     const settings = this.settings();
     if (!settings.notifications.emailNotificationsEnabled ||
         (category === 'request' && !settings.notifications.bloodRequestNotifications) ||
@@ -46,14 +46,15 @@ export class EmailService {
     if (!this.transporter) return { success: false, error: 'SMTP_UNCONFIGURED', previewUrl: null };
     if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { success: false, error: 'INVALID_RECIPIENT', previewUrl: null };
     try {
-      const info = await this.transporter.sendMail({ from: settings.email.fromEmail || this.env.EMAIL_FROM || this.env.EMAIL_USER, to: email, subject, html });
+      const info = await this.transporter.sendMail({ from: settings.email.fromEmail || this.env.EMAIL_FROM || this.env.EMAIL_USER, to: email, subject, html, ...(text ? { text } : {}) });
       const accepted = Array.isArray(info.accepted) && info.accepted.length > 0 && !(info.rejected?.length);
       return { success: accepted, error: accepted ? null : 'SMTP_NOT_ACCEPTED', previewUrl: null };
     } catch { return { success: false, error: 'SMTP_SEND_FAILED', previewUrl: null }; }
   }
   async sendVerificationEmail(email, name, token) {
     const url = `${this.baseUrl()}/verify-email?token=${encodeURIComponent(token)}`;
-    return this.send(email, 'Verify Your VitalMatch Account', this.getVerificationEmailTemplate(name, url), 'account');
+    const text = `Hello ${name},\n\nYou requested a VitalMatch account at ${this.baseUrl()}. Confirm your email address to activate your account:\n\n${url}\n\nThis link expires in 24 hours. If you did not create this account, ignore this email.\n\nVitalMatch\n${this.baseUrl()}`;
+    return this.send(email, 'Confirm your email for VitalMatch', this.getVerificationEmailTemplate(name, url), 'account', text);
   }
   async sendPasswordResetEmail(email, name, token) {
     const url = `${this.baseUrl()}/reset-password/${encodeURIComponent(token)}`;
@@ -74,7 +75,7 @@ export class EmailService {
     if (!['https:', 'http:'].includes(parsed.protocol) || parsed.origin !== this.baseUrl()) throw new Error('Invalid email action URL');
     return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#202020"><h1>VitalMatch</h1><h2>${escapeEmailHtml(heading)}</h2><p>Hello ${escapeEmailHtml(name)},</p><p>${safeHtml ? message : escapeEmailHtml(message)}</p><p><a href="${escapeEmailHtml(parsed.href)}">${escapeEmailHtml(label)}</a></p><p>This is an automated coordination message. Medical staff determine eligibility and clinical arrangements.</p></body></html>`;
   }
-  getVerificationEmailTemplate(name, url) { return this.template(name, 'Verify your account', 'Confirm your email address to activate your account. This link expires in 24 hours.', url, 'Verify email'); }
+  getVerificationEmailTemplate(name, url) { return this.template(name, 'Confirm your email address', `You requested a VitalMatch account at ${this.baseUrl()}. Confirm your email address to activate your account. This link expires in 24 hours. If you did not create this account, ignore this email.`, url, 'Confirm email'); }
   getWelcomeEmailTemplate(name) { return this.template(name, 'Your account is active', 'You can submit requests, manage your donor profile and follow your appointments.', `${this.baseUrl()}/dashboard`, 'Open dashboard'); }
   scheduleTemplate(name, request, date, notes, url, role) {
     const message = `Appointment: ${escapeEmailHtml(new Date(date).toLocaleString('en-PH', { timeZone: this.settings().general.timeZone }))}<br>Facility: ${escapeEmailHtml(request.hospitalName)}<br>Blood type: ${escapeEmailHtml(request.bloodType)}<br>Units requested: ${escapeEmailHtml(request.unitsRequired)}<br>${escapeEmailHtml(notes || '')}<br>This is a scheduled appointment; completion has not yet been recorded.`;

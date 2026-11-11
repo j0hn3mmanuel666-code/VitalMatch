@@ -7,7 +7,7 @@
     <div class="vm-page-heading mb-8">
       <p class="vm-eyebrow">Help us improve</p>
       <h1>Review VitalMatch</h1>
-      <p>Share what is working well and what would make the system easier to use. Your feedback is visible to the VitalMatch administrators.</p>
+      <p>Rate your experience or leave a comment.</p>
     </div>
 
     {{#if success_msg}}<div class="vm-alert vm-alert--success mb-5" role="status">{{success_msg}}</div>{{/if}}
@@ -15,7 +15,7 @@
 
     <section class="vm-panel bg-white dark:bg-[#18181b] rounded-md p-6 mb-8" aria-labelledby="feedback-form-title">
       <h2 id="feedback-form-title" class="text-xl font-bold mb-2">How was your experience?</h2>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mb-5">Your account role is included so administrators can understand feedback across requesters, donors, hospitals, and administrators.</p>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-5">Private to you and the VitalMatch admin.</p>
       <form action="/feedback" method="POST" class="space-y-5">
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <fieldset>

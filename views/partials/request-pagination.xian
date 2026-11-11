@@ -1,0 +1,9 @@
+{{#if pagination}}
+<nav class="vm-pagination request-pagination" aria-label="Blood request pages" data-workspace-pagination data-page="{{pagination.page}}" data-page-param="{{pagination.pageParam}}" data-total-pages="{{pagination.totalPages}}">
+  <p class="vm-muted">{{#if pagination.total}}Page {{pagination.page}} of {{pagination.totalPages}} · {{pagination.total}} requests · {{pagination.limit}} per page{{else}}No requests{{/if}}</p>
+  <div class="request-page-buttons">
+    {{#if pagination.hasPrev}}<a class="vm-button vm-button--small" data-page-offset="-1" href="{{pagination.previousUrl}}">Previous</a>{{else}}<button class="vm-button vm-button--small" disabled>Previous</button>{{/if}}
+    {{#if pagination.hasNext}}<a class="vm-button vm-button--small" data-page-offset="1" href="{{pagination.nextUrl}}">Next</a>{{else}}<button class="vm-button vm-button--small" disabled>Next</button>{{/if}}
+  </div>
+</nav>
+{{/if}}

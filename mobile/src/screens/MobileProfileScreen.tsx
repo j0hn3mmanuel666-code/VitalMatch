@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { getMobileWorkspace, saveMobileDonorProfile, saveNotificationPreferences, submitMobileFeedback } from '../api';
+import { disableMobilePush, getMobileWorkspace, saveMobileDonorProfile, saveNotificationPreferences, submitMobileFeedback } from '../api';
 import type { MobileAccount, MobileWorkspace } from '../api';
+import { enablePushOnDevice } from '../pushNotifications';
 import { colors, radius } from '../theme';
 
 interface Form {
   fullName: string; dateOfBirth: string; gender: string; bloodType: string; weight: string; height: string;
   mobileNumber: string; address: string; city: string; province: string; zipCode: string; latitude: string;
-  longitude: string; lastDonationDate: string; medicalConditions: string; isAvailable: boolean;
+  longitude: string; lastDonationDate: string; medicalConditions: string; isAvailable: boolean; shareOnMap: boolean;
   emergencyContactName: string; emergencyContactNumber: string; emergencyContactRelationship: string;
 }
 const emptyForm = (account: MobileAccount): Form => ({
   fullName: `${account.firstName} ${account.lastName}`,
   dateOfBirth: '', gender: '', bloodType: 'O+', weight: '', height: '', mobileNumber: '',
   address: '', city: '', province: 'Oriental Mindoro', zipCode: '', latitude: '', longitude: '',
-  lastDonationDate: '', medicalConditions: '', isAvailable: false,
+  lastDonationDate: '', medicalConditions: '', isAvailable: false, shareOnMap: false,
   emergencyContactName: '', emergencyContactNumber: '', emergencyContactRelationship: '',
 });
 const dateField = (value?: string | null) => value ? new Date(value).toISOString().slice(0, 10) : '';
@@ -26,9 +27,12 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [preferences, setPreferences] = useState<MobileWorkspace['preferences']>({ notifyMatches: true, notifyAppointments: true, emailUpdates: true });
+  const [preferences, setPreferences] = useState<MobileWorkspace['preferences']>({ notifyMatches: true, notifyAppointments: true, emailUpdates: true, pushEnabled: false, pushAvailable: false });
   const [preferencesError, setPreferencesError] = useState('');
   const [savingPreference, setSavingPreference] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushError, setPushError] = useState('');
+  const [savingPush, setSavingPush] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackCategory, setFeedbackCategory] = useState('general');
   const [feedbackComment, setFeedbackComment] = useState('');
@@ -41,6 +45,7 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
     void getMobileWorkspace().then(workspace => {
       if (!active) return;
       setPreferences(workspace.preferences);
+      setPushEnabled(workspace.preferences.pushEnabled);
       const donor = workspace.donor;
       setHasProfile(!!donor);
       if (account.role === 'donor' && donor) setForm({
@@ -50,7 +55,7 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
         province: donor.province || 'Oriental Mindoro', zipCode: donor.zipCode || '',
         latitude: donor.latitude == null ? '' : String(donor.latitude), longitude: donor.longitude == null ? '' : String(donor.longitude),
         lastDonationDate: dateField(donor.lastDonationDate), medicalConditions: donor.medicalConditions || '',
-        isAvailable: !!donor.isAvailable, emergencyContactName: donor.emergencyContactName || '',
+        isAvailable: !!donor.isAvailable, shareOnMap: donor.shareOnMap === true, emergencyContactName: donor.emergencyContactName || '',
         emergencyContactNumber: donor.emergencyContactNumber || '', emergencyContactRelationship: donor.emergencyContactRelationship || '',
       });
     }).catch(caught => { if (active) setError(caught instanceof Error ? caught.message : 'Could not load your donor profile.'); })
@@ -62,22 +67,33 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
   const save = async () => {
     setError(''); setMessage(''); setSaving(true);
     try {
-      const body = { ...form, isAvailable: form.isAvailable ? 'on' : 'off' };
+      const body = { ...form, isAvailable: form.isAvailable ? 'on' : 'off', shareOnMap: form.shareOnMap ? 'on' : 'off' };
       const result = await saveMobileDonorProfile(body);
       setHasProfile(true); setMessage(result.message);
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Could not save your donor profile.'); }
     finally { setSaving(false); }
   };
 
-  const setPreference = async (key: keyof MobileWorkspace['preferences'], value: boolean) => {
+  const setPreference = async (key: 'notifyMatches' | 'notifyAppointments' | 'emailUpdates', value: boolean) => {
     const previous = preferences;
     const next = { ...preferences, [key]: value };
     setPreferences(next); setPreferencesError(''); setSavingPreference(true);
-    try { await saveNotificationPreferences(next); }
+    try { await saveNotificationPreferences({ notifyMatches: next.notifyMatches, notifyAppointments: next.notifyAppointments, emailUpdates: next.emailUpdates }); }
     catch (caught) {
       setPreferences(previous);
       setPreferencesError(caught instanceof Error ? caught.message : 'Could not save preferences.');
     } finally { setSavingPreference(false); }
+  };
+
+  const setPushPreference = async (enabled: boolean) => {
+    setPushError(''); setSavingPush(true);
+    try {
+      if (enabled) await enablePushOnDevice();
+      else await disableMobilePush();
+      setPushEnabled(enabled);
+    } catch (caught) {
+      setPushError(caught instanceof Error ? caught.message : 'Could not update phone alerts.');
+    } finally { setSavingPush(false); }
   };
 
   const sendFeedback = async () => {
@@ -106,6 +122,10 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
         <Text style={styles.note}>Choose which coordination updates VitalMatch sends to this account.</Text>
         {account.role !== 'donor' && error ? <Text style={styles.error}>{error}</Text> : null}
         {preferencesError ? <Text style={styles.error}>{preferencesError}</Text> : null}
+        {pushError ? <Text style={styles.error}>{pushError}</Text> : null}
+        {!preferences.pushAvailable ? <Text style={styles.note}>Phone alerts need server setup before they can be enabled.</Text> : null}
+        {preferences.pushAvailable ? <Text style={styles.note}>Get alerts when the app is closed. No patient details are shown.</Text> : null}
+        <PreferenceRow label="Phone alerts" value={pushEnabled} disabled={savingPush || loading || !preferences.pushAvailable} onChange={value => void setPushPreference(value)} />
         <PreferenceRow label="Request and donor matches" value={preferences.notifyMatches} disabled={savingPreference || loading} onChange={value => void setPreference('notifyMatches', value)} />
         <PreferenceRow label="Appointment updates" value={preferences.notifyAppointments} disabled={savingPreference || loading} onChange={value => void setPreference('notifyAppointments', value)} />
         <PreferenceRow label="Email updates" value={preferences.emailUpdates} disabled={savingPreference || loading} onChange={value => void setPreference('emailUpdates', value)} />
@@ -136,6 +156,7 @@ export default function MobileProfileScreen({ account, busy, onSignOut }: { acco
             <Field label="Relationship to emergency contact" value={form.emergencyContactRelationship} onChange={v => update('emergencyContactRelationship', v)} />
             <Field label="Medical conditions to share with staff (optional)" value={form.medicalConditions} onChange={v => update('medicalConditions', v)} multiline />
             <View style={styles.switchRow}><View style={styles.switchCopy}><Text style={styles.value}>Show availability preference</Text><Text style={styles.secondary}>This preference does not establish medical eligibility.</Text></View><Switch value={form.isAvailable} onValueChange={value => setForm(current => ({ ...current, isAvailable: value }))} trackColor={{ true: colors.brand }} /></View>
+            <View style={styles.switchRow}><View style={styles.switchCopy}><Text style={styles.value}>Show me on the Blood Map (optional)</Text><Text style={styles.secondary}>Share only your blood type and approximate city with signed-in users when available and eligible. Your name, contacts, address and exact location stay private. Save your profile to apply this choice; you can also change it in website Settings.</Text></View><Switch accessibilityLabel="Share my blood type and approximate city on the Blood Map" value={form.shareOnMap} onValueChange={value => setForm(current => ({ ...current, shareOnMap: value }))} trackColor={{ true: colors.brand }} /></View>
             <Pressable style={styles.saveButton} disabled={saving} onPress={() => void save()}>{saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>{hasProfile ? 'Save donor profile' : 'Create donor profile'}</Text>}</Pressable>
           </>}
         </View>
@@ -172,12 +193,12 @@ function PreferenceRow({ label, value, disabled, onChange }: { label: string; va
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background }, content: { padding: 18, paddingBottom: 32 },
-  title: { fontSize: 25, fontWeight: '800', color: colors.text }, subtitle: { marginTop: 3, marginBottom: 15, color: colors.muted, fontSize: 13 },
+  title: { fontSize: 25, fontWeight: '800', color: colors.text }, subtitle: { marginTop: 3, marginBottom: 15, color: colors.muted, fontSize: 15 },
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 15, marginBottom: 11 },
-  label: { color: colors.muted, fontSize: 12, fontWeight: '700', marginBottom: 4 }, value: { color: colors.text, fontSize: 15, fontWeight: '700' }, secondary: { color: colors.muted, fontSize: 13, marginTop: 4 }, role: { color: colors.brand, fontSize: 12, fontWeight: '800', marginTop: 8 },
-  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '800' }, note: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 5, marginBottom: 8 }, loader: { margin: 20 }, error: { color: colors.danger, marginVertical: 8, fontSize: 13 }, success: { color: colors.success, marginVertical: 8, fontSize: 13, fontWeight: '700' },
-  field: { marginTop: 10 }, input: { minHeight: 43, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 9, color: colors.text, fontSize: 14 }, multiline: { minHeight: 75, textAlignVertical: 'top' }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginVertical: 5 }, chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 11, paddingVertical: 7 }, chipActive: { borderColor: colors.brand, backgroundColor: '#fdecec' }, chipText: { color: colors.muted, fontSize: 12, fontWeight: '600' }, chipTextActive: { color: colors.brand },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.border, marginTop: 16, paddingTop: 13 }, switchCopy: { flex: 1, paddingRight: 10 }, saveButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.brand, borderRadius: 9, marginTop: 16 }, saveText: { color: '#fff', fontWeight: '800' }, signOut: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.brand, borderRadius: 9, marginTop: 8 }, signOutText: { color: colors.brand, fontWeight: '800' },
-  feedbackRow: { flexDirection: 'row', gap: 8, marginVertical: 8 }, starButton: { width: 42, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: colors.border }, starButtonActive: { borderColor: colors.brand, backgroundColor: '#fdecec' }, starText: { fontSize: 22, color: colors.border }, starTextActive: { color: colors.brand },
-  preferenceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 7 }, preferenceLabel: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600', marginRight: 10 },
+  label: { color: colors.muted, fontSize: 16, fontWeight: '700', marginBottom: 4 }, value: { color: colors.text, fontSize: 15, fontWeight: '700' }, secondary: { color: colors.muted, fontSize: 15, marginTop: 4 }, role: { color: colors.brand, fontSize: 16, fontWeight: '800', marginTop: 8 },
+  sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '800' }, note: { color: colors.muted, fontSize: 16, lineHeight: 23, marginTop: 5, marginBottom: 8 }, loader: { margin: 20 }, error: { color: colors.danger, marginVertical: 8, fontSize: 15 }, success: { color: colors.success, marginVertical: 8, fontSize: 15, fontWeight: '700' },
+  field: { marginTop: 10 }, input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 9, color: colors.text, fontSize: 16 }, multiline: { minHeight: 75, textAlignVertical: 'top' }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginVertical: 5 }, chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 11, paddingVertical: 7 }, chipActive: { borderColor: colors.brand, backgroundColor: '#fdecec' }, chipText: { color: colors.muted, fontSize: 16, fontWeight: '600' }, chipTextActive: { color: colors.brand },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.border, marginTop: 16, paddingTop: 13 }, switchCopy: { flex: 1, paddingRight: 10 }, saveButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.brand, borderRadius: 9, marginTop: 16 }, saveText: { color: '#fff', fontWeight: '800' }, signOut: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.brand, borderRadius: 9, marginTop: 8 }, signOutText: { color: colors.brand, fontWeight: '800' },
+  feedbackRow: { flexDirection: 'row', gap: 8, marginVertical: 8 }, starButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: colors.border }, starButtonActive: { borderColor: colors.brand, backgroundColor: '#fdecec' }, starText: { fontSize: 24, color: colors.border }, starTextActive: { color: colors.brand },
+  preferenceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 7 }, preferenceLabel: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600', marginRight: 10 },
 });

@@ -125,3 +125,33 @@
 }
 
 .landing-cms-section__actions:empty { display: none; }
+
+/* Emergency contacts stay visible without scripts or sign-in. */
+.emergency-hotlines { padding-block: 2rem; scroll-margin-top: 7rem; border-top: 1px solid var(--vm-line); }
+.emergency-hotlines__heading { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(15rem, 1fr); gap: 1.5rem; align-items: center; }
+.vitalmatch-public .emergency-hotlines h2 { font-size: clamp(1.4rem, 2.2vw, 1.8rem); line-height: 1.2; }
+.emergency-hotlines .journey-eyebrow { margin-bottom: .5rem; }
+.emergency-hotlines__intro { color: var(--vm-muted); max-width: 48ch; font-size: .9rem; margin-top: .6rem !important; }
+.emergency-hotlines__national { border-left: 2px solid var(--vm-red); padding-left: 1.25rem; }
+.emergency-hotlines__national > span { font-size: .9rem; font-weight: 600; }
+.vitalmatch-public .emergency-hotlines__national > a { display: flex; align-items: center; gap: .8rem; width: fit-content; font-size: 2.75rem; line-height: 1.2; font-weight: 700; color: var(--vm-red); text-decoration-thickness: 2px; text-underline-offset: .12em; padding-block: .2rem; }
+.emergency-hotlines__national svg { width: 24px; height: 24px; }
+.emergency-hotlines__national p { font-size: .85rem; color: var(--vm-muted); margin-top: .5rem; }
+.emergency-hotlines__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 1.5rem; margin: 1.25rem 0 0; }
+.emergency-hotlines__list > div { padding-block: .75rem; border-top: 1px solid var(--vm-line); }
+.emergency-hotlines__list dt { font-size: .9rem; font-weight: 600; line-height: 1.4; }
+.emergency-hotlines__list dd { margin: .25rem 0 0; }
+.emergency-hotlines__service { display: block; color: var(--vm-muted); font-size: .82rem; margin-bottom: .25rem; }
+.vitalmatch-public .emergency-hotlines__list a { display: block; width: fit-content; padding-block: .45rem; min-height: 44px; color: var(--vm-red); font-size: 1rem; font-weight: 600; text-underline-offset: .2em; }
+.emergency-hotlines__sources { border-top: 1px solid var(--vm-line); padding-top: .75rem; margin-top: .25rem; font-size: .8rem; color: var(--vm-muted); }
+.emergency-hotlines__sources nav { display: flex; flex-wrap: wrap; column-gap: 1.5rem; margin-top: .4rem; }
+.emergency-hotlines__sources a { display: inline-flex; align-items: center; min-height: 44px; text-underline-offset: .2em; }
+@media (max-width: 900px) {
+  .emergency-hotlines__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .emergency-hotlines__heading { grid-template-columns: 1fr; gap: 1rem; }
+  .emergency-hotlines__national { padding-left: 1.25rem; }
+  .emergency-hotlines__list { grid-template-columns: 1fr; margin-top: 1rem; }
+  .emergency-hotlines__sources nav { display: grid; gap: 0; }
+}

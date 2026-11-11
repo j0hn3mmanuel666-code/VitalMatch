@@ -68,9 +68,13 @@ import {
 } from "./middleware/performance.js";
 import cors from 'cors';
 import { asyncHandler } from './middleware/asyncHandler.js';
+import { prescriptionUpload } from './middleware/prescriptionUpload.js';
 import { sessionLifetimeMs } from './services/sessionAuth.js';
+import { dashboardPathFor } from './services/accountPolicy.js';
 import net from 'node:net';
 import { startEmailOutboxWorker } from './services/emailOutboxWorker.js';
+import { startPushOutboxWorker } from './services/pushOutboxWorker.js';
+import { isPushSchemaReady } from './services/pushSchemaStatus.js';
 import { assertCurrentSchema } from './scripts/migrate-schema.js';
 import { getRuntimeSettings } from './services/runtimeSettings.js';
 import { getPublicPasswordPolicy } from './middleware/validation.js';
@@ -214,6 +218,7 @@ app.use((req, res, next) => isApiRequest(req) ? apiLimiter(req, res, next) : nex
 app.use(flash());
 // CSRF: issues a per-session token on GET (exposed as res.locals.csrfToken)
 // and rejects POST/PUT/DELETE without a matching _csrf body field or X-CSRF-Token header
+app.use(prescriptionUpload);
 app.use(csrfProtection);
 
 // Template engine configuration
@@ -248,8 +253,9 @@ import { attachNavUser } from "./middleware/adminAuth.js";
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
   res.locals.error_msg = req.flash("error_msg");
-  res.locals.user = req.session.user || null;
-  res.locals.isAuthenticated = !!req.session.userId;
+  res.locals.user = req.authAccount ? { id: req.authAccount.id, firstName: req.authAccount.firstName, role: req.authAccount.role } : null;
+  res.locals.accountHomePath = req.authAccount ? dashboardPathFor(req.authAccount) : null;
+  res.locals.isAuthenticated = !!req.authAccount;
   res.locals.isAdmin = req.session.userRole?.toLowerCase() === 'admin';
   res.locals.appName = getRuntimeSettings().general.appName;
   res.locals.passwordPolicy = getPublicPasswordPolicy();
@@ -421,7 +427,8 @@ const signalingServer = new SignalingServer(io, sessionMiddleware);
 app.set('signalingServer', signalingServer);
 signalingServer.initialize();
 const stopEmailWorker = startEmailOutboxWorker();
-httpServer.on('close', stopEmailWorker);
+const stopPushWorker = isPushSchemaReady() ? startPushOutboxWorker() : () => {};
+httpServer.on('close', () => { stopEmailWorker(); stopPushWorker(); });
 
 // Graceful shutdown handling (closes HTTP, Socket.io, and DB connections)
 gracefulShutdown(httpServer, io, sequelize);

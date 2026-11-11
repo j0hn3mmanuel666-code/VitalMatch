@@ -42,14 +42,14 @@ export default function RequestsScreen() {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Requests</Text>
-      <Text style={styles.subtitle}>Search the requests linked to your account</Text>
+      <Text style={styles.subtitle}>Find a request.</Text>
 
       <View style={styles.searchRow}>
-        <TextInput
+      <TextInput
           style={styles.input}
           value={query}
           onChangeText={setQuery}
-          placeholder="Request id, blood type, hospital…"
+          placeholder="Request ID, blood type, hospital"
           placeholderTextColor={colors.muted}
           returnKeyType="search"
           onSubmitEditing={() => void run()}
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 32 },
   title: { fontSize: 24, fontWeight: '800', color: colors.text },
-  subtitle: { marginTop: 2, marginBottom: 16, color: colors.muted, fontSize: 13 },
+  subtitle: { marginTop: 2, marginBottom: 16, color: colors.muted, fontSize: 15 },
   searchRow: { flexDirection: 'row', gap: 8 },
   input: {
     flex: 1,
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   buttonPressed: { backgroundColor: colors.brandDark },
   buttonText: { color: '#fff', fontWeight: '700' },
-  message: { color: colors.muted, fontSize: 13, marginTop: 14, marginBottom: 4 },
+  message: { color: colors.muted, fontSize: 15, marginTop: 14, marginBottom: 4 },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -110,6 +110,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   cardTitle: { fontWeight: '700', color: colors.text },
-  cardSubtitle: { color: colors.muted, fontSize: 13, marginTop: 3 },
-  status: { color: colors.brand, fontSize: 12, fontWeight: '700', marginTop: 6, textTransform: 'capitalize' },
+  cardSubtitle: { color: colors.muted, fontSize: 15, marginTop: 3 },
+  status: { color: colors.brand, fontSize: 16, fontWeight: '700', marginTop: 6, textTransform: 'capitalize' },
 });

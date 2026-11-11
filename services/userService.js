@@ -57,6 +57,9 @@ export class UserService {
   }
   static input(data) {
     const out = Object.fromEntries(FIELDS.filter(f => data[f] !== undefined).map(f => [f,data[f]]));
+    // HTML forms submit empty text fields as "". A blank hospital name is
+    // valid for non-hospital accounts, so normalize it before generic checks.
+    if (typeof out.hospitalName === 'string' && !out.hospitalName.trim()) out.hospitalName = null;
     if (out.role !== undefined) {
       out.role = normalizedRole(out.role);
       if (!['user','donor','hospital','admin'].includes(out.role)) throw new Error('Invalid role');

@@ -38,6 +38,15 @@ test('remote hangup and another-tab acceptance clean up locally without sending 
   env.signal.onCallEnded({ callId: 10 }); assert.equal(env.manager.callState, 'idle'); assert.equal(env.sent.length, 0);
 });
 
+test('cancelling while the server creates a call also cancels the late call record', async () => {
+  const env = managerEnvironment();
+  await env.manager.initiateCall(2, 'video');
+  env.manager.endCall();
+  env.signal.onCallCreated({ callId: 11 });
+  assert.equal(env.manager.callState, 'idle');
+  assert.deepEqual(env.sent.at(-1), ['end', 11]);
+});
+
 test('remote ICE arriving before a description is applied after the answer and is cleared on close', async () => {
   const WebRTCManager = browserClass('WebRTCManager', { RTCIceCandidate: function (value) { Object.assign(this, value); }, RTCSessionDescription: function (value) { Object.assign(this, value); } });
   const rtc = new WebRTCManager({}), accepted = [];
@@ -61,4 +70,27 @@ test('incoming call names are text, and dynamic call dialogs use the shared focu
   assert.equal(registered.length, 1);
   assert.ok(registered[0].querySelector('[data-dialog-close="true"]'));
   ui.hideIncomingCallNotification(); assert.equal(released[0], registered[0]);
+});
+
+test('voice calls play incoming audio, recover blocked autoplay and detach on cleanup', async () => {
+  const { document, window } = parseHTML('<html><body></body></html>');
+  const CallUI = browserClass('CallUI', { document, window });
+  const ui = new CallUI('unused', {});
+  ui.showCallInterface('audio', false);
+  const audio = document.getElementById('remote-audio');
+  assert.ok(audio, 'Voice calls need a playback element');
+  assert.equal(document.getElementById('local-video'), null);
+  let attempts = 0;
+  audio.play = async () => { if (++attempts === 1) throw new Error('Autoplay blocked'); };
+  const stream = { synthetic: true };
+  ui.attachRemoteStream(stream);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(audio.srcObject, stream);
+  assert.equal(audio.muted, false);
+  const enable = document.getElementById('enable-call-audio');
+  assert.ok(enable && !enable.hidden);
+  enable.click(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(attempts, 2); assert.equal(enable.hidden, true);
+  ui.detachStreams(); assert.equal(audio.srcObject, null);
+  ui.hideCallInterface(); assert.equal(document.getElementById('remote-audio'), null);
 });

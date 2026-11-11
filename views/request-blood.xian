@@ -13,7 +13,7 @@
       <!-- Header -->
       <div class="vm-page-heading mb-8">
         <h1 class="text-3xl font-bold mb-2">Request Blood</h1>
-        <p class="text-white/90">Submit an urgent blood request for your hospital or patient</p>
+        <p class="text-white/90">Enter the blood need and patient details.</p>
       </div>
 
       <!-- Flash Messages -->
@@ -41,7 +41,7 @@
           </div>
         </div>
 
-        <form id="bloodRequestForm" data-workspace-form action="{{#if formAction}}{{formAction}}{{else}}/new-blood-request{{/if}}" method="POST" novalidate>
+        <form id="bloodRequestForm" data-workspace-form action="{{#if formAction}}{{formAction}}{{else}}/new-blood-request{{/if}}" method="POST" enctype="multipart/form-data" novalidate>
           <input type="hidden" name="_csrf" value="{{csrfToken}}">
           <input type="hidden" name="submissionKey" value="{{formValues.submissionKey}}">
           {{#if editRequestId}}<input type="hidden" name="version" value="{{formValues.version}}"><p class="vm-alert vm-alert--info mb-4">Correcting request #{{editRequestId}}. Saving returns it for a new facility or coordinator review.</p>{{/if}}
@@ -261,10 +261,11 @@
                     <!-- Whole Blood -->
                     <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
-                        <input type="checkbox" id="wholeBlood" name="bloodComponents[]" value="wholeBlood"
+                        <input type="checkbox" id="wholeBlood" aria-describedby="wholeBlood-description" name="bloodComponents[]" value="wholeBlood"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
                         <label for="wholeBlood" class="ml-2 text-sm font-medium text-gray-700">Whole blood</label>
                       </div>
+                      <p id="wholeBlood-description" class="text-sm text-gray-600">Blood containing red cells, plasma, and platelets.</p>
                       <input type="text" name="wholeBloodVolume" id="wholeBloodVolume" placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
                         disabled aria-label="Units/Volume">
@@ -273,10 +274,11 @@
                     <!-- Packed RBC -->
                     <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
-                        <input type="checkbox" id="packedRBC" name="bloodComponents[]" value="packedRBC"
+                        <input type="checkbox" id="packedRBC" aria-describedby="packedRBC-description" name="bloodComponents[]" value="packedRBC"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
                         <label for="packedRBC" class="ml-2 text-sm font-medium text-gray-700">Packed RBC</label>
                       </div>
+                      <p id="packedRBC-description" class="text-sm text-gray-600">Concentrated red blood cells that carry oxygen.</p>
                       <input type="text" name="packedRBCVolume" id="packedRBCVolume" placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
                         disabled aria-label="Units/Volume">
@@ -285,12 +287,13 @@
                     <!-- Platelet Concentrate -->
                     <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
-                        <input type="checkbox" id="plateletConcentrate" name="bloodComponents[]"
+                        <input type="checkbox" id="plateletConcentrate" aria-describedby="plateletConcentrate-description" name="bloodComponents[]"
                           value="plateletConcentrate"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
                         <label for="plateletConcentrate" class="ml-2 text-sm font-medium text-gray-700">Platelet
                           concentrate</label>
                       </div>
+                      <p id="plateletConcentrate-description" class="text-sm text-gray-600">Platelets separated from donated blood to help it clot.</p>
                       <input type="text" name="plateletConcentrateVolume" id="plateletConcentrateVolume"
                         placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -300,11 +303,12 @@
                     <!-- Fresh Frozen Plasma -->
                     <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
-                        <input type="checkbox" id="freshFrozenPlasma" name="bloodComponents[]" value="freshFrozenPlasma"
+                        <input type="checkbox" id="freshFrozenPlasma" aria-describedby="freshFrozenPlasma-description" name="bloodComponents[]" value="freshFrozenPlasma"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
                         <label for="freshFrozenPlasma" class="ml-2 text-sm font-medium text-gray-700">Fresh Frozen
                           Plasma</label>
                       </div>
+                      <p id="freshFrozenPlasma-description" class="text-sm text-gray-600">Frozen plasma containing proteins that help blood clot.</p>
                       <input type="text" name="freshFrozenPlasmaVolume" id="freshFrozenPlasmaVolume"
                         placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -314,11 +318,12 @@
                     <!-- Cryoprecipitate -->
                     <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
-                        <input type="checkbox" id="cryoprecipitate" name="bloodComponents[]" value="cryoprecipitate"
+                        <input type="checkbox" id="cryoprecipitate" aria-describedby="cryoprecipitate-description" name="bloodComponents[]" value="cryoprecipitate"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
                         <label for="cryoprecipitate"
                           class="ml-2 text-sm font-medium text-gray-700">Cryoprecipitate</label>
                       </div>
+                      <p id="cryoprecipitate-description" class="text-sm text-gray-600">A plasma portion rich in fibrinogen, a blood-clotting protein.</p>
                       <input type="text" name="cryoprecipitateVolume" id="cryoprecipitateVolume"
                         placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -328,11 +333,12 @@
                     <!-- Platelet Apheresis -->
                     <div class="vm-panel flex flex-col space-y-2 p-3 bg-white rounded-lg border">
                       <div class="flex items-center">
-                        <input type="checkbox" id="plateletApheresis" name="bloodComponents[]" value="plateletApheresis"
+                        <input type="checkbox" id="plateletApheresis" aria-describedby="plateletApheresis-description" name="bloodComponents[]" value="plateletApheresis"
                           class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2">
                         <label for="plateletApheresis" class="ml-2 text-sm font-medium text-gray-700">Platelet
                           Apheresis</label>
                       </div>
+                      <p id="plateletApheresis-description" class="text-sm text-gray-600">Platelets collected from one donor using a special machine.</p>
                       <input type="text" name="plateletApheresisVolume" id="plateletApheresisVolume"
                         placeholder="Units/Volume"
                         class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -363,7 +369,6 @@
               </svg>
               Hospital Information
             </h2>
-            {{> facility-selector}}
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -482,6 +487,14 @@
               </div>
 
               <div class="md:col-span-2">
+                <label class="block text-gray-700 font-semibold mb-2" for="medicalPrescription">Medical prescription (optional)</label>
+                <input type="file" name="medicalPrescription" id="medicalPrescription" accept="image/jpeg,image/png,image/webp" aria-describedby="prescription-help" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                <p id="prescription-help" class="text-sm text-gray-600 mt-1">Upload a clear photo of your medical prescription or hospital blood request form. JPG, PNG, or WebP, up to 5 MB. You can submit without an image. Only you, admins, and your assigned hospital can view it.</p>
+                {{#if formValues.prescriptionImage}}<p class="text-sm text-gray-600 mt-1">A prescription is already attached. Choose an image only if you want to replace it.</p>{{/if}}
+                <p id="prescription-feedback" class="text-sm text-gray-600 mt-1" role="status"></p>
+                <img id="prescription-preview" alt="Selected medical prescription" hidden class="mt-3 rounded-lg" style="max-width:100%;max-height:320px;object-fit:contain">
+              </div>
+              <div class="md:col-span-2">
                 <label class="block text-gray-700 font-semibold mb-2" for="vm-request-blood-57">Additional Notes</label>
                 <textarea name="notes" rows="2"
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -540,6 +553,6 @@
 
 
 
-<script src="/js/workspace-form.js?v=1" defer></script>
+<script src="/js/workspace-form.js?v=2" defer></script>
 
 {{> footer}}

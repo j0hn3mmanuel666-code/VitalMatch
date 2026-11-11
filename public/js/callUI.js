@@ -12,6 +12,10 @@ class CallUI {
     this.container = document.getElementById(containerId);
     this.callManager = callManager;
     this.callDurationInterval = null;
+    this.ringtone = typeof CallRingtone === 'undefined' ? null : new CallRingtone(blocked => {
+      const button = document.getElementById('enable-ringtone');
+      if (button) button.hidden = !blocked;
+    });
   }
   
   // Show incoming call notification
@@ -30,6 +34,7 @@ class CallUI {
           </div>
           <h2 class="text-2xl font-bold text-gray-800 mb-2">${safeName}</h2>
           <p class="text-gray-600">Incoming ${callType} call...</p>
+          <button type="button" id="enable-ringtone" class="vm-button vm-button--small mt-3" hidden>Enable ringtone</button>
         </div>
         <div class="flex space-x-4">
           <button data-dialog-close="true" onclick="window.callManager.declineCall(${Number(callId)})" class="vm-button vm-button--danger flex-1">
@@ -50,10 +55,15 @@ class CallUI {
     document.body.appendChild(notification);
     if (window.registerWorkspaceDialog) window.registerWorkspaceDialog(notification);
     notification.classList.remove('hidden');
+    if (this.ringtone) {
+      notification.querySelector('#enable-ringtone').addEventListener('click', () => this.ringtone.start());
+      this.ringtone.start();
+    }
   }
   
   // Hide incoming call notification
   hideIncomingCallNotification() {
+    if (this.ringtone) this.ringtone.stop();
     const notification = document.getElementById('incoming-call-notification');
     if (notification) {
       if (window.releaseWorkspaceDialog) window.releaseWorkspaceDialog(notification);
@@ -75,6 +85,7 @@ class CallUI {
           <video id="remote-video" autoplay playsinline class="w-full h-full object-cover bg-black"></video>
           <video id="local-video" autoplay playsinline muted class="absolute bottom-24 right-4 w-48 h-36 object-cover rounded-lg shadow-lg bg-gray-800"></video>
         ` : `
+          <audio id="remote-audio" autoplay playsinline></audio>
           <div class="w-full h-full flex items-center justify-center">
             <div class="text-center">
               <div class="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-5xl mx-auto mb-4">
@@ -88,6 +99,7 @@ class CallUI {
       </div>
       
       <!-- Call Controls -->
+      <button type="button" id="enable-call-audio" class="vm-button vm-button--primary" style="position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); z-index: 10001;" hidden>Enable call sound</button>
       <div class="bg-gray-800 p-6" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 10000;">
         <div class="flex justify-center space-x-4">
           <button id="mute-btn" aria-label="Mute microphone" aria-pressed="false" onclick="window.callManager.toggleMute()" class="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-600 transition shadow-lg">
@@ -104,7 +116,7 @@ class CallUI {
             </button>
           ` : ''}
           
-          <button aria-label="End call" data-dialog-close="true" onclick="window.openConfirmModal({title:'End this call?',message:'This disconnects the current conversation.',button:'End call',tone:'danger',onSubmit:function(){window.callManager.endCall();}})" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition shadow-lg">
+          <button type="button" aria-label="End call" data-dialog-close="true" onclick="window.callManager.endCall()" class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center hover:bg-red-700 transition shadow-lg">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -140,31 +152,40 @@ class CallUI {
       localVideo.onloadedmetadata = () => {
         localVideo.play().catch(e => console.error('Error playing local video:', e));
       };
-    } else {
-      console.error('❌ Local video element not found');
     }
   }
   
   // Attach remote stream
   attachRemoteStream(stream) {
-    const remoteVideo = document.getElementById('remote-video');
-    if (remoteVideo) {
-      remoteVideo.srcObject = stream;
-      remoteVideo.onloadedmetadata = () => {
-        remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
-      };
-    } else {
-      console.error('❌ Remote video element not found');
-    }
+    const player = document.getElementById('remote-video') || document.getElementById('remote-audio');
+    if (!player) return;
+    const enable = document.getElementById('enable-call-audio');
+    const play = async () => {
+      try {
+        await player.play();
+        if (enable) enable.hidden = true;
+      } catch (error) {
+        if (enable && player.isConnected && player.srcObject) enable.hidden = false;
+      }
+    };
+    player.muted = false;
+    player.srcObject = stream;
+    player.onloadedmetadata = play;
+    if (enable) enable.onclick = play;
+    play();
   }
   
   // Detach streams
   detachStreams() {
     const localVideo = document.getElementById('local-video');
     const remoteVideo = document.getElementById('remote-video');
+    const remoteAudio = document.getElementById('remote-audio');
     
     if (localVideo) localVideo.srcObject = null;
     if (remoteVideo) remoteVideo.srcObject = null;
+    if (remoteAudio) remoteAudio.srcObject = null;
+    const enable = document.getElementById('enable-call-audio');
+    if (enable) { enable.hidden = true; enable.onclick = null; }
   }
   
   // Show calling indicator

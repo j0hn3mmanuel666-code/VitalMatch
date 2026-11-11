@@ -9,7 +9,7 @@
       <div class="journey-nav__panel" id="public-nav-panel">
         <div class="journey-nav__links"><a href="/" data-public-link>Home</a><a href="/about" data-public-link>About</a><a href="/#how-it-works">How it works</a><a href="/contact" data-public-link>Contact</a></div>
         <div class="journey-nav__actions">
-          {{#if user}}<a href="{{#if isAdmin}}/admin/dashboard{{else}}/dashboard{{/if}}" class="journey-button journey-button--secondary">My account</a>{{else}}
+          {{#if user}}<a href="{{accountHomePath}}" class="journey-button journey-button--secondary">My account</a>{{else}}
           {{#unless hideLogin}}<a href="/login" class="journey-nav__quiet" data-public-link>Sign in</a>{{/unless}}
           {{#unless hideRegister}}<a href="/register" class="journey-button" data-public-link>Become a donor</a>{{/unless}}
           {{/if}}

@@ -5,8 +5,8 @@
 
     <!-- Header -->
     <div class="vm-page-heading mb-8">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Hospital Statistics</h1>
-      <p class="text-gray-600 dark:text-gray-400">View hospital blood request statistics and rankings</p>
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Hospitals</h1>
+      <p class="text-gray-600 dark:text-gray-400">Facilities and request activity.</p>
     </div>
       {{> record-search label="Search facilities" placeholder="Facility name or ID"}}
 
@@ -74,7 +74,7 @@
     <!-- Hospital Accounts -->
     <div class="mt-8 mb-8">
       <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Hospital Accounts</h2>
-      <p class="text-gray-600 dark:text-gray-400 mb-4">Verify new registrations or suspend accounts. Suspended hospitals cannot log in.</p>
+      <p class="text-gray-600 dark:text-gray-400 mb-4">Verify facilities or suspend access.</p>
     </div>
     {{> record-search inputId="accountSearch" searchName="accountSearch" search=accountSearch label="Search hospital accounts" placeholder="Account name, facility, email, contact or ID"}}
     <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none overflow-hidden">

@@ -322,4 +322,40 @@ test('scoped demo repair assigns only the exact synthetic hospital, preserves ac
   assert.deepEqual(await inspectKnownDemoFacility(),{eligible:true,alreadyAssigned:true});
   await assert.rejects(repairKnownDemoFacility({env:{...process.env,NODE_ENV:'production'}}),/local nonproduction/);
 });
+test('blood bank stock supports donorless future release and records only actual supplied units', async () => {
+  const f = await fixture(); await reviewRequest(f.request.id, f.admin.id, true);
+  await assert.rejects(scheduleRequest(f.request.id, f.admin.id, { scheduledDate: new Date(Date.now()+86400000), idempotencyKey:key() }), /donor/i);
+  await assert.rejects(scheduleRequest(f.request.id, f.admin.id, { supplySource:'blood_bank', donorId:f.donor.id, scheduledDate:new Date(Date.now()+86400000), notes:'Synthetic bank stock', idempotencyKey:key() }), /donor/i);
+  const operation = key(), details={supplySource:'blood_bank',scheduledDate:new Date(Date.now()+86400000),notes:'Synthetic Blood Bank, stock reference TEST-1',idempotencyKey:operation};
+  const {appointment}=await scheduleRequest(f.request.id,f.admin.id,details);
+  assert.equal(appointment.donorId,null);assert.equal(appointment.supplySource,'blood_bank');
+  assert.equal((await f.request.reload()).unitsFulfilled,0);assert.equal(f.request.assignedDonorId,null);
+  assert.equal((await scheduleRequest(f.request.id,f.admin.id,details)).duplicate,true);
+  assert.equal(await ScheduleToken.count({where:{bloodRequestId:f.request.id,role:'donor'}}),0);
+  const completion={unitsProvided:1,appointmentId:appointment.id,version:appointment.version,notes:'Actual stock released TEST-1',idempotencyKey:key()};
+  await assert.rejects(fulfillRequest(f.request.id,f.admin.id,completion),/confirm/i);
+  await confirmAppointment({requestId:f.request.id,actorId:f.owner.id,role:'requester',appointmentId:appointment.id,version:appointment.version});
+  await assert.rejects(fulfillRequest(f.request.id,f.admin.id,completion),/not occurred/i);
+  await appointment.update({scheduledDate:new Date(Date.now()-60000)});
+  const before=await f.donor.reload();const lastDonationDate=before.lastDonationDate;
+  await fulfillRequest(f.request.id,f.admin.id,completion);
+  const record=await Fulfillment.findOne({where:{appointmentId:appointment.id}});
+  assert.equal(record.supplySource,'blood_bank');assert.equal(record.donorId,null);assert.equal(record.donorName,'Blood bank stock');
+  assert.equal((await f.donor.reload()).lastDonationDate,lastDonationDate);assert.equal(f.donor.isAvailable,true);
+  assert.equal((await fulfillRequest(f.request.id,f.admin.id,completion)).duplicate,true);
+});
+
+test('stock release can be rescheduled/cancelled and already supplied stock can be recorded without a donor',async()=>{
+  const f=await fixture();await reviewRequest(f.request.id,f.admin.id,true);
+  const {appointment}=await scheduleRequest(f.request.id,f.admin.id,{supplySource:'blood_bank',scheduledDate:new Date(Date.now()+86400000),notes:'Synthetic bank, TEST-2',idempotencyKey:key()});
+  await confirmAppointment({requestId:f.request.id,actorId:f.owner.id,role:'requester',appointmentId:appointment.id,version:1});
+  await changeAppointment(appointment.id,f.admin.id,{version:1,scheduledDate:new Date(Date.now()+2*86400000),reason:'New bank release time',idempotencyKey:key()},'reschedule');
+  await appointment.reload();assert.equal(appointment.requesterConfirmed,false);assert.equal(appointment.supplySource,'blood_bank');
+  await changeAppointment(appointment.id,f.admin.id,{version:2,reason:'Bank release cancelled',idempotencyKey:key()},'cancel');
+  assert.equal((await f.request.reload()).status,'active');
+  await assert.rejects(fulfillRequest(f.request.id,f.admin.id,{supplySource:'other',unitsProvided:1,notes:'Invalid source',idempotencyKey:key()}),/source/i);
+  await fulfillRequest(f.request.id,f.admin.id,{supplySource:'blood_bank',unitsProvided:1,notes:'Blood already supplied by synthetic bank, TEST-3',idempotencyKey:key()});
+  const record=await Fulfillment.findOne({where:{requestId:f.request.id,appointmentId:null}});assert.equal(record.supplySource,'blood_bank');assert.equal(record.donorId,null);
+});
+
 after(async () => { await sequelize.close(); });

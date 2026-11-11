@@ -1,0 +1,31 @@
+/* Keep the complete request and its actions within the workspace width. */
+.vm-internal .request-register { width: 100%; min-width: 0; }
+.vm-internal .request-register-table { width: 100%; min-width: 0; table-layout: fixed; }
+.vm-internal .request-register-table :is(th,td) { padding: 12px 10px; white-space: normal; overflow-wrap: anywhere; vertical-align: top; text-align: left; }
+.vm-internal .request-register-table th { font-size: .8125rem; letter-spacing: normal; }
+.vm-internal .request-register-table th:nth-child(1) { width: 4%; }
+.vm-internal .request-register-table th:nth-child(2) { width: 18%; }
+.vm-internal .request-register-table th:nth-child(3) { width: 7%; }
+.vm-internal .request-register-table th:nth-child(4) { width: 13%; }
+.vm-internal .request-register-table th:nth-child(5) { width: 18%; }
+.vm-internal .request-register-table th:nth-child(6) { width: 13%; }
+.vm-internal .request-register-table th:nth-child(7) { width: 12%; }
+.vm-internal .request-register-table th:nth-child(8) { width: 15%; }
+.vm-internal .request-register-table td > .flex { justify-content: flex-start; flex-wrap: wrap; gap: 8px; }
+.vm-internal .request-register-table td .vm-button { white-space: normal; max-width: 100%; margin-left: 0; }
+.vm-internal .request-register-table .vm-status { white-space: normal; margin-bottom: 5px; }
+.vm-internal .request-register-table .review-panel { width: 100%; min-width: 0; }
+.vm-internal .request-id { font-size: .8125rem; }
+.vm-internal .request-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 16px 0; font-size: .875rem; }
+.request-page-buttons { display: flex; gap: 8px; }
+.request-page-buttons button:disabled { opacity: .55; cursor: default; }
+@media (max-width: 1200px) {
+  .vm-internal .request-register-table, .vm-internal .request-register-table tbody { display: block; }
+  .vm-internal .request-register-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .vm-internal .request-register-table tbody tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px 20px; padding: 20px; border-bottom: 1px solid var(--vm-line); }
+  .vm-internal .request-register-table td { display: block; min-width: 0; padding: 0; }
+  .vm-internal .request-register-table td::before { content: attr(data-label); display: block; font-size: .8125rem; font-weight: 600; color: var(--vm-muted); margin-bottom: 6px; }
+  .vm-internal .request-register-table td:first-child { grid-column: 1 / -1; }
+  .vm-internal .request-register-table td:first-child::before { display: inline; margin-right: 8px; }
+  .vm-internal .request-register-table td:last-child { grid-column: 1 / -1; }
+}

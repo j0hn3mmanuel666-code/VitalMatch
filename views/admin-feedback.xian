@@ -3,7 +3,7 @@
     <div class="vm-page-heading mb-8">
       <p class="vm-eyebrow">Administration</p>
       <h1>System feedback</h1>
-      <p>Review ratings and comments submitted by users across every system role.</p>
+      <p>Ratings and comments from all roles.</p>
     </div>
 
     {{#if success_msg}}<div class="vm-alert vm-alert--success mb-5" role="status">{{success_msg}}</div>{{/if}}
@@ -18,7 +18,7 @@
     </div>
 
     <section class="vm-panel bg-white dark:bg-[#18181b] rounded-md overflow-hidden" aria-labelledby="feedback-list-title">
-      <div class="p-5 border-b border-gray-200 dark:border-gray-800"><h2 id="feedback-list-title" class="text-lg font-bold">Latest feedback</h2><p class="text-sm text-gray-500 mt-1">Showing up to 200 most recent submissions. Comments are private to administrators and the submitter.</p></div>
+      <div class="p-5 border-b border-gray-200 dark:border-gray-800"><h2 id="feedback-list-title" class="text-lg font-bold">Latest feedback</h2><p class="text-sm text-gray-500 mt-1">Private to the user and admin.</p></div>
       {{#if feedbackEntries.length}}
       <div class="divide-y divide-gray-200 dark:divide-gray-800">
         {{#each feedbackEntries}}

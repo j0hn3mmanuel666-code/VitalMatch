@@ -126,10 +126,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: 22,
     color: colors.muted,
-    fontSize: 14,
+    fontSize: 16,
   },
   label: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 6,
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.danger,
-    fontSize: 13,
+    fontSize: 15,
     marginBottom: 12,
   },
   button: {
@@ -167,12 +167,12 @@ const styles = StyleSheet.create({
   hint: {
     marginTop: 16,
     color: colors.muted,
-    fontSize: 11,
+    fontSize: 16,
     textAlign: 'center',
   },
-  notice: { color: colors.success, fontSize: 13, lineHeight: 18, marginBottom: 14 },
+  notice: { color: colors.success, fontSize: 15, lineHeight: 18, marginBottom: 14 },
   registerLink: { alignItems: 'center', paddingVertical: 12 },
-  registerText: { color: colors.brand, fontSize: 14, fontWeight: '700' },
+  registerText: { color: colors.brand, fontSize: 16, fontWeight: '700' },
   forgotLink: { alignItems: 'center', paddingVertical: 4 },
-  forgotText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  forgotText: { color: colors.muted, fontSize: 15, fontWeight: '600' },
 });

@@ -104,6 +104,17 @@ async function assignableDonor(id, request, transaction, { completing = false } 
   return donor;
 }
 async function scheduleNotices(request, appointment, donor, transaction) {
+  if (appointment.supplySource === 'blood_bank') {
+    const account = request.userId && await User.findByPk(request.userId, { attributes: ['id', 'email', 'firstName'], transaction });
+    if (!account) return;
+    const prefs = await UserSetting.findOne({ where: { userId: account.id }, transaction });
+    const title = 'Blood bank release needs confirmation';
+    const message = `Request #${request.id}: a blood-bank pickup/release is scheduled for ${new Date(appointment.scheduledDate).toISOString()}. Open the schedule to confirm. No donor appointment is required.`;
+    const actionPath = `/confirm-schedule/${request.id}/requester?appointment=${appointment.id}&version=${appointment.version}`;
+    if (!prefs || prefs.notifyAppointments) await queueNotification({ userId: account.id, title, message, type: 'info', link: actionPath }, { transaction });
+    if (!prefs || prefs.emailUpdates) await queueEmail({ kind: 'request-update', recipient: account.email, dedupeKey: `schedule:${appointment.id}:${appointment.version}:bank`, payload: { recipientName: account.firstName, title, message, request: { id: request.id, actionPath }, appointmentId: appointment.id, appointmentVersion: appointment.version } }, { transaction });
+    return;
+  }
   const recipients = [{ role: 'requester', userId: request.userId }];
   if (donor) recipients.push({ role: 'donor', userId: donor.userId });
   for (const recipient of recipients) {
@@ -159,13 +170,18 @@ export async function scheduleRequest(requestId, actorId, data) {
     if (request.status !== 'active' || request.hospitalStatus !== 'approved' || unitsRemaining(request) < 1) throw new WorkflowError('Only reviewed active requests can be scheduled');
     const scheduledDate = new Date(data.scheduledDate);
     if (!Number.isFinite(scheduledDate.getTime()) || scheduledDate <= new Date()) throw new WorkflowError('Choose a future appointment date and time');
-    const donor = await assignableDonor(data.donorId, request, transaction);
-    if (!donor) throw new WorkflowError('Select a donor to schedule; record walk-in completion separately');
-    const conflict = await Appointment.findOne({ where: { donorId: donor.id, status: 'scheduled' }, transaction, lock: transaction.LOCK.UPDATE });
+    const supplySource = data.supplySource === undefined ? 'donor' : data.supplySource;
+    if (!['donor', 'blood_bank'].includes(supplySource)) throw new WorkflowError('Choose a valid blood supply source');
+    const bankStock = supplySource === 'blood_bank';
+    if (bankStock && data.donorId) throw new WorkflowError('Do not assign a donor to a blood-bank stock release');
+    const reason = note(data.notes, bankStock);
+    const donor = bankStock ? null : await assignableDonor(data.donorId, request, transaction);
+    if (!bankStock && !donor) throw new WorkflowError('Select a donor for a donation, or choose blood-bank stock');
+    const conflict = donor && await Appointment.findOne({ where: { donorId: donor.id, status: 'scheduled' }, transaction, lock: transaction.LOCK.UPDATE });
     if (conflict) throw new WorkflowError('This donor already has a scheduled appointment');
-    const appointment = await Appointment.create({ requestId: request.id, donorId: donor.id, scheduledDate, createdBy: actor.id, reason: note(data.notes) }, { transaction });
-    await request.update({ status: 'scheduled', assignedDonorId: donor.id, scheduledDate, donorConfirmed: false, requesterConfirmed: false, fulfillmentNotes: note(data.notes), isEmergency: false, emergencyAt: null, emergencyExpiresAt: null, version: request.version + 1 }, { transaction });
-    await event(request, actor, 'appointment_scheduled', { appointmentId: appointment.id, version: appointment.version, donorId: donor.id, scheduledDate }, note(data.notes), key, transaction);
+    const appointment = await Appointment.create({ requestId: request.id, donorId: donor?.id || null, supplySource, scheduledDate, createdBy: actor.id, reason }, { transaction });
+    await request.update({ status: 'scheduled', assignedDonorId: donor?.id || null, scheduledDate, donorConfirmed: false, requesterConfirmed: false, fulfillmentNotes: reason, isEmergency: false, emergencyAt: null, emergencyExpiresAt: null, version: request.version + 1 }, { transaction });
+    await event(request, actor, bankStock ? 'blood_bank_release_scheduled' : 'appointment_scheduled', { appointmentId: appointment.id, version: appointment.version, donorId: donor?.id || null, supplySource, scheduledDate }, reason, key, transaction);
     await scheduleNotices(request, appointment, donor, transaction);
     return { request, appointment };
   });
@@ -184,21 +200,25 @@ export async function fulfillRequest(requestId, actorId, data) {
     if (request.status === 'scheduled') {
       appointment = await Appointment.findOne({ where: { requestId: request.id, status: 'scheduled' }, transaction, lock: transaction.LOCK.UPDATE });
       if (!appointment || Number(data.appointmentId) !== appointment.id || Number(data.version) !== appointment.version) throw new WorkflowError('This appointment changed. Refresh before recording completion', 409);
-      if (!appointment.donorConfirmed || !appointment.requesterConfirmed) throw new WorkflowError('Both parties must confirm before recording a scheduled completion');
+      if (!appointment.requesterConfirmed || (appointment.supplySource !== 'blood_bank' && !appointment.donorConfirmed)) throw new WorkflowError(appointment.supplySource === 'blood_bank' ? 'The requester must confirm before recording the scheduled stock release' : 'Both parties must confirm before recording a scheduled completion');
       if (appointment.scheduledDate > new Date()) throw new WorkflowError('This appointment has not occurred yet');
     }
+    const supplySource = appointment ? appointment.supplySource : data.supplySource === undefined ? 'donor' : data.supplySource;
+    if (!['donor', 'blood_bank'].includes(supplySource)) throw new WorkflowError('Choose a valid blood supply source');
+    if (supplySource === 'blood_bank' && data.donorId) throw new WorkflowError('Do not assign a donor to blood-bank stock');
     const donorId = appointment ? appointment.donorId : data.donorId;
-    const donor = await assignableDonor(donorId, request, transaction, { completing: !!appointment });
+    const donor = supplySource === 'blood_bank' ? null : await assignableDonor(donorId, request, transaction, { completing: !!appointment });
+    const donorName = supplySource === 'blood_bank' ? 'Blood bank stock' : donor?.fullName || 'Walk-in';
     const notes = note(data.notes, true);
     const completedAt = new Date();
-    await Fulfillment.create({ requestId: request.id, appointmentId: appointment?.id, donorId: donor?.id, donorName: donor?.fullName, actorId: actor.id, unitsProvided: units, fulfilledAt: completedAt, notes, operationKey: key }, { transaction });
+    await Fulfillment.create({ requestId: request.id, appointmentId: appointment?.id, donorId: donor?.id, donorName, supplySource, actorId: actor.id, unitsProvided: units, fulfilledAt: completedAt, notes, operationKey: key }, { transaction });
     const total = Number(request.unitsFulfilled || 0) + units;
     const complete = total >= request.unitsRequired;
     if (appointment) await appointment.update({ status: 'completed', reason: notes }, { transaction });
     await invalidateScheduleTokens(request.id, transaction);
     await request.update({ unitsFulfilled: total, fulfilledAt: complete ? completedAt : null, status: complete ? 'fulfilled' : 'active', assignedDonorId: complete ? donor?.id || null : null, scheduledDate: complete ? request.scheduledDate : null, requesterConfirmed: false, donorConfirmed: false, fulfillmentNotes: notes, isEmergency: false, emergencyAt: null, emergencyExpiresAt: null, version: request.version + 1 }, { transaction });
     if (donor) await donor.update({ lastDonationDate: completedAt, isAvailable: false }, { transaction });
-    await event(request, actor, complete ? 'request_fulfilled' : 'request_partially_fulfilled', { unitsProvided: units, unitsFulfilled: total, donorId: donor?.id || null, donorName: donor?.fullName || 'Walk-in', appointmentId: appointment?.id || null, fulfilledAt: completedAt }, notes, key, transaction);
+    await event(request, actor, complete ? 'request_fulfilled' : 'request_partially_fulfilled', { unitsProvided: units, unitsFulfilled: total, donorId: donor?.id || null, donorName, supplySource, appointmentId: appointment?.id || null, fulfilledAt: completedAt }, notes, key, transaction);
     await informUser(request.userId, request, complete ? 'Request fulfilled' : 'Partial fulfillment recorded', `Request #${request.id}: ${units} unit(s) recorded; ${unitsRemaining(request)} unit(s) remain.`, transaction);
     if (donor) await informUser(donor.userId, request, 'Donation recorded', `Your donation for request #${request.id} was recorded by a coordinator.`, transaction);
     await notifyCoordinators(request, complete ? 'Request fulfilled' : 'Request still needs blood', `Request #${request.id} has ${unitsRemaining(request)} outstanding unit(s).`, transaction);

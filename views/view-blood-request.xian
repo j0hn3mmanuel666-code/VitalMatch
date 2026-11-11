@@ -13,11 +13,11 @@
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-3xl font-bold mb-2">Blood Request Details</h1>
-            <p class="text-white/90">View your submitted blood request information</p>
+            <p class="text-white/90">Request status and details.</p>
           </div>
           <a href="{{#if isAdmin}}/admin/requests{{else}}/my-requests{{/if}}"
             class="vm-button bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
-            View All Requests
+            All requests
           </a>
         </div>
       </div>
@@ -37,7 +37,7 @@
         {{#unless last}}<span class="w-0.5 flex-1 {{#if done}}bg-green-600{{else}}bg-gray-200{{/if}}"></span>{{/unless}}
       </div>
       <div class="pb-5">
-        <p class="text-sm font-semibold {{#if current}}text-gray-900{{else}}text-gray-500{{/if}}">{{label}}</p>
+        <p class="text-sm font-semibold {{#if current}}text-gray-900{{else}}text-gray-500{{/if}}">{{#if (eq @root.request.supplySource "blood_bank")}}{{#if (eq index 5)}}Blood bank release scheduled{{else}}{{#if (eq index 4)}}Blood-bank coordination{{else}}{{label}}{{/if}}{{/if}}{{else}}{{label}}{{/if}}</p>
         {{#if current}}<p class="text-xs text-gray-500">Current stage</p>{{/if}}
       </div>
     </li>
@@ -48,7 +48,7 @@
   <p class="vm-muted mt-3">{{nextAction}}</p>
   {{#if isOwner}}{{#if (eq request.status 'pending')}}{{#if (eq request.hospitalStatus 'declined')}}<a class="vm-button mt-3" href="/requests/{{request.id}}/edit">Correct returned request</a>{{/if}}{{/if}}{{/if}}
   {{#if hospitalDeclineReason}}<p class="vm-alert vm-alert--danger mt-3">Facility response: {{hospitalDeclineReason}}</p>{{/if}}
-  {{#if request.scheduledDate}}<p class="mt-3">Scheduled: {{formatDate request.scheduledDate}} at {{formatTime request.scheduledDate}}. {{#if request.requesterConfirmed}}Requester confirmed.{{else}}Requester confirmation needed.{{/if}} {{#if request.donorConfirmed}}Donor confirmed.{{else}}Donor confirmation needed.{{/if}}</p>{{/if}}
+  {{#if request.scheduledDate}}<p class="mt-3">Scheduled: {{formatDate request.scheduledDate}} at {{formatTime request.scheduledDate}}. {{#if request.requesterConfirmed}}Requester confirmed.{{else}}Requester confirmation needed.{{/if}} {{#if (eq request.supplySource "blood_bank")}}Blood-bank stock — no donor confirmation required.{{else}}{{#if request.donorConfirmed}}Donor confirmed.{{else}}Donor confirmation needed.{{/if}}{{/if}}</p>{{/if}}
   {{#if history.length}}<details class="mt-4"><summary>Request activity history (latest 100 events)</summary>{{#each history}}<article class="vm-activity-row"><div><strong>{{label}}</strong><p>{{description}}</p><time>{{formatDate createdAt}}</time></div></article>{{/each}}</details>{{/if}}
 </section>
 {{#if isAdmin}}{{#if (eq request.status 'pending')}}
@@ -206,6 +206,14 @@
       </details>
 
       <!-- Request Details -->
+      {{#if request.prescriptionImage}}
+      <details class="collapsible bg-white rounded-md p-6 mb-6">
+        <summary class="text-2xl font-bold text-gray-800">Medical prescription</summary>
+        <p class="text-sm text-gray-600 mt-2">Private supporting document</p>
+        <a href="{{request.prescriptionImage}}" target="_blank" rel="noopener" class="vm-button mt-3">Open prescription image</a>
+        <img src="{{request.prescriptionImage}}" alt="Medical prescription attached to this blood request" loading="lazy" class="mt-3 rounded-lg" style="max-width:100%;max-height:600px;object-fit:contain">
+      </details>
+      {{/if}}
       <details class="collapsible bg-white rounded-md p-6 mb-6">
         <summary class="flex items-center justify-between">
           <span class="text-2xl font-bold text-gray-800 mb-6 flex items-center">

@@ -302,7 +302,7 @@ export const sessionSecurity = async (req, res, next) => {
       if (!account) return destroySession(req, res);
       req.authAccount = account;
       req.session.userRole = canonicalRole(account.role);
-      req.session.cookie.maxAge = sessionLifetimeMs();
+      req.session.cookie.maxAge = sessionLifetimeMs(req.session);
     }
     next();
   } catch (error) { next(error); }

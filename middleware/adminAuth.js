@@ -51,7 +51,8 @@ export const isAuthenticated = async (req, res, next) => {
     if (!account) return destroySession(req, res);
     req.authAccount = account;
     req.session.userRole = canonicalRole(account.role);
-    if (req.method !== 'GET' || (!req.path?.startsWith('/api/') && !req.path?.endsWith('/api'))) {
+    if (req.method !== 'GET' || (!req.path?.startsWith('/api/') && !req.path?.endsWith('/api')) ||
+        (req.session.rememberMe === true && Date.now() - req.session.lastActivityAt >= 5 * 60000)) {
       req.session.lastActivityAt = Date.now();
     }
     next();

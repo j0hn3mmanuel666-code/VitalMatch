@@ -204,7 +204,7 @@ export const adminRequestsPage = async (req, res) => {
     const searchedWhere = /^\d{5}$/.test(search)
       ? { [Op.and]: [where, { patientReference: { [Op.like]: `%${search}` } }] }
       : withTextSearch(where, search, ['patientName','patientReference','hospitalName','city','bloodType','contactPerson','contactNumber']);
-    const { rows, pagination } = await recordPage(BloodRequest, { where: searchedWhere, order: [['createdAt', 'DESC']] }, req.query, req.path);
+    const { rows, pagination } = await recordPage(BloodRequest, { where: searchedWhere, order: [['createdAt', 'DESC']] }, req.query, req.path, 'page', 5);
     const ids = rows.map(r => r.id);
     const { Pledge } = await import('../models/pledgeModel.js');
     const pledges = ids.length ? await Pledge.findAll({ where: { requestId: ids }, attributes: ['requestId', 'userId'], raw: true }) : [];
@@ -503,7 +503,7 @@ export const fulfillRequest = async (req, res) => {
 export const rescheduleAppointment = async (req, res) => {
   try {
     await changeAppointment(req.params.id, req.session.userId, req.body, 'reschedule');
-    res.json({ success: true, message: 'Appointment rescheduled. Both parties must confirm the new date.' });
+    res.json({ success: true, message: 'Appointment rescheduled. Required participants must confirm the new date.' });
   } catch (error) { res.status(error.status || 500).json({ success: false, message: error.status ? error.message : 'Could not reschedule appointment' }); }
 };
 export const cancelAppointment = async (req, res) => {
@@ -723,7 +723,7 @@ export const adminAppointmentsPage = async (req, res) => {
   try {
     const search = searchTerm(req.query);
     const { rows, pagination } = await recordPage(Appointment, { where: withTextSearch({ status: 'scheduled' },search,['$BloodRequest.patientName$','$BloodRequest.hospitalName$','$BloodRequest.bloodType$','$Donor.fullName$','$Donor.mobileNumber$'], 'requestId'), include: [{ model: BloodRequest, required: true, where: { archivedAt: null } }, { model: Donor, attributes: ['id', 'fullName', 'email', 'bloodType', 'mobileNumber'] }], order: [['scheduledDate', 'ASC']] },req.query,req.path);
-    const appointments = rows.map(a => ({ ...a.BloodRequest.toJSON(), id: a.requestId, requestId: a.requestId, appointmentId: a.id, version: a.version, scheduledDate: a.scheduledDate, donorConfirmed: a.donorConfirmed, requesterConfirmed: a.requesterConfirmed, donor: a.Donor?.toJSON(), unitsRemaining: unitsRemaining(a.BloodRequest) }));
+    const appointments = rows.map(a => ({ ...a.BloodRequest.toJSON(), id: a.requestId, requestId: a.requestId, appointmentId: a.id, version: a.version, scheduledDate: a.scheduledDate, supplySource: a.supplySource, donorConfirmed: a.donorConfirmed, requesterConfirmed: a.requesterConfirmed, donor: a.Donor?.toJSON(), unitsRemaining: unitsRemaining(a.BloodRequest) }));
     res.render('admin-appointments', { layout: 'admin', title: 'Appointments - VitalMatch Admin', isAppointments: true, appointments, pagination, search, error: null });
   } catch (error) {
     console.error('Appointments failed:', error.name);

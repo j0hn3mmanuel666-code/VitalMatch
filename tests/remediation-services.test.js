@@ -36,6 +36,21 @@ test('SMTP acceptance, rejection and escaped email content have honest outcomes'
   mode='throw'; assert.equal((await service.sendWelcomeEmail('donor@example.invalid','Donor')).success,false);
   assert.equal(await service.testEmailConfiguration(),true);
 });
+test('registration verification explains the request and provides the same expiring link in HTML and plain text', async () => {
+  let mail;
+  const service=new EmailService({env:{EMAIL_HOST:'smtp.example.invalid',EMAIL_USER:'operator',EMAIL_PASS:'synthetic',BASE_URL:'https://vitalmatch.example'},settings,
+    createTransport:()=>({sendMail:async options=>{mail=options;return {accepted:[options.to],rejected:[]};}})});
+  await service.sendVerificationEmail('donor@example.invalid','Ana <Test>','synthetic-token');
+  const link='https://vitalmatch.example/verify-email?token=synthetic-token';
+  assert.equal(mail.subject,'Confirm your email for VitalMatch');
+  assert.ok(mail.html.includes(link));
+  assert.ok(mail.html.includes('Ana &lt;Test&gt;'));
+  assert.ok(mail.html.includes('If you did not create this account'));
+  assert.ok(mail.text.includes(link));
+  assert.ok(mail.text.includes('https://vitalmatch.example'));
+  assert.ok(mail.text.includes('24 hours'));
+  assert.ok(mail.text.includes('If you did not create this account'));
+});
 test('optional welcome email preference does not disable account verification or reset', async () => {
   const config=settings();config.notifications.registrationNotifications=false;let sends=0;
   const service=new EmailService({env:{EMAIL_HOST:'smtp.example.invalid',EMAIL_USER:'operator',EMAIL_PASS:'synthetic'},settings:()=>config,createTransport:()=>({sendMail:async o=>{sends++;return {accepted:[o.to],rejected:[]};}})});

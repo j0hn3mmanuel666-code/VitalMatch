@@ -33,6 +33,7 @@ import { donationIntervalDays, isDonorReady, isDonorAgeEligible, parseBirthDate,
 import { cancelRequest as cancelRequestLifecycle, WorkflowError } from "../services/requestLifecycleService.js";
 import { Op, literal } from "sequelize";
 import { retryTransaction } from '../services/transactionService.js';
+import { mapConsentUpdates } from '../services/mapConsentService.js';
 // Display the donor profile form (pre-filled when the user already has one)
 export const donorProfilePage = async (req, res) => {
   try {
@@ -136,8 +137,9 @@ export const updateDonorProfile = async (req, res) => {
       const data = Object.fromEntries(required.filter(key => !['weight','height','dateOfBirth'].includes(key)).map(key => [key, req.body[key].trim()]));
       Object.assign(data, { dateOfBirth, weight, height, email: account.email, latitude, longitude, lastDonationDate: effectiveDate, medicalConditions: typeof req.body.medicalConditions === 'string' ? req.body.medicalConditions.trim().slice(0, 2000) : null, isAvailable: req.body.isAvailable === 'on' });
       if (data.isAvailable && !isDonorReady(data)) data.isAvailable = false;
+      Object.assign(data, mapConsentUpdates(req.body, donor));
       const saved = donor ? await donor.update(data, { transaction }) : await Donor.create({ ...data, userId: account.id }, { transaction });
-      await AuditService.logAction(account.id, donor ? 'donor_profile_updated' : 'donor_profile_created', 'Donor', saved.id, null, { isAvailable: saved.isAvailable, bloodType: saved.bloodType }, { ...AuditService.getRequestContext(req), transaction });
+      await AuditService.logAction(account.id, donor ? 'donor_profile_updated' : 'donor_profile_created', 'Donor', saved.id, null, { isAvailable: saved.isAvailable, bloodType: saved.bloodType, shareOnMap: saved.shareOnMap, mapConsentUpdatedAt: saved.mapConsentUpdatedAt }, { ...AuditService.getRequestContext(req), transaction });
     });
     delete req.session.donorFormValues;
     if (req.get?.('Accept')?.includes('application/json')) {
@@ -148,12 +150,13 @@ export const updateDonorProfile = async (req, res) => {
     res.redirect('/view-donor-profile');
   } catch (error) {
     if (req.get?.('Accept')?.includes('application/json')) {
-      const status = error instanceof WorkflowError ? error.status : 503;
-      return res.status(status).json({ success: false, error: error instanceof WorkflowError ? error.message : 'The profile could not be saved. Please retry.' });
+      const status = error.status || 503;
+      return res.status(status).json({ success: false, error: error.status ? error.message : 'The profile could not be saved. Please retry.' });
     }
     const fields = ['fullName','dateOfBirth','gender','bloodType','weight','height','mobileNumber','address','city','province','zipCode','emergencyContactName','emergencyContactNumber','emergencyContactRelationship','latitude','longitude','lastDonationDate','medicalConditions'];
     req.session.donorFormValues = Object.fromEntries(fields.filter(field => typeof req.body[field] === 'string').map(field => [field, req.body[field].slice(0,2000)]));
     req.session.donorFormValues.isAvailable = req.body.isAvailable === 'on';
+    if (req.body.mapConsentSubmitted === '1' || req.body.shareOnMap !== undefined) req.session.donorFormValues.shareOnMap = req.body.shareOnMap === 'on';
     req.flash('error_msg', error.status ? error.message : 'The profile could not be saved. Please retry.');
     res.redirect('/donor-profile');
   }

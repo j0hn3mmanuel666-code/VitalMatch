@@ -1,4 +1,5 @@
 <!-- User Management Content -->
+<link rel="stylesheet" href="/css/user-register.css?v=1">
 <link rel="stylesheet" href="/css/vendor/leaflet/leaflet.css?v=1.9.4" />
 <script src="/js/vendor/leaflet/leaflet.js?v=1.9.4" defer></script>
 <main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
@@ -7,12 +8,12 @@
 
     <!-- Header -->
     <div class="vm-page-heading mb-8">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">User Management</h1>
-      <p class="text-gray-600 dark:text-gray-400">Manage all system users, roles, and permissions</p>
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Users</h1>
+      <p class="text-gray-600 dark:text-gray-400">Accounts and access.</p>
     </div>
 
     <!-- Controls Bar -->
-    <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none p-6 mb-6">
+    <div class="vm-panel user-controls bg-white dark:bg-[#18181b] rounded-md dark:shadow-none p-6 mb-6">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
         <!-- Search and Filters -->
@@ -69,9 +70,10 @@
       <button id="applyBulk" class="vm-button vm-button--small px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">Apply</button>
     </div>
 
+    <div class="user-pagination" data-user-pagination><p class="vm-muted" data-user-page-summary>Loading users…</p><nav aria-label="User pages" data-user-page-buttons></nav></div>
     <!-- Users Table -->
     <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none overflow-hidden">
-      <div class="vm-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable data table">
+      <div class="user-register" role="region" aria-label="User accounts">
         <table data-search-mode="server" class="vm-table w-full">
           <thead class="bg-gray-50 dark:bg-[#27272a]">
             <tr>
@@ -103,30 +105,9 @@
         </table>
       </div>
 
-      <!-- Pagination -->
-      <div id="pagination" class="bg-gray-50 dark:bg-[#27272a] px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-800">
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button id="prevPageMobile" class="vm-button vm-button--small relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-[#18181b] hover:bg-gray-50 dark:bg-[#27272a]">
-            Previous
-          </button>
-          <button id="nextPageMobile" class="vm-button vm-button--primary vm-button--small ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-[#18181b] hover:bg-gray-50 dark:bg-[#27272a]">
-            Next
-          </button>
-        </div>
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm text-gray-700 dark:text-gray-300">
-              Showing <span id="showingFrom">1</span> to <span id="showingTo">20</span> of <span id="totalUsers">0</span> users
-            </p>
-          </div>
-          <div>
-            <nav class="relative z-0 inline-flex rounded-md shadow-sm dark:shadow-none -space-x-px" id="paginationNav">
-              <!-- Pagination buttons will be generated here -->
-            </nav>
-          </div>
-        </div>
-      </div>
+
     </div>
+    <div class="user-pagination" data-user-pagination><p class="vm-muted" data-user-page-summary>Loading users…</p><nav aria-label="User pages" data-user-page-buttons></nav></div>
 
   </div>
 </main>
@@ -306,6 +287,7 @@
 
 <!-- JavaScript for User Management -->
 <script>
+const USERS_PER_PAGE = 5;
 let currentPage = 1;
 let currentSearch = '';
 let currentRole = '';
@@ -413,7 +395,7 @@ async function loadUsers() {
   try {
     const params = new URLSearchParams({
       page: currentPage,
-      limit: 20,
+      limit: USERS_PER_PAGE,
       search: currentSearch,
       role: currentRole
     });
@@ -453,10 +435,10 @@ function renderUsers(users) {
 
   tbody.innerHTML = users.map(raw => { const user = { ...raw, id: Number(raw.id), firstName: escapeUserText(raw.firstName), lastName: escapeUserText(raw.lastName), email: escapeUserText(raw.email), phone: escapeUserText(raw.phone), role: escapeUserText(raw.role) }; return `
     <tr class="hover:bg-gray-50 dark:bg-[#27272a]">
-      <td class="px-6 py-4 whitespace-nowrap">
+      <td data-label="Select user" class="px-6 py-4 whitespace-nowrap">
         <input type="checkbox" class="user-checkbox rounded border-gray-300 text-red-600 focus:ring-red-500" value="${user.id}" aria-label="Select ${user.firstName} ${user.lastName}">
       </td>
-      <td class="px-6 py-4 whitespace-nowrap">
+      <td data-label="User" class="px-6 py-4 whitespace-nowrap">
         <div class="flex items-center">
           <div class="flex-shrink-0 h-10 w-10">
             <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -468,18 +450,18 @@ function renderUsers(users) {
           </div>
         </div>
       </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${user.email}</td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${user.phone}</td>
-      <td class="px-6 py-4 whitespace-nowrap">
+      <td data-label="Email" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${user.email}</td>
+      <td data-label="Phone" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${user.phone}</td>
+      <td data-label="Role" class="px-6 py-4 whitespace-nowrap">
         <span class="vm-status px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : user.role === 'hospital' ? 'bg-blue-100 text-blue-800' : user.role === 'hospital_admin' ? 'bg-orange-100 text-orange-800' : user.role === 'donor' ? 'bg-teal-100 text-teal-800' : 'bg-green-100 text-green-800'}">
           ${user.role}
         </span>
       </td>
-      <td class="px-6 py-4"><span class="vm-status ${user.isActive ? 'vm-status--success' : 'vm-status--danger'}">${user.archivedAt ? 'Archived' : user.isActive ? 'Active' : 'Disabled'}</span></td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+      <td data-label="Status" class="px-6 py-4"><span class="vm-status ${user.isActive ? 'vm-status--success' : 'vm-status--danger'}">${user.archivedAt ? 'Archived' : user.isActive ? 'Active' : 'Disabled'}</span></td>
+      <td data-label="Created" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
         ${new Date(user.createdAt).toLocaleDateString()}
       </td>
-      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      <td data-label="Actions" class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <button data-action="edit-user" data-user-id="${user.id}" class="vm-button text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
         <button data-action="delete-user" data-user-id="${user.id}" class="vm-button text-red-600 hover:text-red-900 vm-button--danger">Archive</button>
       </td>
@@ -488,30 +470,19 @@ function renderUsers(users) {
 }
 
 function renderPagination(pagination) {
-  document.getElementById('showingFrom').textContent = pagination.totalCount ? ((pagination.currentPage - 1) * 20) + 1 : 0;
-  document.getElementById('showingTo').textContent = Math.min(pagination.currentPage * 20, pagination.totalCount);
-  document.getElementById('totalUsers').textContent = pagination.totalCount;
-
-  const nav = document.getElementById('paginationNav');
-  let paginationHTML = '';
-
-  // Previous button
-  if (pagination.hasPrevPage) {
-    paginationHTML += `<button onclick="changePage(${pagination.currentPage - 1})" class="vm-button vm-button--small relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white dark:bg-[#18181b] text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-[#27272a]">Previous</button>`;
+  currentPage = pagination.currentPage;
+  const total = pagination.totalCount, limit = pagination.limit || USERS_PER_PAGE;
+  const from = total ? ((currentPage - 1) * limit) + 1 : 0;
+  const to = Math.min(currentPage * limit, total);
+  let buttons = `<button type="button" class="vm-button vm-button--small" onclick="changePage(${currentPage - 1})" ${pagination.hasPrevPage ? '' : 'disabled'}>Previous</button>`;
+  for (let i = Math.max(1, currentPage - 2); i <= Math.min(pagination.totalPages, currentPage + 2); i++) {
+    buttons += `<button type="button" class="vm-button vm-button--small" onclick="changePage(${i})" aria-label="Page ${i}" ${i === currentPage ? 'aria-current="page"' : ''}>${i}</button>`;
   }
-
-  // Page numbers (simplified)
-  for (let i = Math.max(1, pagination.currentPage - 2); i <= Math.min(pagination.totalPages, pagination.currentPage + 2); i++) {
-    const isActive = i === pagination.currentPage;
-    paginationHTML += `<button onclick="changePage(${i})" aria-current="${isActive ? 'page' : 'false'}" class="vm-button vm-button--small relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${isActive ? 'bg-red-50 border-red-500 text-red-600' : 'bg-white dark:bg-[#18181b] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-[#27272a]'}">${i}</button>`;
-  }
-
-  // Next button
-  if (pagination.hasNextPage) {
-    paginationHTML += `<button onclick="changePage(${pagination.currentPage + 1})" class="vm-button vm-button--small relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white dark:bg-[#18181b] text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:bg-[#27272a]">Next</button>`;
-  }
-
-  nav.innerHTML = paginationHTML;
+  buttons += `<button type="button" class="vm-button vm-button--small" onclick="changePage(${currentPage + 1})" ${pagination.hasNextPage ? '' : 'disabled'}>Next</button>`;
+  document.querySelectorAll('[data-user-pagination]').forEach(navigation => {
+    navigation.querySelector('[data-user-page-summary]').textContent = `Showing ${from}–${to} of ${total} users · Page ${currentPage} of ${Math.max(1, pagination.totalPages)}`;
+    navigation.querySelector('[data-user-page-buttons]').innerHTML = buttons;
+  });
 }
 
 function selectedIds() {
@@ -746,7 +717,8 @@ async function submitUserUpdate() {
 function showSuccess(message) {
   // Simple success notification
   const notification = document.createElement('div');
-  notification.className = 'vm-toast vm-toast--success fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg  dark:shadow-none z-50';
+  notification.className = 'vm-toast vm-toast--success';
+  notification.setAttribute('role', 'status');
   notification.textContent = message;
   document.body.appendChild(notification);
 
@@ -758,7 +730,8 @@ function showSuccess(message) {
 function showError(message) {
   // Simple error notification
   const notification = document.createElement('div');
-  notification.className = 'vm-toast vm-toast--danger fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg  dark:shadow-none z-50';
+  notification.className = 'vm-toast vm-toast--danger';
+  notification.setAttribute('role', 'status');
   notification.textContent = message;
   document.body.appendChild(notification);
 

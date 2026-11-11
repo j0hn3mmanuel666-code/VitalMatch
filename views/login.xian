@@ -5,7 +5,7 @@
     <section class="journey-auth__form" aria-labelledby="login-heading">
       <p class="journey-eyebrow">Welcome to VitalMatch</p>
       <h1 id="login-heading">Good to have you here.</h1>
-      <p class="journey-lead">Sign in to manage your requests, donor profile, and the next steps that need your attention.</p>
+    <p class="journey-lead">Sign in to see your requests and updates.</p>
       {{#if error}}<div id="login-error" class="journey-alert" role="alert">{{error}}</div>{{/if}}
       {{#if error_msg}}<div class="journey-alert" role="alert">{{error_msg}}</div>{{/if}}
       <form method="POST" action="/login" class="journey-form"{{#if error}} aria-describedby="login-error"{{/if}}>
@@ -14,15 +14,17 @@
         <label for="email">Email address</label><input type="email" name="email" id="email" placeholder="name@example.com" autocomplete="email" required>
         <div class="journey-form__label-row"><label for="password">Password</label><a href="/forgot-password">Forgot password?</a></div>
         <div class="password-field"><input type="password" name="password" id="password" autocomplete="current-password" required><button type="button" data-toggle-password="password" aria-controls="password" aria-pressed="false" aria-label="Show or hide password">Show</button></div>
+        <label for="rememberMe" style="display:flex;align-items:center;gap:10px;"><input type="checkbox" id="rememberMe" name="rememberMe" value="true" {{#unless shortSession}}checked{{/unless}} style="width:18px;height:18px;min-height:18px;margin:0;">Keep me signed in</label>
+        <p class="journey-form__footer">Stay signed in for 30 days, renewed when you use VitalMatch. Uncheck on a shared device.</p>
         <button type="submit" class="journey-button journey-button--block">Sign in</button>
         <p class="journey-form__footer">New to VitalMatch? <a href="/register">Create a donor account</a></p>
       </form>
     </section>
     <aside class="journey-auth__rail" aria-labelledby="login-guide" data-reveal>
       <div class="journey-rail__mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 3S6 14 6 20a10 10 0 0 0 20 0C26 14 16 3 16 3Z"/></svg></div>
-      <h2 id="login-guide">A connection that starts with care.</h2><p>Your account connects you to the coordination tools available to your role.</p>
-      <ol class="journey-rail__steps"><li><div><strong>For donors</strong><span>Keep your profile and availability up to date.</span></div></li><li><div><strong>For hospitals</strong><span>Submit requests and follow their progress.</span></div></li><li><div><strong>For coordinators</strong><span>Help people understand the next step.</span></div></li></ol>
-      <p>Need help with a hospital account? <a class="journey-text-link" href="/contact">Contact the team</a>.</p>
+      <h2 id="login-guide">Your next step starts here.</h2>
+      <ol class="journey-rail__steps"><li><div><strong>Donor</strong><span>Manage your profile.</span></div></li><li><div><strong>Hospital</strong><span>Submit and track requests.</span></div></li><li><div><strong>Coordinator</strong><span>Arrange the next step.</span></div></li></ol>
+      <p>Hospital account help? <a class="journey-text-link" href="/contact">Contact us</a>.</p>
     </aside>
   </div>
 </main>

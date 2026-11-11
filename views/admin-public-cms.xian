@@ -2,8 +2,8 @@
 <main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
   <div class="vm-page-container container mx-auto px-4">
     <div class="vm-page-heading mb-8">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Public CMS Management</h1>
-      <p class="text-gray-600 dark:text-gray-400">Manage public-facing content sections for your landing page</p>
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Website content</h1>
+      <p class="text-gray-600 dark:text-gray-400">Edit the public pages.</p>
     </div>
 
     <!-- Success/Error Messages -->
@@ -368,6 +368,15 @@ popupConfirm?.addEventListener('click', () => {
 
 popupCancel?.addEventListener('click', hideSystemPopup);
 
+async function cmsFetch(url, options) {
+  const response = await fetch(url, { ...options, credentials: 'same-origin', headers: { ...options.headers, 'Accept': 'application/json', 'X-CSRF-Token': window.getCsrfToken() } });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(response.status === 403 ? 'Your session expired. Refresh this page and sign in again if needed before retrying.' : result.message || result.error || 'The service is temporarily unavailable. Your entered details are retained; please retry.');
+  }
+  return response;
+}
+
 // Edit content form submission
 document.querySelectorAll('.edit-content-form').forEach(form => {
   form.addEventListener('submit', async (e) => {
@@ -391,7 +400,7 @@ document.querySelectorAll('.edit-content-form').forEach(form => {
     };
 
     try {
-      const response = await fetch(`/api/admin/public-content/${section}`, {
+      const response = await cmsFetch(`/api/admin/public-content/${section}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -408,7 +417,7 @@ document.querySelectorAll('.edit-content-form').forEach(form => {
       }
     } catch (error) {
       console.error('Error:', error);
-      showSystemPopup('Update Failed', 'Unable to save changes', 'An unexpected error occurred while saving the content.');
+      showSystemPopup('Update Failed', 'Unable to save changes', error.message || 'Unable to save. Your entered details are retained.');
     }
   });
 });
@@ -418,7 +427,7 @@ document.querySelectorAll('.reactivate-btn').forEach(btn => {
   btn.addEventListener('click', async () => {
     const section = btn.getAttribute('data-section');
     try {
-      const response = await fetch(`/api/admin/public-content/${encodeURIComponent(section)}`, {
+      const response = await cmsFetch(`/api/admin/public-content/${encodeURIComponent(section)}`, {
         method: 'PUT',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.getCsrfToken() },
@@ -449,7 +458,7 @@ document.querySelectorAll('.delete-section-btn').forEach(btn => {
         cancelText: 'Cancel',
         onConfirm: async () => {
           try {
-            const response = await fetch(`/api/admin/public-content/${section}`, {
+            const response = await cmsFetch(`/api/admin/public-content/${section}`, {
               method: 'DELETE'
             });
 
@@ -461,7 +470,7 @@ document.querySelectorAll('.delete-section-btn').forEach(btn => {
             }
           } catch (error) {
             console.error('Error:', error);
-            showSystemPopup('Delete Failed', 'Unable to delete section', 'An unexpected error occurred while deleting the section.', { type: 'error' });
+            showSystemPopup('Delete Failed', 'Unable to delete section', error.message || 'Unable to deactivate this section.', { type: 'error' });
           }
         }
       }
@@ -490,7 +499,8 @@ document.getElementById('add-content-form').addEventListener('submit', async (e)
   }
 
   try {
-    const response = await fetch('/api/admin/public-content', {
+    if (document.getElementById('add-upload-input').files.length && !data.imageUrl) throw new Error('Click Upload to attach your selected image, then click Create Section. Your entered details are retained.');
+    const response = await cmsFetch('/api/admin/public-content', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -507,7 +517,7 @@ document.getElementById('add-content-form').addEventListener('submit', async (e)
     }
   } catch (error) {
     console.error('Error:', error);
-    showSystemPopup('Creation Failed', 'Unable to create section', 'An unexpected error occurred while creating the section.');
+    showSystemPopup('Creation Failed', 'Unable to create section', error.message || 'Unable to create the section. Your entered details are retained.');
   }
 });
 
@@ -527,7 +537,7 @@ document.querySelectorAll('.tab-content').forEach(tab => {
       fd.append('image', file);
 
       try {
-        const res = await fetch('/api/admin/upload-image', {
+        const res = await cmsFetch('/api/admin/upload-image', {
           method: 'POST',
           credentials: 'same-origin',
           body: fd
@@ -553,7 +563,7 @@ document.querySelectorAll('.tab-content').forEach(tab => {
         }
       } catch (err) {
         console.error('Upload error', err);
-        showSystemPopup('Upload Failed', 'Unable to upload image', 'An unexpected error occurred during the upload.');
+        showSystemPopup('Upload Failed', 'Unable to upload image', err.message || 'Unable to upload the image. Your selected file is retained.');
       }
     });
   }
@@ -573,7 +583,7 @@ if (!file) { showSystemPopup('Upload Required', 'No file selected', 'Please choo
       fd.append('image', file);
 
       try {
-        const res = await fetch('/api/admin/upload-image', {
+        const res = await cmsFetch('/api/admin/upload-image', {
           method: 'POST',
           credentials: 'same-origin',
           body: fd
@@ -592,7 +602,7 @@ if (!file) { showSystemPopup('Upload Required', 'No file selected', 'Please choo
         }
       } catch (err) {
         console.error('Upload error', err);
-        showSystemPopup('Upload Failed', 'Unable to upload image', 'An unexpected error occurred during the upload.');
+        showSystemPopup('Upload Failed', 'Unable to upload image', err.message || 'Unable to upload the image. Your selected file is retained.');
     }
   });
 }

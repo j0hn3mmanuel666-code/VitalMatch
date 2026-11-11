@@ -10,7 +10,7 @@
       <div class="vm-page-heading vm-heading-actions flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 class="text-3xl font-bold text-gray-800">Facility Appointments</h1>
-          <p class="text-gray-600">Scheduled donations for your facility — confirmations update here</p>
+          <p class="text-gray-600">Scheduled donations and blood-bank releases for your facility — confirmations update here</p>
         </div>
       </div>
       {{> record-search label="Search appointments" placeholder="Donor, blood type, facility, location or ID"}}
@@ -36,7 +36,7 @@
                 <td class="px-4 py-3 text-sm text-gray-700">{{donorName}}{{#if donorBloodType}} ({{donorBloodType}}){{/if}}</td>
                 <td class="px-4 py-3 text-sm font-bold text-red-600">{{bloodType}}</td>
                 <td class="px-4 py-3 text-sm text-gray-700">{{formatDateTime scheduledDate}}</td>
-                <td class="px-4 py-3 text-xs text-gray-600">Donor: {{#if donorConfirmed}}confirmed{{else}}pending{{/if}} · Requester: {{#if requesterConfirmed}}confirmed{{else}}pending{{/if}}</td>
+                <td class="px-4 py-3 text-xs text-gray-600">{{#if (eq supplySource "blood_bank")}}No donor required{{else}}Donor: {{#if donorConfirmed}}confirmed{{else}}pending{{/if}}{{/if}} · Requester: {{#if requesterConfirmed}}confirmed{{else}}pending{{/if}}</td>
                 <td class="px-4 py-3 text-right whitespace-nowrap">
                   <a href="/view-blood-request/{{id}}" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">View</a>
                 </td>

@@ -38,15 +38,15 @@ export default function AppointmentsScreen({ role }: { role: AccountRole }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} tintColor={colors.brand} />}>
       <Text style={styles.title}>Appointments</Text>
-      <Text style={styles.subtitle}>Confirm upcoming appointments and review completed donations.</Text>
+      <Text style={styles.subtitle}>Scheduled and completed donations.</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {!items.length ? <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No appointments yet</Text><Text style={styles.emptyText}>Appointments and completed donations will appear here after a donor is assigned.</Text></View> : null}
+      {!items.length ? <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No appointments yet</Text><Text style={styles.emptyText}>Appointments appear after scheduling.</Text></View> : null}
       {items.map(item => {
         const myRole = item.role === 'donor' || item.role === 'requester';
         const confirmed = item.role === 'donor' ? item.donorConfirmed : item.requesterConfirmed;
         return (
           <View key={item.id} style={styles.card}>
-            <View style={styles.cardTop}><Text style={styles.bloodType}>{item.bloodType}</Text><Text style={styles.units}>{item.unitsRemaining} unit(s) outstanding</Text></View>
+            <View style={styles.cardTop}><Text style={styles.bloodType}>{item.bloodType}</Text><Text style={styles.units}>{item.unitsRemaining} units left</Text></View>
             <Text style={styles.hospital}>{item.hospitalName}</Text>
             <Text style={styles.detail}>{item.city} · Request #{item.requestId}</Text>
             <Text style={styles.date}>{item.status === 'completed' ? 'Donation recorded' : 'Appointment'} · {new Date(item.scheduledDate).toLocaleString()}</Text>
@@ -56,7 +56,7 @@ export default function AppointmentsScreen({ role }: { role: AccountRole }) {
               <Text style={item.requesterConfirmed ? styles.confirmed : styles.waiting}>Requester {item.requesterConfirmed ? 'confirmed' : 'pending'}</Text>
             </View>
             {item.status === 'completed' ? (
-              <Text style={styles.confirmedNotice}>Donation completion was recorded by the coordination team.</Text>
+              <Text style={styles.confirmedNotice}>Recorded by the coordinator.</Text>
             ) : myRole ? (
               confirmed ? <Text style={styles.confirmedNotice}>You have confirmed this appointment.</Text> : (
                 <View style={styles.actions}>
@@ -66,7 +66,7 @@ export default function AppointmentsScreen({ role }: { role: AccountRole }) {
                   {item.role === 'donor' ? <Pressable style={styles.secondaryButton} onPress={() => Alert.alert('Decline appointment?', 'The coordinator will be notified and can arrange another donor.', [{ text: 'Keep appointment', style: 'cancel' }, { text: 'Decline', style: 'destructive', onPress: () => void decline(item) }])} disabled={busyId === item.id}><Text style={styles.secondaryText}>Decline</Text></Pressable> : null}
                 </View>
               )
-            ) : <Text style={styles.detail}>Only the assigned donor and requester can confirm.</Text>}
+            ) : <Text style={styles.detail}>Donor and requester confirm.</Text>}
           </View>
         );
       })}
@@ -79,22 +79,22 @@ const styles = StyleSheet.create({
   content: { padding: 18, paddingBottom: 32 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
   title: { fontSize: 25, fontWeight: '800', color: colors.text },
-  subtitle: { marginTop: 3, marginBottom: 16, color: colors.muted, fontSize: 13, lineHeight: 19 },
+  subtitle: { marginTop: 3, marginBottom: 16, color: colors.muted, fontSize: 15, lineHeight: 19 },
   error: { color: colors.danger, marginBottom: 12 },
   emptyCard: { padding: 18, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   emptyTitle: { color: colors.text, fontWeight: '700' },
-  emptyText: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 5 },
+  emptyText: { color: colors.muted, fontSize: 15, lineHeight: 19, marginTop: 5 },
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 15, marginBottom: 11 },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bloodType: { fontSize: 19, color: colors.brand, fontWeight: '800' },
-  units: { color: colors.muted, fontSize: 12 },
+  units: { color: colors.muted, fontSize: 16 },
   hospital: { marginTop: 6, color: colors.text, fontSize: 16, fontWeight: '700' },
-  detail: { marginTop: 4, color: colors.muted, fontSize: 12 },
+  detail: { marginTop: 4, color: colors.muted, fontSize: 16 },
   date: { marginTop: 10, color: colors.text, fontWeight: '700' },
   confirmations: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  confirmed: { color: colors.success, fontSize: 12, fontWeight: '700' },
-  waiting: { color: colors.warning, fontSize: 12, fontWeight: '700' },
-  confirmedNotice: { marginTop: 12, color: colors.success, fontWeight: '700', fontSize: 13 },
+  confirmed: { color: colors.success, fontSize: 16, fontWeight: '700' },
+  waiting: { color: colors.warning, fontSize: 16, fontWeight: '700' },
+  confirmedNotice: { marginTop: 12, color: colors.success, fontWeight: '700', fontSize: 15 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 14 },
   primaryButton: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm, backgroundColor: colors.brand },
   primaryText: { color: '#fff', fontWeight: '700' },

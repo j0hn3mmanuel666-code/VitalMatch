@@ -218,6 +218,9 @@
   document.addEventListener('keydown', function (event) {
     if (!activeDialog || !document.getElementById('confirmModal').classList.contains('hidden')) return;
     if (event.key === 'Escape') {
+      // Scheduling fields use native pickers/dropdowns. Escape must dismiss
+      // those controls without dismissing the unfinished scheduling form.
+      if (activeDialog.querySelector('.schedule-form')) return;
       var exit = dialogExit(activeDialog);
       if (exit) { event.preventDefault(); exit.click(); }
     }

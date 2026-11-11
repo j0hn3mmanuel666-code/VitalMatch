@@ -19,7 +19,7 @@ export async function backupDatabase(destination = path.resolve('.local/backups'
       rowsByTable[table] = rows;
     }
   });
-  const statements = ['-- VitalMatch snapshot; restore only into a new empty database.', `SET time_zone = ${mysql.escape(sequelize.options.timezone)};`, 'SET FOREIGN_KEY_CHECKS=0;', ...schema];
+  const statements = ['-- VitalMatch snapshot; restore only into a new empty database.', 'SET NAMES utf8mb4;', `SET time_zone = ${mysql.escape(sequelize.options.timezone)};`, 'SET FOREIGN_KEY_CHECKS=0;', ...schema];
   for (const [table, rows] of Object.entries(rowsByTable)) for (const row of rows) {
     const columns = Object.keys(row).map(key => mysql.escapeId(key)).join(',');
     const values = Object.values(row).map(value => mysql.escape(value && typeof value === 'object' && !(value instanceof Date) && !Buffer.isBuffer(value) ? JSON.stringify(value) : value,false,sequelize.options.timezone)).join(',');

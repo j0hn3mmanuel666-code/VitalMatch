@@ -229,16 +229,16 @@ export default function MobileRequestsScreen() {
 }
 
 function listDescription(role: string) {
-  return ({ user: 'Track requests created by your account.', donor: 'Review approved requests matching your donor blood type.', hospital: 'Review requests connected to your verified facility.', admin: 'Review open requests and urgent coordination work.' } as Record<string, string>)[role] || 'Coordinate blood requests.';
+  return ({ user: 'Your requests.', donor: 'Matching requests.', hospital: 'Facility requests.', admin: 'Requests to review.' } as Record<string, string>)[role] || 'Blood requests.';
 }
 
 function WorkflowProgress({ item, role }: { item: MobileRequest; role: string }) {
   let title = 'Waiting for review';
-  let detail = 'A facility or coordinator needs to review this request before donor outreach begins.';
+  let detail = 'Staff review this request before donor matching.';
 
   if (item.status === 'cancelled') {
     title = 'Request cancelled';
-    detail = 'No further coordination is planned for this request.';
+    detail = 'No further action is planned.';
   } else if (item.status === 'fulfilled') {
     title = 'Donation recorded';
     detail = `${item.unitsFulfilled} of ${item.unitsRequired} unit(s) recorded${item.fulfilledAt ? ` on ${new Date(item.fulfilledAt).toLocaleDateString()}` : ''}.`;
@@ -249,19 +249,19 @@ function WorkflowProgress({ item, role }: { item: MobileRequest; role: string })
       : `Waiting for ${item.donorConfirmed ? 'the requester' : item.requesterConfirmed ? 'the donor' : 'the donor and requester'} to confirm${item.scheduledDate ? ` · ${new Date(item.scheduledDate).toLocaleString()}` : ''}.`;
   } else if (item.hospitalStatus === 'declined') {
     title = 'Updates requested';
-    detail = 'The request was returned for corrections before donor matching can continue.';
+    detail = 'Update this request before donor matching.';
   } else if (item.status === 'active' && item.unitsFulfilled > 0) {
     title = 'Donation partially recorded';
     detail = `${item.unitsFulfilled} of ${item.unitsRequired} unit(s) recorded; ${item.unitsRemaining} still needed.`;
   } else if (item.status === 'active' && role === 'donor' && item.hasPledged) {
     title = 'Your offer was sent';
-    detail = 'A coordinator will review your offer and contact you if an appointment is arranged.';
+    detail = 'A coordinator will review your offer.';
   } else if (item.status === 'active' && item.offerCount > 0) {
     title = item.offerCount === 1 ? 'Donor offer received' : `${item.offerCount} donor offers received`;
-    detail = 'A coordinator will review the offer(s), confirm a donor, and arrange an appointment.';
+    detail = 'A coordinator will confirm a donor and schedule a visit.';
   } else if (item.status === 'active') {
     title = 'Open for donor matching';
-    detail = 'When a donor offers to help, a coordinator will review the match and arrange an appointment.';
+    detail = 'A coordinator reviews donor offers and schedules a visit.';
   }
 
   return <View style={styles.workflowCard}>
@@ -292,14 +292,14 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background }, content: { padding: 17, paddingBottom: 32 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
   headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }, headingCopy: { flex: 1, paddingRight: 8 },
-  title: { color: colors.text, fontSize: 25, fontWeight: '800' }, subtitle: { color: colors.muted, marginTop: 3, fontSize: 13, lineHeight: 19 },
+  title: { color: colors.text, fontSize: 25, fontWeight: '800' }, subtitle: { color: colors.muted, marginTop: 3, fontSize: 15, lineHeight: 19 },
   newButton: { borderRadius: 10, backgroundColor: colors.brand, paddingHorizontal: 13, paddingVertical: 10 }, newButtonText: { color: '#fff', fontWeight: '800' },
-  error: { color: colors.danger, marginBottom: 10, fontSize: 13 }, success: { color: colors.success, marginBottom: 10, fontSize: 13, fontWeight: '600' },
-  emptyCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: 18 }, emptyTitle: { color: colors.text, fontWeight: '800', fontSize: 16 }, emptyText: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 6 },
-  requestCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 }, requestTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, bloodType: { color: colors.brand, fontSize: 20, fontWeight: '900' }, urgency: { fontSize: 10, fontWeight: '900', color: colors.warning, textTransform: 'uppercase' }, critical: { color: colors.danger }, facility: { color: colors.text, fontWeight: '800', fontSize: 15, marginTop: 5 }, detail: { color: colors.muted, fontSize: 12, marginTop: 4 }, statusRow: { flexDirection: 'row', gap: 8, marginTop: 10 }, status: { color: colors.text, fontSize: 11, fontWeight: '800', textTransform: 'capitalize' }, reviewStatus: { color: colors.muted, fontSize: 11, textTransform: 'capitalize' },
-  actionButton: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 42, borderRadius: 9, backgroundColor: colors.brand, paddingHorizontal: 12, marginTop: 12 }, actionText: { color: '#fff', fontWeight: '800' }, actions: { flexDirection: 'row', gap: 8 }, declineButton: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 42, borderRadius: 9, borderWidth: 1, borderColor: colors.border, marginTop: 12 }, declineText: { color: colors.text, fontWeight: '800' }, cancelButton: { paddingVertical: 10, alignItems: 'center' }, cancelText: { color: colors.danger, fontWeight: '700', fontSize: 12 },
-  workflowCard: { marginTop: 10, padding: 11, borderRadius: 9, backgroundColor: '#fff7f5', borderWidth: 1, borderColor: '#f4d7d2' }, workflowEyebrow: { color: colors.brand, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 }, workflowTitle: { color: colors.text, fontSize: 13, fontWeight: '800', marginTop: 3 }, workflowBody: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
-  reviewBox: { marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }, helper: { color: colors.muted, fontSize: 12, lineHeight: 17, marginBottom: 8 },
-  adminActions: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 10, paddingTop: 5 }, adminButton: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: colors.border, marginTop: 8 }, adminButtonText: { color: colors.text, fontWeight: '700', fontSize: 12 }, inlinePanel: { marginTop: 10, padding: 11, backgroundColor: colors.background, borderRadius: 9 }, donorOption: { padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8, marginTop: 6, backgroundColor: '#fff' }, donorOptionActive: { borderColor: colors.brand, backgroundColor: '#fdecec' }, donorName: { color: colors.text, fontSize: 13, fontWeight: '700' },
-  formCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 15, marginBottom: 14 }, formTitle: { color: colors.text, fontSize: 18, fontWeight: '800' }, field: { marginTop: 10 }, label: { color: colors.text, fontWeight: '700', fontSize: 12, marginBottom: 5 }, input: { minHeight: 43, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 9, color: colors.text, fontSize: 14 }, multiline: { minHeight: 82, textAlignVertical: 'top' }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 4 }, chip: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: '#fff' }, chipActive: { backgroundColor: '#fdecec', borderColor: colors.brand }, chipText: { fontSize: 12, color: colors.muted, fontWeight: '600' }, chipTextActive: { color: colors.brand }, submitButton: { alignItems: 'center', justifyContent: 'center', minHeight: 48, backgroundColor: colors.brand, borderRadius: 9, marginTop: 16 }, submitText: { color: '#fff', fontWeight: '800' },
+  error: { color: colors.danger, marginBottom: 10, fontSize: 15 }, success: { color: colors.success, marginBottom: 10, fontSize: 15, fontWeight: '600' },
+  emptyCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: 18 }, emptyTitle: { color: colors.text, fontWeight: '800', fontSize: 16 }, emptyText: { color: colors.muted, fontSize: 15, lineHeight: 19, marginTop: 6 },
+  requestCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginBottom: 10 }, requestTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, bloodType: { color: colors.brand, fontSize: 20, fontWeight: '900' }, urgency: { fontSize: 16, fontWeight: '900', color: colors.warning, textTransform: 'uppercase' }, critical: { color: colors.danger }, facility: { color: colors.text, fontWeight: '800', fontSize: 15, marginTop: 5 }, detail: { color: colors.muted, fontSize: 16, marginTop: 4 }, statusRow: { flexDirection: 'row', gap: 8, marginTop: 10 }, status: { color: colors.text, fontSize: 16, fontWeight: '800', textTransform: 'capitalize' }, reviewStatus: { color: colors.muted, fontSize: 16, textTransform: 'capitalize' },
+  actionButton: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48, borderRadius: 9, backgroundColor: colors.brand, paddingHorizontal: 12, marginTop: 12 }, actionText: { color: '#fff', fontWeight: '800' }, actions: { flexDirection: 'row', gap: 8 }, declineButton: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48, borderRadius: 9, borderWidth: 1, borderColor: colors.border, marginTop: 12 }, declineText: { color: colors.text, fontWeight: '800' }, cancelButton: { paddingVertical: 10, alignItems: 'center' }, cancelText: { color: colors.danger, fontWeight: '700', fontSize: 16 },
+  workflowCard: { marginTop: 10, padding: 11, borderRadius: 9, backgroundColor: '#fff7f5', borderWidth: 1, borderColor: '#f4d7d2' }, workflowEyebrow: { color: colors.brand, fontSize: 14, fontWeight: '900', letterSpacing: 0.8 }, workflowTitle: { color: colors.text, fontSize: 16, fontWeight: '800', marginTop: 3 }, workflowBody: { color: colors.muted, fontSize: 16, lineHeight: 23, marginTop: 3 },
+  reviewBox: { marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }, helper: { color: colors.muted, fontSize: 16, lineHeight: 23, marginBottom: 8 },
+  adminActions: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 10, paddingTop: 5 }, adminButton: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: colors.border, marginTop: 8 }, adminButtonText: { color: colors.text, fontWeight: '700', fontSize: 16 }, inlinePanel: { marginTop: 10, padding: 11, backgroundColor: colors.background, borderRadius: 9 }, donorOption: { padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8, marginTop: 6, backgroundColor: '#fff' }, donorOptionActive: { borderColor: colors.brand, backgroundColor: '#fdecec' }, donorName: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  formCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 15, marginBottom: 14 }, formTitle: { color: colors.text, fontSize: 18, fontWeight: '800' }, field: { marginTop: 10 }, label: { color: colors.text, fontWeight: '700', fontSize: 16, marginBottom: 5 }, input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 9, color: colors.text, fontSize: 16 }, multiline: { minHeight: 82, textAlignVertical: 'top' }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 4 }, chip: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: '#fff' }, chipActive: { backgroundColor: '#fdecec', borderColor: colors.brand }, chipText: { fontSize: 16, color: colors.muted, fontWeight: '600' }, chipTextActive: { color: colors.brand }, submitButton: { alignItems: 'center', justifyContent: 'center', minHeight: 48, backgroundColor: colors.brand, borderRadius: 9, marginTop: 16 }, submitText: { color: '#fff', fontWeight: '800' },
 });

@@ -5,6 +5,7 @@ import { canonicalRole } from './accountPolicy.js';
 
 const positiveId = value => Number.isSafeInteger(Number(value)) && Number(value) > 0;
 const validDescription = (value, type) => value && value.type === type && typeof value.sdp === 'string' && value.sdp.length <= 65536;
+const accountName = account => [account.firstName, account.lastName].filter(Boolean).join(' ').trim() || 'VitalMatch member';
 
 export class SignalingServer {
   constructor(io, sessionMiddleware, options = {}) {
@@ -27,6 +28,7 @@ export class SignalingServer {
         if (!account) return next(new Error('Authentication required'));
         if (!this.serviceAvailable(account)) return next(new Error('Service temporarily unavailable'));
         socket.userId = Number(account.id);
+        socket.userName = accountName(account);
         next();
       } catch { next(new Error('Authentication unavailable')); }
     });
@@ -45,6 +47,7 @@ export class SignalingServer {
         socket.disconnect(true);
         return false;
       }
+      socket.userName = accountName(account);
       return true;
     } catch {
       socket.emit('call:error', { code: 'AUTH_REQUIRED', error: 'Please log in again.' });
@@ -123,7 +126,7 @@ export class SignalingServer {
       call.timeout.unref();
       this.activeCalls.set(callId, call);
       socket.emit('call:created', { callId });
-      this.broadcastToUser(calleeId, 'call:incoming', { callId, caller: { id: callerId }, callType, offer });
+      this.broadcastToUser(calleeId, 'call:incoming', { callId, caller: { id: callerId, name: socket.userName || 'VitalMatch member' }, callType, offer });
     } catch { socket.emit('call:error', { code: 'SIGNALING_FAILED', error: 'Failed to initiate call.' }); }
     finally { this.pendingUsers.delete(callerId); this.pendingUsers.delete(calleeId); }
   }

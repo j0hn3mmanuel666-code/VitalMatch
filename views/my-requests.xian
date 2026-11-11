@@ -15,8 +15,7 @@
       <div class="vm-page-heading mb-8">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-3xl font-bold mb-2">My Requests</h1>
-            <p class="text-white/90">View and manage your blood requests and donation history</p>
+            <h1 class="text-3xl font-bold mb-2">Requests</h1>
           </div>
           <a href="/request-blood"
             class="vm-button vm-button--primary bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">

@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 32 },
   title: { fontSize: 24, fontWeight: '800', color: colors.text },
-  subtitle: { marginTop: 2, marginBottom: 16, color: colors.muted, fontSize: 13 },
+  subtitle: { marginTop: 2, marginBottom: 16, color: colors.muted, fontSize: 15 },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -66,10 +66,10 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
-  label: { color: colors.muted, fontSize: 12, fontWeight: '600', marginBottom: 3 },
+  label: { color: colors.muted, fontSize: 16, fontWeight: '600', marginBottom: 3 },
   value: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  secondary: { color: colors.muted, fontSize: 13, marginTop: 3 },
-  role: { color: colors.brand, fontSize: 12, fontWeight: '700', marginTop: 8 },
+  secondary: { color: colors.muted, fontSize: 15, marginTop: 3 },
+  role: { color: colors.brand, fontSize: 16, fontWeight: '700', marginTop: 8 },
   button: {
     marginTop: 10,
     borderWidth: 1,
@@ -80,5 +80,5 @@ const styles = StyleSheet.create({
   },
   buttonPressed: { backgroundColor: '#fdecec' },
   buttonText: { color: colors.brand, fontWeight: '700', fontSize: 15 },
-  note: { marginTop: 18, color: colors.muted, fontSize: 12, lineHeight: 18 },
+  note: { marginTop: 18, color: colors.muted, fontSize: 16, lineHeight: 23 },
 });

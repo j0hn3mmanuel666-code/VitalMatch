@@ -12,8 +12,8 @@
     <div class="max-w-4xl mx-auto">
 
       <div class="vm-page-heading mb-8">
-        <h1 class="text-3xl font-bold mb-2">My History</h1>
-        <p class="text-white/90">Your blood requests and donations over time</p>
+        <h1 class="text-3xl font-bold mb-2">History</h1>
+        <p class="text-white/90">Requests and donations.</p>
       </div>
       {{> record-search label="Search your history" placeholder="Patient, facility, blood type, location or request ID"}}
 

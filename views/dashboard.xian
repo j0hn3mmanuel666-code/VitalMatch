@@ -10,25 +10,25 @@
   <div class="vm-page-container">
     {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/dashboard">Retry loading dashboard</a></div>{{/if}}
     <div class="vm-page-heading vm-heading-actions">
-      <div><p class="vm-eyebrow">{{#if (eq user.role 'hospital')}}Hospital coordination{{else}}Your workspace{{/if}}</p><h1>{{#if (eq user.role 'hospital')}}Hospital dashboard{{else}}Dashboard{{/if}}</h1><p>{{#if (eq user.role 'hospital')}}Follow your requests and coordinate the next step with donors and the chapter.{{else}}Review current requests, manage your availability, and keep track of your activity.{{/if}}</p></div>
-      <a href="/new-blood-request" class="vm-button vm-button--primary">New blood request</a>
+      <div><p class="vm-eyebrow">{{#if (eq user.role 'hospital')}}Hospital{{else}}VitalMatch{{/if}}</p><h1>{{#if (eq user.role 'hospital')}}Dashboard{{else}}Dashboard{{/if}}</h1><p>{{#if (eq user.role 'hospital')}}Your requests and updates.{{else}}{{#if donorProfile}}Requests and donation updates.{{else}}Your requests and updates.{{/if}}{{/if}}</p></div>
+      <a href="/new-blood-request" class="vm-button vm-button--primary">New request</a>
     </div>
     {{#unless error}}<dl class="vm-dashboard-summary">
       {{#if (eq user.role 'hospital')}}
       <div><dt>Total requests</dt><dd>{{#if hospitalStats}}{{hospitalStats.totalRequests}}{{else}}0{{/if}}</dd><p><a href="/my-requests" class="vm-text-link">All submitted requests</a></p></div>
       <div><dt>Active requests</dt><dd>{{#if hospitalStats}}{{hospitalStats.activeRequests}}{{else}}0{{/if}}</dd><p><a href="/my-requests" class="vm-text-link">Review your requests</a></p></div>
-      <div><dt>Emergency needs attention</dt><dd>{{#if hospitalStats}}{{hospitalStats.emergencyRequests}}{{else}}0{{/if}}</dd><p>Critical and escalated requests</p></div>
-      <div><dt>Fulfilled requests</dt><dd>{{#if hospitalStats}}{{hospitalStats.fulfilledRequests}}{{else}}0{{/if}}</dd><p>Completed coordination</p></div>
+      <div><dt>Urgent</dt><dd>{{#if hospitalStats}}{{hospitalStats.emergencyRequests}}{{else}}0{{/if}}</dd><p>Needs action</p></div>
+      <div><dt>Fulfilled</dt><dd>{{#if hospitalStats}}{{hospitalStats.fulfilledRequests}}{{else}}0{{/if}}</dd><p>Completed requests</p></div>
       <div><dt>Facility reviews needed</dt><dd>{{pendingReviewCount}}</dd><p><a href="/hospital/patients" class="vm-text-link">Open review inbox</a></p></div>
       {{else}}
       {{#if donorProfile}}
-      <div><dt>Your availability</dt><dd style="font-size:1.15rem">{{donorStatus}}</dd><p><a href="/donor-profile" class="vm-text-link">Manage availability</a></p></div>
-      <div><dt>Completed donations</dt><dd>{{donationStats.totalDonations}}</dd><p>Your recorded donation activity</p></div>
-      <div><dt>Next coordination date</dt><dd style="font-size:1.15rem">{{nextEligible}}</dd><p>Final eligibility is assessed by medical staff</p></div>
+      <div><dt>Availability</dt><dd style="font-size:1.15rem">{{donorStatus}}</dd><p><a href="/donor-profile" class="vm-text-link">Change status</a></p></div>
+      <div><dt>Donations</dt><dd>{{donationStats.totalDonations}}</dd><p>Recorded donations</p></div>
+      <div><dt>Next eligible date</dt><dd style="font-size:1.15rem">{{nextEligible}}</dd><p>Staff confirm eligibility</p></div>
       {{else}}
-      <div><dt>Requests awaiting review</dt><dd>{{requesterStats.pendingRequests}}</dd><p><a href="/my-requests" class="vm-text-link">Follow facility review</a></p></div>
-      <div><dt>Open requests</dt><dd>{{requesterStats.activeRequests}}</dd><p><a href="/my-requests" class="vm-text-link">Review coordination</a></p></div>
-      <div><dt>Your requests</dt><dd>{{requesterStats.totalRequests}}</dd><p>Submitted requests and outcomes</p></div>
+      <div><dt>Awaiting review</dt><dd>{{requesterStats.pendingRequests}}</dd><p><a href="/my-requests" class="vm-text-link">View requests</a></p></div>
+      <div><dt>Open</dt><dd>{{requesterStats.activeRequests}}</dd><p><a href="/my-requests" class="vm-text-link">View requests</a></p></div>
+      <div><dt>Total requests</dt><dd>{{requesterStats.totalRequests}}</dd><p>All requests</p></div>
       {{/if}}
       {{/if}}
     </dl>

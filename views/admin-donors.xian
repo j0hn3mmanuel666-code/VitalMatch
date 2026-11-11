@@ -5,8 +5,8 @@
     
     <!-- Header -->
     <div class="vm-page-heading mb-8">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Manage Donors</h1>
-      <p class="text-gray-600 dark:text-gray-400">View and manage all registered blood donors</p>
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Donors</h1>
+      <p class="text-gray-600 dark:text-gray-400">Donor profiles and availability.</p>
     </div>
       {{> record-search label="Search donors" placeholder="Name, blood type, location, contact or ID"}}
     

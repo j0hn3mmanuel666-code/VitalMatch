@@ -8,7 +8,7 @@ const database = `vitalmatch_audit_test_${Date.now()}_${crypto.randomBytes(4).to
 const connection = await mysql.createConnection({ host:process.env.DB_HOST || 'localhost',port:Number(process.env.DB_PORT || 3306),user:process.env.DB_USER || 'root',password:process.env.DB_PASSWORD || '' });
 const privateDirectory = path.resolve('.local/test-results',database);
 await fs.mkdir(privateDirectory,{recursive:true});
-const env = { ...process.env, DB_NAME:database,NODE_ENV:'test',BCRYPT_ROUNDS:'4',SESSION_SECRET:crypto.randomBytes(48).toString('hex'),EMAIL_OUTBOX_ENABLED:'false',COORDINATION_JOBS_ENABLED:'false',EMAIL_USER:'',EMAIL_PASS:'',EMAIL_HOST:'',BASE_URL:'http://localhost:3107',PORT:'3107',RUNTIME_SETTINGS_FILE:path.join(privateDirectory,'settings.json'),ELECTRON:'1' };
+const env = { ...process.env, DB_NAME:database,NODE_ENV:'test',BCRYPT_ROUNDS:'4',SESSION_SECRET:crypto.randomBytes(48).toString('hex'),EMAIL_OUTBOX_ENABLED:'false',PUSH_OUTBOX_ENABLED:'false',COORDINATION_JOBS_ENABLED:'false',EMAIL_USER:'',EMAIL_PASS:'',EMAIL_HOST:'',BASE_URL:'http://localhost:3107',PORT:'3107',RUNTIME_SETTINGS_FILE:path.join(privateDirectory,'settings.json'),ELECTRON:'1' };
 // Do not consume existing credentials/configuration in synthetic email tests.
 await fs.writeFile(env.RUNTIME_SETTINGS_FILE,JSON.stringify({security:{sessionTimeout:30,minPasswordLength:8,requireSpecialChars:false},email:{},notifications:{emailNotificationsEnabled:false},general:{appName:'VitalMatch',systemStatus:'online',timeZone:'Asia/Manila'}}));
 const run = (args, extra = {}) => new Promise((resolve,reject)=>{

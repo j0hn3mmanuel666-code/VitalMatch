@@ -32,7 +32,8 @@ try {
       const [rows]=await sequelize.query('SELECT * FROM '+quote(table));
       const oldVersions=new Set(originalSchemaMigrationRows.map(row=>row.version));
       const preserved=rows.filter(row=>oldVersions.has(row.version));
-      if(rows.length!==before.count+1||!rows.some(row=>row.version==='20261024_01_system_feedback'))throw new Error('Migration ledger did not record exactly the expected additive feedback migration');
+      const expectedNewVersions=['20261024_01_system_feedback','20261027_01_mobile_push'].filter(version=>!oldVersions.has(version));
+      if(rows.length!==before.count+expectedNewVersions.length||!expectedNewVersions.every(version=>rows.some(row=>row.version===version)))throw new Error('Migration ledger did not record the expected additive feature migrations');
       if(preserved.length!==originalSchemaMigrationRows.length||hash(preserved)!==before.hash)throw new Error('Historical schema migration records changed; inspect before starting the application');
       continue;
     }

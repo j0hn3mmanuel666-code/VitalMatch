@@ -56,7 +56,13 @@ npm audit
 npm audit --omit=dev
 ```
 
-Integration tests create uniquely named `vitalmatch_audit_test_*` databases, apply migrations twice, use synthetic accounts and disable real delivery workers. They remove only the database they created. The browser suite uses installed Chrome in headless mode. It does not require private demo credentials. Test results, traces and snapshots are ignored under `.local/test-results`.
+### Mobile push alerts
+
+The mobile app can send generic push alerts for new VitalMatch inbox updates. Users opt in under **Profile → Phone alerts**; the lock-screen message does not include patient details. Apply the reviewed `20261027_01_mobile_push` schema migration after taking and verifying a backup before enabling this feature on a populated database.
+
+Configure an Expo/EAS project and set `EXPO_PUBLIC_EAS_PROJECT_ID` when building the app. Set `EXPO_PUBLIC_API_BASE_URL` to the deployed HTTPS VitalMatch address in the mobile build environment. Configure Android FCM v1 credentials or iOS APNs credentials in EAS, then create and install a development or release build. Expo Go cannot receive remote push alerts. The server processes its durable push outbox automatically when the migration is present; `PUSH_OUTBOX_ENABLED=false` disables sending. `EXPO_ACCESS_TOKEN` is optional unless enhanced push security is enabled for the Expo project.
+
+Integration tests create uniquely named `vitalmatch_audit_test_*` databases, apply migrations twice, use synthetic accounts and disable real delivery workers. They remove only the database they created. The browser suite uses installed Chrome by default; set `PLAYWRIGHT_CHANNEL=msedge` to use Microsoft Edge. It does not require private demo credentials. Test results, traces and snapshots are ignored under `.local/test-results`.
 
 ## Mobile app
 

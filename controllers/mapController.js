@@ -9,6 +9,7 @@ import { RED_CROSS_PINS, resolveCoords, normalizeCity } from '../services/mindor
 import { donationIntervalDays, donorAgeBounds } from '../services/coordinationPolicy.js';
 export const mapPage = (req, res) => res.render('map', { title: 'Blood Map - VitalMatch' });
 export const mapPins = async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
   try {
     const userId = req.session.userId, role = String(req.session.userRole || 'user').toLowerCase();
     if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -58,7 +59,7 @@ export const mapPins = async (req, res) => {
     pins.redcross = RED_CROSS_PINS.map(p => ({ name:p.name,address:p.address,phone:p.phone,lat:p.lat,lng:p.lng }));
     const include = [{ model: User, attributes: [], required: true, where: { isActive:true,emailVerified:true,archivedAt:null } }];
     const ages=donorAgeBounds();
-    const donorWhere = { isAvailable:true,dateOfBirth:{[Op.gt]:ages.after,[Op.lte]:ages.through},[Op.and]:[
+    const donorWhere = { shareOnMap:true,isAvailable:true,dateOfBirth:{[Op.gt]:ages.after,[Op.lte]:ages.through},[Op.and]:[
       {[Op.or]:[{lastDonationDate:null},{lastDonationDate:{[Op.lte]:new Date(Date.now()-donationIntervalDays()*86400000)}}]},
       literal("NOT EXISTS (SELECT 1 FROM Appointments occupied WHERE occupied.donorId = Donor.id AND occupied.status = 'scheduled')")
     ] };
@@ -68,7 +69,7 @@ export const mapPins = async (req, res) => {
       pins.donors = donors.map(d => ({ bloodType:d.bloodType,city:d.city,...resolveCoords(null,null,d.city),approximate:true }));
     } else {
       const self = await Donor.findOne({ where: { userId } });
-      if (self) pins.self = { bloodType:self.bloodType,city:self.city,...resolveCoords(self.latitude,self.longitude,self.city),isAvailable:self.isAvailable };
+      if (self) pins.self = { bloodType:self.bloodType,city:self.city,...resolveCoords(self.latitude,self.longitude,self.city),isAvailable:self.isAvailable,shareOnMap:self.shareOnMap };
       const grouped = await Donor.findAll({ where: donorWhere, include, attributes: ['city','bloodType',[fn('COUNT',col('Donor.id')),'count']], group:['Donor.city','Donor.bloodType'], raw:true });
       const byCity = new Map();
       for (const d of grouped) {

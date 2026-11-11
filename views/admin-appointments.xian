@@ -4,8 +4,8 @@
 
     <!-- Header -->
     <div class="vm-page-heading mb-8">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Upcoming Appointments</h1>
-      <p class="text-gray-600 dark:text-gray-400">View and manage scheduled blood donations</p>
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Appointments</h1>
+      <p class="text-gray-600 dark:text-gray-400">Scheduled donations and blood-bank releases.</p>
     </div>
       {{> record-search label="Search appointments" placeholder="Patient, donor, facility, blood type or request ID"}}
 
@@ -46,7 +46,7 @@
                     <span class="text-xs text-gray-500 flex items-center">📱 {{donor.mobileNumber}}</span>
                   </div>
                 {{else}}
-                  <span class="vm-status text-xs text-gray-500 italic bg-gray-50 px-2 py-1 rounded">Walk-in / TBD</span>
+                  <span class="vm-status text-xs text-gray-500 italic bg-gray-50 px-2 py-1 rounded">{{#if (eq supplySource "blood_bank")}}Blood bank stock{{else}}Walk-in / TBD{{/if}}</span>
                 {{/if}}
               </td>
               <td class="px-4 py-4 whitespace-nowrap">
@@ -88,7 +88,7 @@
                   <a href="/view-blood-request/{{id}}" class="vm-button vm-button--small p-1.5 text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 hover:text-blue-800 transition tooltip-trigger" title="View details">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                   <span>View</span></a>
-                  <button type="button" class="vm-button vm-button--small vm-button--success" data-appointment-action="complete" data-request-id="{{id}}" data-appointment-id="{{appointmentId}}" data-version="{{version}}" data-remaining="{{unitsRemaining}}">Record donation</button>
+                  <button type="button" class="vm-button vm-button--small vm-button--success" data-appointment-action="complete" data-request-id="{{id}}" data-appointment-id="{{appointmentId}}" data-version="{{version}}" data-remaining="{{unitsRemaining}}">{{#if (eq supplySource "blood_bank")}}Record stock supplied{{else}}Record donation{{/if}}</button>
                   <button type="button" class="vm-button vm-button--small vm-button--warning" data-appointment-action="reschedule" data-request-id="{{id}}" data-appointment-id="{{appointmentId}}" data-version="{{version}}" data-remaining="{{unitsRemaining}}">Reschedule</button>
                   <button type="button" class="vm-button vm-button--small vm-button--danger" data-appointment-action="cancel" data-request-id="{{id}}" data-appointment-id="{{appointmentId}}" data-version="{{version}}" data-remaining="{{unitsRemaining}}">Cancel</button>
                 </div>
@@ -106,7 +106,7 @@
           </svg>
         </div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No upcoming appointments</h3>
-        <p class="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto">When requests are scheduled with donors, they will appear here for tracking.</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto">When donations or blood-bank releases are scheduled, they will appear here for tracking.</p>
       </div>
       {{/if}}
     </div>
@@ -119,9 +119,9 @@
   <div class="vm-dialog">
     <h2 id="appointmentActionTitle">Update appointment</h2>
     <p id="appointmentContext"></p>
-    <p class="vm-muted text-sm">Scheduling changes require a reason and fresh confirmations. Record only units actually collected after medical clearance. Partial donations leave the remaining request open.</p>
+    <p class="vm-muted text-sm">Scheduling changes require a reason and fresh confirmations. Record only units actually collected or released by the blood bank. Partial supply leaves the remaining request open.</p>
     <form id="appointmentActionForm">
-      <div class="form-group mt-4"><label for="appointmentUnits">Units actually collected</label><input id="appointmentUnits" type="number" name="unitsProvided" min="1" max="10" step="1"></div>
+      <div class="form-group mt-4"><label for="appointmentUnits">Units actually supplied</label><input id="appointmentUnits" type="number" name="unitsProvided" min="1" max="10" step="1"></div>
       <div class="form-group mt-4"><label for="appointmentDate">New date and time (your local time)</label><input id="appointmentDate" type="datetime-local" name="scheduledDate"></div>
       <div class="form-group mt-4"><label for="appointmentReason">Reason / completion notes</label><textarea id="appointmentReason" name="reason" maxlength="1000" rows="3"></textarea></div>
       <p id="appointmentActionError" class="vm-field-error" role="alert"></p>

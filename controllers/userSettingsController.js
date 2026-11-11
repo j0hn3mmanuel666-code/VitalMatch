@@ -10,6 +10,33 @@ import { sessionIsCurrent } from '../services/sessionAuth.js';
 import { AuditService } from '../services/auditService.js';
 import { canonicalRole } from '../services/accountPolicy.js';
 import { retryTransaction } from '../services/transactionService.js';
+import { mapConsentUpdates } from '../services/mapConsentService.js';
+
+export const updateMapPrivacy = async (req, res) => {
+  res.set('Cache-Control', 'private, no-store');
+  const json = req.get('Accept')?.includes('application/json');
+  try {
+    if (req.body.mapConsentSubmitted === '1' && req.body.shareOnMap === undefined) req.body.shareOnMap = 'off';
+    if (!['on', 'off'].includes(req.body.shareOnMap)) throw Object.assign(new Error('Choose on or off for Blood Map visibility.'), { status: 400 });
+    const consent = await retryTransaction(async transaction => {
+      const account = await lockCurrentAccount(req, transaction);
+      const donor = await Donor.findOne({ where: { userId: account.id }, transaction, lock: transaction.LOCK.UPDATE });
+      if (!donor) throw Object.assign(new Error('Create a donor profile before changing map visibility.'), { status: 404 });
+      const previous = donor.shareOnMap;
+      await donor.update(mapConsentUpdates(req.body, donor), { transaction });
+      await AuditService.logAction(account.id, 'DONOR_MAP_CONSENT_UPDATE', 'Donors', donor.id, { shareOnMap: previous }, { shareOnMap: donor.shareOnMap, mapConsentUpdatedAt: donor.mapConsentUpdatedAt }, auditContext(req, transaction, account));
+      return donor.shareOnMap;
+    });
+    const message = consent ? 'Blood Map sharing enabled. Only your blood type and approximate city are shared when you are available and eligible.' : 'Blood Map sharing disabled. Your donor details are excluded from shared map markers and counts.';
+    if (json) return res.json({ success: true, shareOnMap: consent, message });
+    req.flash('success_msg', message);
+  } catch (error) {
+    const message = error.status ? error.message : 'Map visibility could not be saved. Please retry.';
+    if (json) return res.status(error.status || 503).json({ success: false, error: message });
+    req.flash('error_msg', message);
+  }
+  res.redirect('/settings?tab=donor');
+};
 
 const auditContext = (req, transaction, actor) => ({ transaction, actorRole: canonicalRole(actor.role), source: 'self-service', ipAddress: req.ip || req.socket?.remoteAddress, userAgent: req.get?.('User-Agent') });
 const lockCurrentAccount = async (req, transaction) => {

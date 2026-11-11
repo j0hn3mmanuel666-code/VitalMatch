@@ -1,4 +1,5 @@
 <!-- Admin Requests Content -->
+<link rel="stylesheet" href="/css/request-register.css?v=1">
 <main id="main-content" tabindex="-1" class="vm-page min-h-screen bg-gray-100 dark:bg-[#09090b] py-8">
   <div class="vm-page-container container mx-auto px-4">
     {{#if error}}<div class="vm-alert vm-alert--danger mb-4" role="alert">{{error}} <a class="vm-text-link" href="/admin/requests">Retry</a></div>{{/if}}
@@ -6,8 +7,8 @@
     <!-- Header -->
     <div class="vm-page-heading vm-heading-actions mb-8 flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Manage Blood Requests</h1>
-        <p class="text-gray-600 dark:text-gray-400">View and manage all blood requests in the system</p>
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">Requests</h1>
+        <p class="text-gray-600 dark:text-gray-400">Review and coordinate blood requests.</p>
       </div>
       <a href="/admin/new-blood-request"
         class="vm-button inline-flex items-center space-x-2 bg-red-600 text-white px-6 py-3 rounded-md font-bold hover:bg-red-700 transition-all duration-200 vm-button--primary">
@@ -62,11 +63,12 @@
       </div>
     </div>
 
+    {{> request-pagination}}
     <!-- Requests Table -->
     <div class="vm-panel bg-white dark:bg-[#18181b] rounded-md dark:shadow-none overflow-hidden">
       {{#if requests.length}}
-      <div class="vm-table-scroll overflow-x-auto" tabindex="0" role="region" aria-label="Scrollable data table">
-        <table data-search-mode="server" class="vm-table min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+      <div class="request-register" role="region" aria-label="Blood requests">
+        <table data-search-mode="server" class="vm-table request-register-table min-w-full divide-y divide-gray-100 dark:divide-gray-800">
           <thead class="bg-gray-50 dark:bg-[#27272a]/80 backdrop-blur">
             <tr>
               <th scope="col"
@@ -74,50 +76,39 @@
                 <input type="checkbox" id="selectAll" onchange="selectAllRequests()"
                   class="rounded border-gray-300 text-red-600 focus:ring-red-500 shadow-sm dark:shadow-none transition" aria-label="Select all rows">
               </th>
-              <th scope="col"
+<th scope="col"
                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                ID</th>
-              <th scope="col"
-                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                Patient</th>
-              <th scope="col"
+                Patient / ID</th>
+<th scope="col"
                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">
                 Blood Type</th>
-              <th scope="col"
+<th scope="col"
                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">
                 Units</th>
-              <th scope="col"
+<th scope="col"
                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                Hospital</th>
-              <th scope="col"
+                Hospital / location</th>
+<th scope="col"
                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                Location</th>
-              <th scope="col"
-                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                Urgency</th>
-              <th scope="col"
-                class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                Status</th>
-              <th scope="col"
+                Status / urgency</th>
+<th scope="col"
                 class="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-center">
                 Matches</th>
-              <th scope="col"
+<th scope="col"
                 class="px-4 py-3 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest pr-6">
                 Actions</th>
-            </tr>
-          </thead>
+</tr>
+</thead>
           <tbody class="bg-white dark:bg-[#18181b] divide-y divide-gray-100 dark:divide-gray-800">
             {{#each requests}}
             <tr id="request-row-{{id}}" class="hover:bg-blue-50/30 transition-colors duration-200 group">
-              <td class="px-4 py-3 whitespace-nowrap">
+              <td data-label="Select request" class="px-4 py-3 whitespace-nowrap">
                 <input type="checkbox" name="selectedRequests" value="{{id}}" {{#unless (eq status "fulfilled")}}{{#unless (eq status "cancelled")}}disabled{{/unless}}{{/unless}} onchange="updateBulkActionsVisibility()"
                   class="rounded border-gray-300 text-red-600 focus:ring-red-500 shadow-sm dark:shadow-none transition" aria-label="Select this row">
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-600 dark:text-gray-400">#{{id}}
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{patientName}}<br><span class="vm-muted text-xs">{{#if patientReference}}{{patientReference}}{{else}}No reference yet{{/if}}</span></td>
-              <td class="px-4 py-3 whitespace-nowrap">
+<td data-label="Patient / ID" class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span class="vm-muted request-id">#{{id}}</span><br>{{patientName}}<br><span class="vm-muted text-xs">{{#if patientReference}}{{patientReference}}{{else}}No reference yet{{/if}}</span></td>
+<td data-label="Blood type" class="px-4 py-3 whitespace-nowrap">
                 <div class="flex justify-center">
                   <div
                     class="flex items-center justify-center w-10 h-10 rounded-full bg-red-50/80 text-red-600 font-extrabold text-sm shadow-sm dark:shadow-none border border-red-100">
@@ -125,30 +116,10 @@
                   </div>
                 </div>
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-400 text-center">
+<td data-label="Units" class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-400 text-center">
                 <span>{{unitsRemaining}} outstanding</span><br><span class="vm-muted text-xs">{{unitsFulfilled}} collected / {{unitsRequired}} requested</span></td>
-              <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-medium">{{hospitalName}}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{city}}</td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                {{#if (eq urgency 'critical')}}
-                <span
-                  class="vm-status vm-status--danger inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 border border-red-200 shadow-sm dark:shadow-none"><span
-                    class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse"></span>Critical</span>
-                {{else if (eq urgency 'urgent')}}
-                <span
-                  class="vm-status vm-status--warning inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 shadow-sm dark:shadow-none"><span
-                    class="w-1.5 h-1.5 rounded-full bg-orange-500 mr-1.5"></span>Urgent</span>
-                {{else if (eq urgency 'high')}}
-                <span
-                  class="vm-status vm-status--warning inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-sm dark:shadow-none"><span
-                    class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>High</span>
-                {{else}}
-                <span
-                  class="vm-status vm-status--info inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:shadow-none"><span
-                    class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Moderate</span>
-                {{/if}}
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
+<td data-label="Hospital / location" class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 font-medium">{{hospitalName}}<br><span class="vm-muted">{{city}}</span></td>
+<td data-label="Status / urgency" class="px-4 py-3 whitespace-nowrap">
                 {{#if emergencyActive}}
                 <span
                   class="vm-status vm-status--danger inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-red-600 text-white border border-red-600 shadow-sm dark:shadow-none animate-pulse">EMERGENCY</span>
@@ -172,8 +143,26 @@
                 <span
                   class="vm-status vm-status--warning inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200 shadow-sm dark:shadow-none">Pending</span>
                 {{/if}}
+              <br>
+                {{#if (eq urgency 'critical')}}
+                <span
+                  class="vm-status vm-status--danger inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 border border-red-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse"></span>Critical</span>
+                {{else if (eq urgency 'urgent')}}
+                <span
+                  class="vm-status vm-status--warning inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-orange-500 mr-1.5"></span>Urgent</span>
+                {{else if (eq urgency 'high')}}
+                <span
+                  class="vm-status vm-status--warning inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>High</span>
+                {{else}}
+                <span
+                  class="vm-status vm-status--info inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm dark:shadow-none"><span
+                    class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Moderate</span>
+                {{/if}}
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-center">
+<td data-label="Matches" class="px-4 py-3 whitespace-nowrap text-center">
                 {{#if pledgeCount}}
                 <a href="/view-blood-request/{{id}}" title="View pledged donors"
                   class="vm-button vm-button--small inline-flex items-center justify-center px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-xs font-semibold hover:from-green-600 hover:to-green-700 transition shadow-sm dark:shadow-none dark:shadow-none transform mb-1">
@@ -198,7 +187,7 @@
                   matches</span>
                 {{/if}}
               </td>
-              <td class="px-4 py-3 whitespace-nowrap text-right pr-6">
+<td data-label="Actions" class="px-4 py-3 whitespace-nowrap text-right pr-6">
                 <div class="flex items-center justify-end space-x-2">
                   <a href="/view-blood-request/{{id}}"
                     class="vm-button vm-button--small p-1.5 text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 hover:text-blue-800 transition tooltip-trigger"
@@ -233,8 +222,7 @@
                   <span>Archive</span></button>
                   {{else if (eq status "cancelled")}}<button type="button" class="vm-button vm-button--small vm-button--danger" onclick="deleteRequest('{{id}}')">Archive</button>{{/if}}
                 </div>
-              </td>
-            </tr>
+              </td></tr>
 
 
             {{/each}}
@@ -252,8 +240,8 @@
       </div>
       {{/if}}
     </div>
+    {{> request-pagination}}
   </div>
-  {{> pagination}}
 </main>
 
 <!-- Donor Modals -->
@@ -351,17 +339,18 @@
       </button>
     </div>
     <form class="schedule-form" data-request-id="{{id}}">
-      <p class="vm-muted p-4">Scheduling reserves coordination only. It does not record a completed donation. Completed walk-in collection requires actual units and a reason.</p>
+      <p class="vm-muted p-4">Choose a donor donation or blood-bank stock. Scheduling does not record blood as supplied. For bank stock, enter the supplying bank and stock/reference details in Notes.</p>
       <div class="p-6 overflow-y-auto flex-1">
         <div class="space-y-4">
-          <div><label for="coordination-mode-{{id}}" class="block mb-1">Action</label><select name="coordinationMode" id="coordination-mode-{{id}}"><option value="schedule">Schedule a future donation</option><option value="complete">Record a collected walk-in donation</option></select></div>
+          <div><label for="coordination-mode-{{id}}" class="block mb-1">Action</label><select name="coordinationMode" id="coordination-mode-{{id}}"><option value="schedule">Schedule a future donation / stock release</option><option value="complete">Record blood already supplied</option></select></div>
+          <div><label for="supply-source-{{id}}" class="block mb-1">Blood supply source</label><select name="supplySource" id="supply-source-{{id}}"><option value="donor">Donor donation</option><option value="blood_bank">Blood-bank stock (no donor required)</option></select></div>
           <p class="schedule-error vm-field-error" role="alert"></p>
           <!-- Donor Selection -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-requests-27-{{id}}">Assign donor (required for scheduled donation)</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-requests-27-{{id}}">Assign donor (for donor donation only)</label>
             <select name="donorId"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#09090b] dark:text-white" id="vm-admin-requests-27-{{id}}">
-              <option value="">-- No donor assigned (Walk-in) --</option>
+              <option value="">-- Select a donor, or choose blood-bank stock --</option>
               {{#each matchingDonors}}
               <option value="{{id}}" {{#unless isAssignable}}disabled{{/unless}}>{{fullName}} ({{bloodType}}){{#if pledged}} - pledged{{/if}}{{#unless isAssignable}} - currently unavailable{{/unless}}</option>
               {{/each}}
@@ -369,7 +358,7 @@
           </div>
           <!-- Units for this donation -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-requests-28-{{id}}">Units for a completed donation</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-requests-28-{{id}}">Units actually supplied</label>
             <input type="number" name="unitsProvided" value="1" min="1" max="10" step="1" required
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#09090b] dark:text-white" id="vm-admin-requests-28-{{id}}">
           </div>
@@ -378,7 +367,7 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="vm-admin-requests-29-{{id}}">Schedule date &amp; time (your device time zone)</label>
             <input type="datetime-local" name="scheduledDate"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#09090b] dark:text-white" id="vm-admin-requests-29-{{id}}">
-            <p class="text-xs text-gray-500 mt-1">Leave blank only after a walk-in donation has actually been collected.</p>
+            <p class="text-xs text-gray-500 mt-1">For a future pickup or donation, choose a future date. Leave blank only when recording blood already supplied.</p>
           </div>
           <!-- Notes -->
           <div>
@@ -410,9 +399,16 @@
 
     // Bind all donor buttons to open modal
     document.querySelectorAll('.schedule-form').forEach(form => {
-      const mode = form.elements.coordinationMode, date = form.elements.scheduledDate, units = form.elements.unitsProvided, donor = form.elements.donorId, notes = form.elements.notes;
-      const update = () => { const scheduling = mode.value === 'schedule'; date.required = scheduling; date.disabled = !scheduling; units.disabled = scheduling; donor.required = scheduling; notes.required = !scheduling; form.querySelector('button[type="submit"]').textContent = scheduling ? 'Schedule donation' : 'Record actual collection'; };
-      mode.addEventListener('change', update); donor.addEventListener('change', () => donor.setCustomValidity('')); update();
+      const mode = form.elements.coordinationMode, source = form.elements.supplySource, date = form.elements.scheduledDate, units = form.elements.unitsProvided, donor = form.elements.donorId, notes = form.elements.notes;
+      const update = () => {
+        const scheduling = mode.value === 'schedule', bank = source.value === 'blood_bank';
+        date.required = scheduling; date.disabled = !scheduling; units.disabled = scheduling;
+        donor.required = scheduling && !bank; donor.disabled = bank; donor.parentElement.hidden = bank; donor.setCustomValidity('');
+        notes.required = !scheduling || bank;
+        notes.placeholder = bank ? 'Supplying blood bank, stock/batch reference, and pickup or release instructions...' : 'Add any instructions for the donor or hospital...';
+        form.querySelector('button[type="submit"]').textContent = scheduling ? bank ? 'Schedule stock release' : 'Schedule donation' : bank ? 'Record stock supplied' : 'Record actual collection';
+      };
+      mode.addEventListener('change', update); source.addEventListener('change', update); donor.addEventListener('change', () => donor.setCustomValidity('')); update();
     });
     const donorButtons = document.querySelectorAll('.show-donor-btn');
     donorButtons.forEach(btn => {
@@ -448,7 +444,7 @@
     });
 
     // Bind close schedule modal buttons
-    const closeScheduleElements = document.querySelectorAll('.close-schedule-modal-btn, .close-schedule-modal-backdrop');
+    const closeScheduleElements = document.querySelectorAll('.close-schedule-modal-btn');
     closeScheduleElements.forEach(el => {
       el.addEventListener('click', function (e) {
         e.preventDefault();
@@ -560,9 +556,9 @@
     event.preventDefault();
     const form = event.target, feedback = form.querySelector('.schedule-error'), button = form.querySelector('button[type="submit"]');
     if (button.disabled || !form.checkValidity()) { form.reportValidity(); return; }
-    const fields = new FormData(form), scheduling = fields.get('coordinationMode') === 'schedule';
-    if (scheduling && (!fields.get('donorId') || new Date(fields.get('scheduledDate')).getTime() <= Date.now())) { feedback.textContent = 'Select an eligible donor and a future date.'; return; }
-    const payload = { donorId: fields.get('donorId') || null, unitsProvided: scheduling ? undefined : fields.get('unitsProvided'), scheduledDate: scheduling ? new Date(fields.get('scheduledDate')).toISOString() : null, notes: fields.get('notes') || '', idempotencyKey: form.dataset.idempotencyKey || (form.dataset.idempotencyKey = crypto.randomUUID()) };
+    const fields = new FormData(form), scheduling = fields.get('coordinationMode') === 'schedule', bank = fields.get('supplySource') === 'blood_bank';
+    if (scheduling && ((!bank && !fields.get('donorId')) || new Date(fields.get('scheduledDate')).getTime() <= Date.now())) { feedback.textContent = bank ? 'Choose a future stock release date.' : 'Select an eligible donor and a future date.'; return; }
+    const payload = { supplySource: fields.get('supplySource'), donorId: fields.get('donorId') || null, unitsProvided: scheduling ? undefined : fields.get('unitsProvided'), scheduledDate: scheduling ? new Date(fields.get('scheduledDate')).toISOString() : null, notes: fields.get('notes') || '', idempotencyKey: form.dataset.idempotencyKey || (form.dataset.idempotencyKey = crypto.randomUUID()) };
     button.disabled = true; feedback.textContent = 'Saving...';
     try {
       const response = await fetch(`/admin/fulfill-request/${requestId}`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.getCsrfToken() }, body: JSON.stringify(payload) });
@@ -607,6 +603,8 @@
       const text = document.getElementById('critical-banner-text');
       if (banner && text && data.success && data.count > 0) {
         const latest = data.criticals[0];
+        const reviewLink = document.getElementById('critical-review-link');
+        if (reviewLink) reviewLink.href = '/view-blood-request/' + latest.id;
         text.textContent = `${data.count} CRITICAL request${data.count > 1 ? 's need' : ' needs'} immediate action (latest: #${latest.id}, ${latest.bloodType} at ${latest.hospitalName || latest.city || 'unknown facility'})`;
         banner.classList.remove('hidden');
       } else if (banner) {
@@ -617,15 +615,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     pollCriticalAlerts();
     setInterval(pollCriticalAlerts, 20000);
-    // Review now: filter to pending, then scroll to and flash the critical row
-    var reviewLink = document.getElementById('critical-review-link');
-    if (reviewLink) {
-      reviewLink.addEventListener('click', function (e) {
-        var text = document.getElementById('critical-banner-text');
-        var match = text ? text.textContent.match(/#(\d+)/) : null;
-        if (match) reviewLink.href = '/admin/requests?filter=pending&highlight=' + match[1];
-      });
-    }
     try {
       var highlight = new URLSearchParams(window.location.search).get('highlight');
       if (highlight) {

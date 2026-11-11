@@ -7,7 +7,7 @@
         <p class="journey-eyebrow">Care starts with community</p>
         <h1 id="landing-title">{{#if hero.title}}{{hero.title}}{{else}}When blood is needed, every connection matters.{{/if}}</h1>
         <p class="landing-hero__statement">{{#if hero.subtitle}}{{hero.subtitle}}{{else}}A clear way to connect people who need blood with people ready to help.{{/if}}</p>
-        <div class="landing-hero__description">{{#if hero.description}}{{{hero.description}}}{{else}}VitalMatch supports donors, hospitals, and coordinators in Oriental Mindoro, from a request for support to the next coordinated step.{{/if}}</div>
+        <div class="landing-hero__description">{{#if hero.description}}{{{hero.description}}}{{else}}For donors, hospitals, and coordinators in Oriental Mindoro.{{/if}}</div>
         <div class="landing-actions">
           <a class="journey-button" href="{{#if hero.primaryButtonLink}}{{hero.primaryButtonLink}}{{else}}/login{{/if}}">{{#if hero.primaryButtonText}}{{hero.primaryButtonText}}{{else}}Request blood{{/if}} <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></a>
           <a class="journey-button journey-button--secondary" href="{{#if hero.secondaryButtonLink}}{{hero.secondaryButtonLink}}{{else}}/register{{/if}}">{{#if hero.secondaryButtonText}}{{hero.secondaryButtonText}}{{else}}Become a donor{{/if}}</a>
@@ -22,26 +22,26 @@
   <div class="landing-context"><div class="journey-container landing-context__inner"><span><strong>Local focus.</strong> Oriental Mindoro communities</span><span><strong>Shared purpose.</strong> Donors, hospitals &amp; coordinators</span><span><strong>Human care.</strong> Professional donation screening</span></div></div>
   <section class="landing-section" aria-labelledby="intro-heading">
     <div class="journey-container landing-intro__grid" data-reveal>
-      <div><p class="journey-eyebrow">People at the heart of the response</p><h2 id="intro-heading">A small act of care can begin a meaningful connection.</h2></div>
-      <div class="landing-copy"><p>Behind every blood request are people waiting for support, volunteers willing to give, and teams working to bring them together.</p><p>VitalMatch helps make that coordination easier to follow. It brings requests, donor availability, notifications, and scheduling into one place, while medical professionals guide donation screening and care.</p><a href="/about" class="journey-text-link">Get to know VitalMatch <span aria-hidden="true">&rarr;</span></a></div>
+      <div><p class="journey-eyebrow">Our community</p><h2 id="intro-heading">Care begins with a connection.</h2></div>
+      <div class="landing-copy"><p>VitalMatch helps people follow blood requests, donor availability, and appointments.</p><p>Medical professionals guide donation screening and care.</p><a href="/about" class="journey-text-link">About VitalMatch <span aria-hidden="true">&rarr;</span></a></div>
     </div>
   </section>
   <section class="landing-section" aria-labelledby="paths-heading">
     <div class="journey-container">
-      <div class="landing-section-heading" data-reveal><div><p class="journey-eyebrow">How you can take part</p><h2 id="paths-heading">Find the right place to begin.</h2></div><p>Whether you are seeking support or ready to give, your next step should be clear.</p></div>
+      <div class="landing-section-heading" data-reveal><div><p class="journey-eyebrow">Get started</p><h2 id="paths-heading">Choose your next step.</h2></div></div>
       <div class="path-choices">
-        <article class="path-choice" data-reveal><div class="path-choice__mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 28V5h20v23M2 28h28M12 28v-7h8v7M12 11h8M16 7v8"/></svg></div><h3>I need to request blood</h3><p>Hospitals and authorized requesters can sign in to submit a request and follow the coordination process.</p><a href="/login">Start a blood request <span aria-hidden="true">&rarr;</span></a></article>
-        <article class="path-choice path-choice--donor" data-reveal style="--reveal-delay: 80ms"><div class="path-choice__mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 3S6 14 6 20a10 10 0 0 0 20 0C26 14 16 3 16 3Z"/><path d="M11 21a5 5 0 0 0 5 5"/></svg></div><h3>I want to become a donor</h3><p>Create an account, verify your email, and share your donor profile and availability when you are ready.</p><a href="/register">Join the donor community <span aria-hidden="true">&rarr;</span></a></article>
+        <article class="path-choice" data-reveal><div class="path-choice__mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6 28V5h20v23M2 28h28M12 28v-7h8v7M12 11h8M16 7v8"/></svg></div><h3>Request blood</h3><p>Hospitals and authorized requesters can submit and follow requests.</p><a href="/login">Sign in <span aria-hidden="true">&rarr;</span></a></article>
+        <article class="path-choice path-choice--donor" data-reveal style="--reveal-delay: 80ms"><div class="path-choice__mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 3S6 14 6 20a10 10 0 0 0 20 0C26 14 16 3 16 3Z"/><path d="M11 21a5 5 0 0 0 5 5"/></svg></div><h3>Become a donor</h3><p>Create an account, verify your email, and complete your profile.</p><a href="/register">Join VitalMatch <span aria-hidden="true">&rarr;</span></a></article>
       </div>
     </div>
   </section>
   <section id="how-it-works" class="landing-section landing-section--soft" aria-labelledby="process-heading">
     <div class="journey-container">
-      <div class="landing-section-heading" data-reveal><div><p class="journey-eyebrow">A clearer process</p><h2 id="process-heading">From a request to a coordinated next step.</h2></div><p>Simple handoffs help everyone understand what happens next.</p></div>
+      <div class="landing-section-heading" data-reveal><div><p class="journey-eyebrow">How it works</p><h2 id="process-heading">Three simple steps.</h2></div></div>
       <ol class="process-list">
-        <li data-reveal><span class="process-list__number" aria-hidden="true">01</span><div><h3>Share the need</h3><p>An authorized requester submits the blood type, hospital, and other details through their account.</p></div></li>
-        <li data-reveal style="--reveal-delay: 70ms"><span class="process-list__number" aria-hidden="true">02</span><div><h3>Connect with donors</h3><p>Relevant request details help coordinators identify potential donors and send notifications.</p></div></li>
-        <li data-reveal style="--reveal-delay: 140ms"><span class="process-list__number" aria-hidden="true">03</span><div><h3>Arrange the next step</h3><p>Donors, hospitals, and coordinators can communicate and follow through with scheduling.</p></div></li>
+        <li data-reveal><span class="process-list__number" aria-hidden="true">01</span><div><h3>Submit a request</h3><p>Share the blood type and hospital.</p></div></li>
+        <li data-reveal style="--reveal-delay: 70ms"><span class="process-list__number" aria-hidden="true">02</span><div><h3>Find donors</h3><p>Coordinators contact potential donors.</p></div></li>
+        <li data-reveal style="--reveal-delay: 140ms"><span class="process-list__number" aria-hidden="true">03</span><div><h3>Schedule donation</h3><p>Donor, requester, and coordinator confirm the visit.</p></div></li>
       </ol>
       <p class="landing-process__note">Every donation remains subject to professional screening. Request fulfillment and timing depend on availability and clinical requirements.</p>
     </div>
@@ -66,6 +66,23 @@
     <div class="journey-container landing-call__inner" data-reveal>
       <div class="landing-call__copy"><p class="journey-eyebrow">Bring people together</p><h2 id="call-heading">{{#if callForDonation.title}}{{callForDonation.title}}{{else}}Planning a drive or seeking donor support?{{/if}}</h2><div>{{#if callForDonation.description}}{{{callForDonation.description}}}{{else}}Share a call for donation with the VitalMatch team. A coordinator reviews the details before arranging the next step.{{/if}}</div><div class="landing-cms-section__actions">{{#if callForDonation.primaryButtonText}}<a class="journey-button journey-button--secondary" href="{{callForDonation.primaryButtonLink}}">{{callForDonation.primaryButtonText}}</a>{{/if}}{{#if callForDonation.secondaryButtonText}}<a class="journey-text-link" href="{{callForDonation.secondaryButtonLink}}">{{callForDonation.secondaryButtonText}}</a>{{/if}}</div></div>
       <div class="landing-call__action">{{#if error_msg}}<div class="landing-form-alert" role="alert">{{error_msg}}</div>{{/if}}<p id="call-submission-status" class="journey-alert journey-alert--success" role="status" hidden></p><button id="openCallDonationBtn" type="button" class="journey-button" aria-haspopup="dialog" aria-controls="callDonationModal" aria-expanded="false">Submit a call for donation</button><p>Have your contact details, blood type, and donation location ready. Required details are marked in the form.</p></div>
+    </div>
+  </section>
+  <section id="emergency-hotlines" class="landing-section landing-section--soft emergency-hotlines" aria-labelledby="emergency-heading">
+    <div class="journey-container">
+      <div class="emergency-hotlines__heading">
+        <div><p class="journey-eyebrow">Keep these numbers close</p><h2 id="emergency-heading">Emergency hotlines in Oriental Mindoro.</h2><p class="emergency-hotlines__intro">For immediate help, call emergency services directly. Do not wait for a response through VitalMatch.</p></div>
+        <div class="emergency-hotlines__national"><span>National emergency hotline</span><a href="tel:911" aria-label="Call national emergency hotline 911">911 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a14 14 0 0 1-7-7l2-2-2-5Z"/></svg></a><p>Tap the number to call.</p></div>
+      </div>
+      <dl class="emergency-hotlines__list">
+        <div><dt>Provincial rescue &amp; disaster response</dt><dd><span class="emergency-hotlines__service">PDRRMO · Operations &amp; Warning</span><a href="tel:+639481460382">0948 146 0382</a><a href="tel:+639209513690">0920 951 3690</a></dd></div>
+        <div><dt>Oriental Mindoro Provincial Hospital</dt><dd><span class="emergency-hotlines__service">Emergency Room · Mobile</span><a href="tel:+639504533086">0950 453 3086</a></dd></div>
+        <div><dt>Oriental Mindoro Central District Hospital</dt><dd><a href="tel:+639934110125">0993 411 0125</a></dd></div>
+        <div><dt>Oriental Mindoro Southern District Hospital</dt><dd><a href="tel:+639621281080">0962 128 1080</a></dd></div>
+        <div><dt>Naujan Community Hospital</dt><dd><a href="tel:+639363085380">0936 308 5380</a></dd></div>
+        <div><dt>Bulalacao Community Hospital</dt><dd><a href="tel:+639175776232">0917 577 6232</a></dd></div>
+      </dl>
+      <div class="emergency-hotlines__sources"><p>Published government contacts. Listings checked <time datetime="2026-11-04">4 November 2026</time>; phone availability has not been confirmed by a call.</p><nav aria-label="Emergency hotline sources"><a href="https://ehotlines.e.gov.ph/" target="_blank" rel="noopener noreferrer">National directory</a><a href="https://ormindoro.gov.ph/2025/11/24/tingnan-emergency-hotlines-na-maaaaring-tawagan-sa-panahon-ng-kalamidad/" target="_blank" rel="noopener noreferrer">Provincial rescue advisory</a><a href="https://ormindoro.gov.ph/2025/12/30/mga-dapat-tandaan-sa-panahon-ng-emergency-sa-pagsalubong-sa-bagong-taon-alamin/" target="_blank" rel="noopener noreferrer">Hospital advisory</a></nav></div>
     </div>
   </section>
 </main>

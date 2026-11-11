@@ -41,7 +41,8 @@ try {
         const [rows] = await connection.query('SELECT * FROM ??', [table]);
         const oldVersions = new Set(originalRowsByTable[table].map(row => row.version));
         const preserved = rows.filter(row => oldVersions.has(row.version));
-        if (rows.length !== manifest.tables[table] + 1 || !rows.some(row => row.version === '20261024_01_system_feedback')) throw new Error('Migration ledger did not record exactly the expected additive feedback migration');
+        const expectedNewVersions = ['20261024_01_system_feedback', '20261027_01_mobile_push'].filter(version => !oldVersions.has(version));
+        if (rows.length !== manifest.tables[table] + expectedNewVersions.length || !expectedNewVersions.every(version => rows.some(row => row.version === version))) throw new Error('Migration ledger did not record the expected additive feature migrations');
         const preservedHash = crypto.createHash('sha256').update(JSON.stringify(preserved.map(r => JSON.stringify(r)).sort())).digest('hex');
         if (preserved.length !== originalRowsByTable[table].length || preservedHash !== signature.hash) throw new Error('Migration changed historical schema migration records');
         continue;

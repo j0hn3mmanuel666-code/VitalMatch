@@ -12,12 +12,12 @@
     <div class="max-w-6xl mx-auto">
 
       <div class="vm-page-heading mb-6">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Blood Map of Mindoro</h1>
-        <p class="text-gray-600">Hospitals with open requests, urgent needs, donation centers, and donor coverage. Toggle layers on the map.</p>
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Blood map</h1>
+        <p class="text-gray-600">Hospitals, requests, and donors.</p>
       </div>
 
       <p id="mapFeedback" class="vm-muted mb-3" aria-live="polite">Loading map records...</p>
-      <div class="flex gap-3 mb-4"><button id="mapRetry" type="button" class="vm-button vm-button--small">Refresh map records</button><a class="vm-button vm-button--small" href="{{#if isAdmin}}/admin/requests{{else}}/my-requests{{/if}}">Open request register</a></div>
+      <div class="flex gap-3 mb-4"><button id="mapRetry" type="button" class="vm-button vm-button--small" aria-label="Refresh map"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.7-2L20 12M4 12l2.7 5a7 7 0 0 0 11.7-2"/></svg>Refresh</button><a class="vm-button vm-button--small" href="{{#if isAdmin}}/admin/requests{{else}}/my-requests{{/if}}">Requests</a></div>
       <div class="vm-panel bg-white rounded-md overflow-hidden">
         <div id="bloodMap" class="w-full" style="height: 70vh; min-height: 480px;"></div>
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-6 py-4 border-t border-gray-100 text-sm text-gray-600">
@@ -37,6 +37,6 @@
 
 
 
-<script src="/js/workspace-map.js?v=2" defer></script>
+<script src="/js/workspace-map.js?v=3" defer></script>
 
 {{> footer}}

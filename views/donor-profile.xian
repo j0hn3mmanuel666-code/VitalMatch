@@ -151,7 +151,7 @@
                   <option value="">Select blood type</option>
                   <option value="A+">A+ (A Positive)</option>
                   <option value="A-">A- (A Negative)</option>
-                  <option value="B+">B+ (B Positive)</option>
+                  <option value="B+" {{#unless donor}}selected{{/unless}}>B+ (B Positive)</option>
                   <option value="B-">B- (B Negative)</option>
                   <option value="AB+">AB+ (AB Positive)</option>
                   <option value="AB-">AB- (AB Negative)</option>
@@ -360,6 +360,16 @@
           </div>
 
           <!-- Emergency Contact Section -->
+          <div class="mb-8 donor-step" data-step="4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Blood Map privacy</h2>
+            <input type="hidden" name="mapConsentSubmitted" value="1">
+            <label class="flex items-start space-x-3 bg-gray-50 border border-gray-200 rounded-lg p-4 cursor-pointer">
+              <input type="checkbox" name="shareOnMap" id="shareOnMap" aria-describedby="map-consent-help" class="mt-1 w-5 h-5 rounded" {{#if donor.shareOnMap}}checked{{/if}}>
+              <span><span class="block font-semibold text-gray-800">I agree to show my blood type and approximate city on the Blood Map (optional)</span>
+              <span id="map-consent-help" class="block text-sm text-gray-600 mt-1">Other signed-in users can see these details when you are available and eligible. Your name, contact details, address, and exact location stay private. Leave unchecked to stay off the shared map. You can enable or disable this anytime in Settings → Donor Preferences without changing your availability for matching.</span></span>
+            </label>
+          </div>
+
           <div class="mb-8 donor-step" data-step="4">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <svg class="w-6 h-6 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

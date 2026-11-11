@@ -35,25 +35,29 @@
       container.appendChild(link);
     });
   }
-  window.handleDashboardSearch = function (event, mobile) {
+  window.handleDashboardSearch = function (event, mobile, openFirst) {
     var query = event.target.value.trim();
     var container = region(!!mobile);
     if (!container) return;
     clearTimeout(timer);
     var current = ++revision;
     if (query.length < 2) { container.classList.add('hidden'); container.setAttribute('aria-busy', 'false'); return; }
+    feedback(container, 'Searching...'); container.setAttribute('aria-busy', 'true'); container.classList.remove('hidden');
     timer = setTimeout(async function () {
-      feedback(container, 'Searching...'); container.setAttribute('aria-busy', 'true'); container.classList.remove('hidden');
       try {
         var response = await fetch('/api/search?q=' + encodeURIComponent(query));
         if (!response.ok) throw new Error('Search unavailable');
         var data = await response.json();
         if (current !== revision) return;
         render(Array.isArray(data.results) ? data.results : [], container);
+        if (openFirst) {
+          var first = container.querySelector('a');
+          if (first) window.location.assign(first.href);
+        }
       } catch (error) {
         if (current === revision) feedback(container, 'Search is temporarily unavailable. Please try again.');
       } finally { if (current === revision) container.setAttribute('aria-busy', 'false'); }
-    }, 300);
+    }, openFirst ? 0 : 300);
   };
   window.toggleDashboardMobileSearch = function () {
     var bar = document.getElementById('dashboardMobileSearch');
@@ -75,6 +79,24 @@
     var bar = document.getElementById('dashboardMobileSearch');
     if (bar && !bar.classList.contains('hidden')) window.toggleDashboardMobileSearch();
   };
+  [false, true].forEach(function (mobile) {
+    var field = input(mobile), container = region(mobile);
+    if (!field || !container) return;
+    field.addEventListener('input', function (event) { window.handleDashboardSearch(event, mobile); });
+    field.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault(); window.handleDashboardSearch(event, mobile, true);
+      } else if (event.key === 'ArrowDown') {
+        var first = container.querySelector('a');
+        if (first && !container.classList.contains('hidden')) { event.preventDefault(); first.focus(); }
+      } else if (event.key === 'Escape') {
+        event.preventDefault(); window.closeWorkspaceSearch();
+      }
+    });
+    container.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { event.preventDefault(); window.closeWorkspaceSearch(); if (!mobile) field.focus(); }
+    });
+  });
   document.addEventListener('click', function (event) {
     var desktop = input(false), mobile = input(true), trigger = mobileTrigger();
     if ((desktop && desktop.parentElement.contains(event.target)) || (mobile && mobile.parentElement.contains(event.target)) || (trigger && trigger.contains(event.target))) return;

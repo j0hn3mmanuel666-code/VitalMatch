@@ -27,8 +27,10 @@ SOFTWARE.
 import { PublicContent } from "../models/publicContentModel.js";
 import { sanitizeRichHtml } from '../middleware/validation.js';
 import { safeContentUrl } from '../services/contentSafety.js';
+import { dashboardPathFor } from '../services/accountPolicy.js';
 
 export const homePage = async (req, res) => {
+  if (req.authAccount && req.query?.public !== '1') return res.redirect(dashboardPathFor(req.authAccount));
   try {
     // Fetch all active public content sections (CMS)
     let publicContent = await PublicContent.findAll({

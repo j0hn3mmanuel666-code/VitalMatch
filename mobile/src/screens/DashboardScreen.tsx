@@ -74,13 +74,13 @@ export default function DashboardScreen() {
         {account.role === 'admin' ? <Stat label="Open requests" value={metrics.requestCount} /> : null}
         {account.role === 'admin' ? <Stat label="Awaiting review" value={metrics.pendingReviews} /> : null}
         <Stat label="Appointments" value={metrics.appointments} />
-        <Stat label="Unread updates" value={metrics.unreadNotifications} />
+        <Stat label="Updates" value={metrics.unreadNotifications} />
       </View>
 
       {account.role === 'donor' ? (
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>Donor availability</Text>
-          <Text style={styles.noticeText}>{donor?.isAvailable ? 'Your availability preference is on.' : 'Your availability preference is off.'} Medical suitability is determined by authorized medical staff.</Text>
+          <Text style={styles.noticeText}>{donor?.isAvailable ? 'Available for contact.' : 'Not available for contact.'} Medical staff confirm eligibility.</Text>
         </View>
       ) : null}
 
@@ -105,11 +105,11 @@ function roleName(role: string) {
 
 function roleDescription(role: string) {
   return ({
-    user: 'Track your requests and coordination updates.',
-    donor: 'Review compatible requests and manage your appointments.',
-    hospital: 'Review requests assigned to your verified facility.',
-    admin: 'Monitor requests and coordinate system activity.',
-  } as Record<string, string>)[role] || 'Your coordination updates.';
+    user: 'Requests and updates.',
+    donor: 'Requests and appointments.',
+    hospital: 'Facility requests and updates.',
+    admin: 'Requests and reviews.',
+  } as Record<string, string>)[role] || 'Your updates.';
 }
 
 function Stat({ label, value }: { label: string; value: number | string }) {
@@ -120,27 +120,27 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   content: { padding: 18, paddingBottom: 34 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: colors.background },
-  eyebrow: { color: colors.brand, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  eyebrow: { color: colors.brand, fontSize: 16, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
   title: { marginTop: 4, fontSize: 27, fontWeight: '800', color: colors.text },
-  subtitle: { marginTop: 4, marginBottom: 18, color: colors.muted, fontSize: 14, lineHeight: 20 },
+  subtitle: { marginTop: 4, marginBottom: 18, color: colors.muted, fontSize: 16, lineHeight: 20 },
   error: { color: colors.danger, marginBottom: 12, textAlign: 'center' },
   retry: { color: colors.brand, fontWeight: '700', marginTop: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   stat: { width: '48%', flexGrow: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 14 },
   statValue: { fontSize: 24, fontWeight: '800', color: colors.brand },
-  statLabel: { marginTop: 4, color: colors.muted, fontSize: 12, fontWeight: '600' },
+  statLabel: { marginTop: 4, color: colors.muted, fontSize: 16, fontWeight: '600' },
   notice: { backgroundColor: '#fff8e8', borderColor: '#f4d38a', borderWidth: 1, borderRadius: radius.md, padding: 14, marginTop: 14 },
   noticeTitle: { color: colors.text, fontWeight: '800', marginBottom: 5 },
-  noticeText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  noticeText: { color: colors.muted, fontSize: 15, lineHeight: 19 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 10 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-  link: { color: colors.brand, fontSize: 12, fontWeight: '700' },
-  empty: { color: colors.muted, fontSize: 13 },
+  link: { color: colors.brand, fontSize: 16, fontWeight: '700' },
+  empty: { color: colors.muted, fontSize: 15 },
   notification: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 13, marginBottom: 9 },
   unread: { borderLeftWidth: 3, borderLeftColor: colors.brand },
   notificationTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   notificationTitle: { flex: 1, fontWeight: '700', color: colors.text },
-  new: { color: colors.brand, fontSize: 10, fontWeight: '800' },
-  notificationBody: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 4 },
-  date: { color: colors.muted, fontSize: 11, marginTop: 7 },
+  new: { color: colors.brand, fontSize: 16, fontWeight: '800' },
+  notificationBody: { color: colors.muted, fontSize: 15, lineHeight: 19, marginTop: 4 },
+  date: { color: colors.muted, fontSize: 16, marginTop: 7 },
 });

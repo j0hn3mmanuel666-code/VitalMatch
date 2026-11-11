@@ -21,12 +21,22 @@
 {{/if}}
 
 <!-- Messages Content -->
-<main id="main-content" tabindex="-1" class="vm-messages vm-page flex chat-container" data-has-conversation="{{#if selectedUser}}true{{else}}false{{/if}}">
+<main id="main-content" tabindex="-1" class="vm-messages vm-page flex chat-container" data-message-time-zone="{{messageTimeZone}}" data-message-server-now="{{messageServerNow}}" data-has-conversation="{{#if selectedUser}}true{{else}}false{{/if}}">
   
   <!-- Conversations List (Left Panel) -->
   <div class="vm-conversation-pane bg-white dark:bg-[#18181b] border-r">
     <div class="p-4 border-b">
       <div class="vm-messages__list-heading"><div><h1 class="text-xl font-bold text-gray-800 dark:text-gray-200">Messages</h1><p>{{conversations.length}} conversations</p></div><span aria-hidden="true"><svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg></span></div>
+      <button type="button" class="vm-button vm-button--primary vm-contact-start" id="contactPickerToggle" aria-expanded="false" aria-controls="contactPicker">{{#if isAdmin}}New message{{else}}Message admin{{/if}}</button>
+      <section id="contactPicker" class="vm-contact-picker" aria-label="{{#if isAdmin}}Find an account{{else}}Choose an administrator{{/if}}" data-admin="{{#if isAdmin}}true{{else}}false{{/if}}" hidden>
+        <div class="vm-contact-picker__heading"><h2>{{#if isAdmin}}Find an account{{else}}Choose an admin{{/if}}</h2><button type="button" class="vm-button vm-button--small" id="contactPickerClose">Close</button></div>
+        <label for="contactSearch">{{#if isAdmin}}Name, email, or hospital{{else}}Admin name{{/if}}</label>
+        <input type="search" id="contactSearch" maxlength="100" autocomplete="off" placeholder="{{#if isAdmin}}Search accounts…{{else}}Search admins…{{/if}}" aria-describedby="contactStatus">
+        <p class="vm-contact-picker__hint">{{#if isAdmin}}Choose an account to start a conversation.{{else}}Choose who to contact. You can leave a message while they’re offline.{{/if}}</p>
+        <p id="contactStatus" role="status" aria-live="polite"></p>
+        <button type="button" class="vm-button vm-button--small" id="contactRetry" hidden>Try again</button>
+        <ul id="contactResults" class="vm-contact-results" aria-label="Contacts"></ul>
+      </section>
       <input 
         type="text" 
         id="conversationSearch"
@@ -46,7 +56,7 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center justify-between mb-1">
                   <p class="font-semibold text-gray-800 dark:text-gray-200 truncate">{{otherUserName}}</p>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">{{timeAgo}}</span>
+                  <time class="text-xs text-gray-500 dark:text-gray-400" datetime="{{sentAt}}" data-message-time data-message-relative>{{timeAgo}}</time>
                 </div>
                 <p class="text-sm text-gray-600 dark:text-gray-400 truncate">{{lastMessage}}</p>
                 {{#if unreadCount}}
@@ -62,7 +72,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
           </svg>
           <p class="text-gray-500 dark:text-gray-400">No conversations yet</p>
-          <p class="text-sm text-gray-400 mt-2">Start messaging donors or beneficiaries</p>
+          <p class="text-sm text-gray-400 mt-2">{{#if isAdmin}}Use New message to find an account.{{else}}Use Message admin to contact an administrator.{{/if}}</p>
         </div>
       {{/if}}
     </div>
@@ -176,7 +186,7 @@
                     <p class="whitespace-pre-wrap">{{message}}</p>
                   </div>
                 {{/if}}
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">{{timestamp}}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right"><time datetime="{{sentAt}}" data-message-time>{{timestamp}}</time></p>
               </div>
             </div>
           {{else}}
@@ -206,7 +216,7 @@
                     <p class="whitespace-pre-wrap">{{message}}</p>
                   </div>
                 {{/if}}
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{timestamp}}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1"><time datetime="{{sentAt}}" data-message-time>{{timestamp}}</time></p>
               </div>
             </div>
           {{/if}}
@@ -616,6 +626,9 @@
     };
   }
 </script>
+
+<script src="/js/message-contacts.js" defer></script>
+<script src="/js/message-time.js?v=1" defer></script>
 
 <!-- Call Container (for UI elements) -->
 <div id="call-container"></div>

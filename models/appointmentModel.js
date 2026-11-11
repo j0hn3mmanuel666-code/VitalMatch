@@ -6,6 +6,7 @@ import { Donor } from './donorModel.js';
 export const Appointment = sequelize.define('Appointment', {
   requestId: { type: DataTypes.INTEGER, allowNull: false, references: { model: BloodRequest, key: 'id' }, onDelete: 'RESTRICT' },
   donorId: { type: DataTypes.INTEGER, allowNull: true, references: { model: Donor, key: 'id' }, onDelete: 'RESTRICT' },
+  supplySource: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'donor' },
   scheduledDate: { type: DataTypes.DATE, allowNull: false },
   status: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'scheduled' },
   version: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },

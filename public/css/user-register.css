@@ -1,0 +1,34 @@
+.vm-internal .user-controls > .flex, .vm-internal .user-controls > .flex > .flex { flex-wrap: wrap; min-width: 0; }
+.vm-internal .user-controls .relative { min-width: 0; }
+.vm-internal .user-controls input { max-width: 100%; }
+.vm-internal .user-register { width: 100%; min-width: 0; }
+.vm-internal .user-register .vm-table { width: 100%; min-width: 0; table-layout: fixed; }
+.vm-internal .user-register :is(th,td) { padding: 14px 10px; white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+.vm-internal .user-register th:nth-child(1) { width: 4%; }
+.vm-internal .user-register th:nth-child(2) { width: 20%; }
+.vm-internal .user-register th:nth-child(3) { width: 23%; }
+.vm-internal .user-register th:nth-child(4) { width: 12%; }
+.vm-internal .user-register th:nth-child(5) { width: 9%; }
+.vm-internal .user-register th:nth-child(6) { width: 8%; }
+.vm-internal .user-register th:nth-child(7) { width: 10%; }
+.vm-internal .user-register th:nth-child(8) { width: 14%; }
+.vm-internal .user-register td:nth-child(2) > .flex { align-items: flex-start; gap: 10px; }
+.vm-internal .user-register td:nth-child(2) .ml-4 { margin-left: 0; min-width: 0; }
+.vm-internal .user-register td:last-child { white-space: normal; }
+.vm-internal .user-register .vm-button { max-width: 100%; white-space: normal; margin: 0 6px 8px 0; }
+.vm-internal .user-register .vm-status { white-space: normal; max-width: 100%; }
+.vm-internal .user-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0; }
+.user-pagination p { font-size: .875rem; }
+.user-pagination nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.user-pagination [aria-current='page'] { border-color: var(--vm-brand); color: var(--vm-brand); background: var(--vm-brand-wash); }
+.user-pagination button:disabled { opacity: .55; cursor: default; }
+@media (max-width: 1200px) {
+  .vm-internal .user-register :is(table,tbody) { display: block; }
+  .vm-internal .user-register thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .vm-internal .user-register tbody tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px 20px; padding: 20px; border-bottom: 1px solid var(--vm-line); }
+  .vm-internal .user-register td { display: block; min-width: 0; padding: 0; border: 0; }
+  .vm-internal .user-register td::before { content: attr(data-label); display: block; color: var(--vm-muted); font-size: .8125rem; font-weight: 600; margin-bottom: 6px; }
+  .vm-internal .user-register :is(td:first-child,td:last-child,td[colspan]) { grid-column: 1/-1; }
+  .vm-internal .user-register td:first-child::before { display: inline; margin-right: 8px; }
+  .vm-internal .user-register td:nth-child(2) { grid-column: 1/-1; }
+}

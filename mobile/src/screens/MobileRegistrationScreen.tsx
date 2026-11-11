@@ -52,8 +52,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background }, content: { flexGrow: 1, justifyContent: 'center', padding: 18 },
   back: { paddingVertical: 9 }, backText: { color: colors.brand, fontWeight: '700' },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: 20 },
-  brand: { color: colors.brand, fontSize: 25, fontWeight: '900' }, subtitle: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 4, marginBottom: 8 },
-  error: { color: colors.danger, fontSize: 13, marginTop: 8 }, field: { marginTop: 10 }, label: { color: colors.text, fontWeight: '700', fontSize: 12, marginBottom: 5 },
-  input: { minHeight: 43, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 9, color: colors.text, fontSize: 14 }, multiline: { minHeight: 72, textAlignVertical: 'top' },
-  button: { minHeight: 47, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.brand, marginTop: 17 }, buttonText: { color: '#fff', fontWeight: '800' }, footnote: { color: colors.muted, fontSize: 11, textAlign: 'center', marginTop: 13 },
+  brand: { color: colors.brand, fontSize: 25, fontWeight: '900' }, subtitle: { color: colors.muted, fontSize: 15, lineHeight: 19, marginTop: 4, marginBottom: 8 },
+  error: { color: colors.danger, fontSize: 15, marginTop: 8 }, field: { marginTop: 10 }, label: { color: colors.text, fontWeight: '700', fontSize: 16, marginBottom: 5 },
+  input: { minHeight: 48, borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 9, color: colors.text, fontSize: 16 }, multiline: { minHeight: 72, textAlignVertical: 'top' },
+  button: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: colors.brand, marginTop: 17 }, buttonText: { color: '#fff', fontWeight: '800' }, footnote: { color: colors.muted, fontSize: 16, textAlign: 'center', marginTop: 13 },
 });

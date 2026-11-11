@@ -15,11 +15,11 @@
       <div class="vm-page-heading mb-8">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-3xl font-bold mb-2">My Donor Profile</h1>
-            <p class="text-white/90">View your registered donor information</p>
+            <h1 class="text-3xl font-bold mb-2">Donor profile</h1>
+            <p class="text-white/90">Your donor details.</p>
           </div>
           <a href="/donor-profile" class="vm-button bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
-            Edit Profile
+            Edit
           </a>
         </div>
       </div>
@@ -48,6 +48,12 @@
       </div>
       
       <!-- Personal Information -->
+      <div class="vm-panel bg-white rounded-md p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Blood Map privacy</h2>
+        <p class="text-gray-600 mt-2">{{#if donor.shareOnMap}}Sharing enabled: only your blood type and approximate city can appear when you are available and eligible.{{else}}Sharing disabled: your donor details are excluded from shared map markers and counts.{{/if}}</p>
+        <a href="/settings?tab=donor" class="vm-button mt-3">Change map privacy in Settings</a>
+      </div>
+
       <div class="vm-panel bg-white rounded-md p-6 mb-6">
         <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
           <svg class="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

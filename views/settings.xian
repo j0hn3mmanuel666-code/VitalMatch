@@ -13,7 +13,7 @@
       <!-- Header -->
       <div class="vm-page-heading mb-8">
         <h1 class="text-3xl font-bold mb-2">Settings</h1>
-        <p class="text-red-100">Manage your profile, donor preferences, notifications, and security</p>
+        <p class="text-red-100">Profile, donation, and security settings.</p>
       </div>
 
       <!-- Flash Messages -->
@@ -116,6 +116,19 @@
             </div>
           </div>
           <button type="submit" class="vm-button vm-button--primary bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition">Save Donor Settings</button>
+        </form>
+        <form id="mapPrivacyForm" action="/settings/map-privacy" method="POST" class="mt-6 space-y-4">
+          <input type="hidden" name="_csrf" value="{{csrfToken}}">
+          <input type="hidden" name="mapConsentSubmitted" value="1">
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <label for="mapVisibilityToggle" class="flex items-center justify-between cursor-pointer">
+              <span class="font-semibold text-gray-800">Show me on the Blood Map</span>
+              <input type="checkbox" role="switch" id="mapVisibilityToggle" name="shareOnMap" aria-describedby="map-privacy-help map-privacy-status" class="w-5 h-5 rounded" {{#if donor.shareOnMap}}checked{{/if}}>
+            </label>
+            <p id="map-privacy-help" class="text-sm text-gray-600 mt-2">Optional. Share only your blood type and approximate city with other signed-in users when available and eligible. Your name, contact details, address, and exact location stay private. Turning this off removes you from shared donor markers and counts without changing your availability for matching.</p>
+            <p id="map-privacy-status" class="text-sm text-gray-600 mt-2" role="status">{{#if donor.shareOnMap}}Blood Map sharing is enabled.{{else}}Blood Map sharing is disabled.{{/if}}</p>
+          </div>
+          <button type="submit" class="vm-button vm-button--primary bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition">Save map privacy</button>
         </form>
         {{else}}
         <div class="text-center py-8">
@@ -239,4 +252,5 @@
 </script>
 
 <script src="/js/public-register.js?v=2" defer></script>
+<script src="/js/map-privacy.js?v=1" defer></script>
 {{> footer}}

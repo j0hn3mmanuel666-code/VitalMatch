@@ -11,12 +11,14 @@ import MobilePasswordResetScreen from './src/screens/MobilePasswordResetScreen';
 import ProfileScreen from './src/screens/MobileProfileScreen';
 import RequestsScreen from './src/screens/MobileRequestsScreen';
 import { colors } from './src/theme';
+import * as Notifications from 'expo-notifications';
+import { refreshPushRegistrationIfEnabled } from './src/pushNotifications';
 
 const tabs = [
-  { id: 'dashboard', label: 'Home' },
-  { id: 'requests', label: 'Requests' },
-  { id: 'appointments', label: 'Appointments' },
-  { id: 'profile', label: 'Profile' },
+  { id: 'dashboard', label: 'Home', icon: '🏠' },
+  { id: 'requests', label: 'Requests', icon: '📋' },
+  { id: 'appointments', label: 'Visits', icon: '📅' },
+  { id: 'profile', label: 'Profile', icon: '👤' },
 ] as const;
 
 type Tab = (typeof tabs)[number]['id'];
@@ -41,6 +43,20 @@ export default function App() {
     });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!account) return;
+    let active = true;
+    const responseListener = Notifications.addNotificationResponseReceivedListener(() => {
+      if (active) setTab('dashboard');
+    });
+    void Notifications.getLastNotificationResponseAsync().then(async response => {
+      if (response && active) setTab('dashboard');
+      if (response) await Notifications.clearLastNotificationResponseAsync();
+    }).catch(() => {});
+    void refreshPushRegistrationIfEnabled().catch(() => {});
+    return () => { active = false; responseListener.remove(); };
+  }, [account?.id]);
 
   const signOut = async () => {
     setSigningOut(true);
@@ -90,10 +106,9 @@ export default function App() {
       </View>
       <View style={styles.tabBar}>
         {tabs.map((item) => (
-          <Pressable key={item.id} style={styles.tab} onPress={() => setTab(item.id)}>
-            <Text style={[styles.tabLabel, tab === item.id && styles.tabLabelActive]}>
-              {item.label}
-            </Text>
+          <Pressable key={item.id} style={styles.tab} onPress={() => setTab(item.id)} accessibilityRole="tab" accessibilityLabel={item.label} accessibilityState={{ selected: tab === item.id }}>
+            <Text style={[styles.tabIcon, tab === item.id && styles.tabLabelActive]} accessibilityElementsHidden importantForAccessibility="no">{item.icon}</Text>
+            <Text style={[styles.tabLabel, tab === item.id && styles.tabLabelActive]}>{item.label}</Text>
             <View style={[styles.tabIndicator, tab === item.id && styles.tabIndicatorActive]} />
           </Pressable>
         ))}
@@ -113,9 +128,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingBottom: 6,
   },
-  tab: { flex: 1, alignItems: 'center', paddingTop: 10 },
-  tabLabel: { fontSize: 13, fontWeight: '600', color: colors.muted },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 58, paddingTop: 6 },
+  tabIcon: { fontSize: 20, lineHeight: 24, fontWeight: '700', color: colors.muted },
+  tabLabel: { fontSize: 14, fontWeight: '700', color: colors.muted },
   tabLabelActive: { color: colors.brand },
-  tabIndicator: { height: 3, width: 26, borderRadius: 2, marginTop: 6, backgroundColor: 'transparent' },
+  tabIndicator: { position: 'absolute', top: 0, height: 3, width: 32, borderRadius: 2, backgroundColor: 'transparent' },
   tabIndicatorActive: { backgroundColor: colors.brand },
 });

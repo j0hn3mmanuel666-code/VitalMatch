@@ -25,13 +25,14 @@ SOFTWARE.
 */
 
 import bcrypt from "bcrypt";
+import { sessionLifetimeMs } from '../services/sessionAuth.js';
 import { User } from "../models/userModel.js";
 import { BloodRequest } from "../models/bloodRequestModel.js";
 import { Donor } from "../models/donorModel.js";
 import { PasswordReset } from "../models/passwordResetModel.js";
 import { Fulfillment } from '../models/workflowEventModel.js';
 import { nextCoordinationDate, isDonorReady } from '../services/coordinationPolicy.js';
-import { canonicalRole, isHospitalAccount } from '../services/accountPolicy.js';
+import { canonicalRole, isHospitalAccount, dashboardPathFor } from '../services/accountPolicy.js';
 import { emailService } from "../services/emailService.js";
 import { validatePassword, validateEmail, getBcryptRounds, hashToken, passwordPolicyMessage } from "../middleware/validation.js";
 import { Op } from "sequelize";
@@ -46,7 +47,7 @@ const refreshVerification = (id, token, req, source) => retryTransaction(async t
   return current;
 });
 const invalidCredentialHash = bcrypt.hash('Invalid credential timing comparison', getBcryptRounds());
-export const loginPage = (req, res) => res.render("login", { title: "Login" });
+export const loginPage = (req, res) => req.authAccount ? res.redirect(dashboardPathFor(req.authAccount)) : res.render("login", { title: "Login" });
 export const registerPage = (req, res) => res.render("register", { title: "Register" });
 export const forgotPasswordPage = (req, res) => res.render("forgotpassword", { title: "Forgot Password" });
 const buildDashboardData = async (userId) => {
@@ -292,25 +293,28 @@ export const hospitalDashboardPage = async (req, res) => {
 // Real dashboard search: user's own requests + app pages
 export const searchDashboard = async (req, res) => {
   try {
+    if (typeof (req.query.q ?? '') !== 'string' || (req.query.q || '').length > 100) {
+      return res.status(400).json({ success: false, results: [], error: 'Use a search of up to 100 characters.' });
+    }
     const q = (req.query.q || "").trim().toLowerCase();
     if (q.length < 2) return res.json({ success: true, results: [] });
 
+    const role = canonicalRole(req.authAccount.role);
+    const scope = role === 'admin' ? {} : isHospitalAccount(req.authAccount) && req.authAccount.facilityId
+      ? { [Op.or]: [{ userId: req.session.userId }, { facilityId: req.authAccount.facilityId }] }
+      : { userId: req.session.userId };
+    const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
+    const match = { [Op.or]: ['patientName', 'patientReference', 'hospitalName', 'bloodType', 'city'].map(field => ({ [field]: { [Op.like]: pattern } })) };
+    const requestId = /^#?\d+$/.test(q) ? Number(q.replace('#', '')) : NaN;
+    if (Number.isSafeInteger(requestId) && requestId > 0) match[Op.or].push({ id: requestId });
     const myRequests = await BloodRequest.findAll({
-      where: { userId: req.session.userId },
+      where: { [Op.and]: [scope, match, { archivedAt: null }] },
+      attributes: ['id', 'patientName', 'hospitalName', 'bloodType', 'status'],
       order: [["createdAt", "DESC"]],
-      limit: 20
+      limit: 4
     });
 
-    const results = myRequests
-      .filter(r =>
-        String(r.id).includes(q) ||
-        (r.patientName || "").toLowerCase().includes(q) ||
-        (r.hospitalName || "").toLowerCase().includes(q) ||
-        (r.bloodType || "").toLowerCase().includes(q) ||
-        (r.city || "").toLowerCase().includes(q)
-      )
-      .slice(0, 4)
-      .map(r => ({
+    const results = myRequests.map(r => ({
         type: "request",
         title: `Blood Request #${r.id} (${r.bloodType})`,
         subtitle: `${r.patientName} at ${r.hospitalName}`,
@@ -318,13 +322,29 @@ export const searchDashboard = async (req, res) => {
         status: r.status
       }));
 
-    const pages = [
+    const commonPages = [
+      { type: 'page', title: 'Dashboard', subtitle: 'Workspace overview', url: role === 'admin' ? '/admin/dashboard' : role === 'hospital' ? '/hospital/dashboard' : '/dashboard' },
+      { type: 'page', title: 'Messages', subtitle: 'Open your conversations and contact an admin', url: '/messages' },
+      { type: 'page', title: 'Blood Map', subtitle: 'View donation locations and requests', url: '/map' },
+      { type: 'page', title: 'Help', subtitle: 'Workspace guidelines and support', url: '/help' }
+    ];
+    const accountPages = [
       { type: "page", title: "Request Blood", subtitle: "Submit a new blood request", url: "/new-blood-request" },
       { type: "page", title: "My Requests", subtitle: "View your blood requests", url: "/my-requests" },
-      { type: "page", title: "My Profile", subtitle: "Update your donor information", url: "/view-donor-profile" },
-      { type: "page", title: "Messages", subtitle: "Chat with hospitals and donors", url: "/messages" },
+      ...(role === 'hospital' ? [{ type: 'page', title: 'Patients', subtitle: 'Hospital patient requests', url: '/hospital/patients' }] : [{ type: "page", title: "My Profile", subtitle: "Update your donor information", url: "/view-donor-profile" }]),
+      { type: 'page', title: 'Appointments', subtitle: 'Review schedules and donation visits', url: role === 'hospital' ? '/hospital/appointments' : '/my-appointments' },
+      { type: 'page', title: 'Updates', subtitle: 'Notifications and alerts', url: '/notifications' },
+      { type: 'page', title: 'History', subtitle: 'Review your previous activity', url: '/history' },
+      { type: 'page', title: 'Feedback', subtitle: 'Share your experience', url: '/feedback' },
       { type: "page", title: "Settings", subtitle: "Manage your account settings", url: "/settings" }
-    ].filter(p => p.title.toLowerCase().includes(q) || p.subtitle.toLowerCase().includes(q));
+    ];
+    const adminPages = [
+      ['Requests', '/admin/requests'], ['Appointments', '/admin/appointments'], ['Donors', '/admin/donors'],
+      ['Donor calls', '/admin/calls'], ['Hospitals', '/admin/hospitals'], ['Reports', '/admin/reports'],
+      ['Website', '/admin/cms'], ['Users', '/admin/users'], ['Settings', '/admin/settings'], ['Feedback', '/admin/feedback']
+    ].map(([title,url]) => ({ type:'page',title,subtitle:`Manage ${title.toLowerCase()}`,url }));
+    const pages = [...commonPages, ...(role === 'admin' ? adminPages : accountPages)]
+      .filter(p => p.title.toLowerCase().includes(q) || p.subtitle.toLowerCase().includes(q));
 
     res.json({ success: true, results: [...results, ...pages].slice(0, 6) });
   } catch (error) {
@@ -335,6 +355,8 @@ export const searchDashboard = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
+  const rememberMe = [true, 'true', 'on'].includes(req.body.rememberMe);
+  res.locals.shortSession = !rememberMe;
 
   // Generic response for unknown email OR wrong password so attackers cannot
   // enumerate registered addresses. Verification/active status is only revealed
@@ -369,6 +391,8 @@ export const loginUser = async (req, res) => {
     req.session.authVersion = Number(user.authVersion);
     req.session.authenticatedAt = Date.now();
     req.session.lastActivityAt = Date.now();
+    req.session.rememberMe = rememberMe;
+    req.session.cookie.maxAge = sessionLifetimeMs(req.session);
 
 
     // Force session save before redirect

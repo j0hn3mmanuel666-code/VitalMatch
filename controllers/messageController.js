@@ -14,6 +14,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import crypto from "node:crypto";
+import { formatMessageTime, messageTimeAgo } from '../services/messageTime.js';
 
 // Helper function to create conversation ID
 function createConversationId(userId1, userId2) {
@@ -21,20 +22,48 @@ function createConversationId(userId1, userId2) {
   return `${ids[0]}-${ids[1]}`;
 }
 
-// Helper function to format time ago
-function timeAgo(date) {
-  const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-
-  if (seconds < 60) return 'Just now';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-  return new Date(date).toLocaleDateString();
-}
+// Ordinary accounts discover admins only; the account directory stays admin-only.
+export const messageContacts = async (req, res) => {
+  const isAdmin = req.session.userRole === 'admin';
+  const query = req.query.q ?? '';
+  res.set('Cache-Control', 'private, no-store');
+  if (typeof query !== 'string' || query.length > 100) {
+    return res.status(400).json({ error: 'Use a search of up to 100 characters.' });
+  }
+  const search = query.trim();
+  if (isAdmin && search.length < 2) return res.json({ contacts: [], hasMore: false });
+  const where = {
+    id: { [Op.ne]: req.session.userId }, isActive: true,
+    emailVerified: true, archivedAt: null,
+    ...(!isAdmin ? { role: 'admin' } : {})
+  };
+  if (search) {
+    const fields = isAdmin ? ['firstName', 'lastName', 'email', 'hospitalName'] : ['firstName', 'lastName'];
+    where[Op.and] = search.split(/\s+/).map(term => ({
+      [Op.or]: fields.map(field => ({ [field]: { [Op.like]: `%${term.replace(/[\\%_]/g, '\\$&')}%` } }))
+    }));
+  }
+  try {
+    const accounts = await User.findAll({ where,
+      attributes: ['id', 'firstName', 'lastName', 'role', 'hospitalName', ...(isAdmin ? ['email'] : [])],
+      order: [['firstName', 'ASC'], ['lastName', 'ASC'], ['id', 'ASC']], limit: 21
+    });
+    res.json({ contacts: accounts.slice(0, 20).map(account => ({
+      id: account.id, name: `${account.firstName} ${account.lastName}`,
+      role: account.role, hospitalName: account.hospitalName,
+      ...(isAdmin ? { email: account.email } : {})
+    })), hasMore: accounts.length > 20 });
+  } catch {
+    res.status(503).json({ error: 'Contacts could not be loaded. Please try again.' });
+  }
+};
 
 // Messages page
 export const messagesPage = async (req, res) => {
   if (!req.session.userId) return res.redirect("/login");
+  const messageTimeZone = res.locals.timeZone || 'Asia/Manila';
+  res.locals.messageTimeZone = messageTimeZone;
+  res.locals.messageServerNow = Date.now();
 
   try {
     const currentUserId = req.session.userId;
@@ -83,7 +112,8 @@ export const messagesPage = async (req, res) => {
           otherUserName: `${otherUser.firstName} ${otherUser.lastName}`,
           otherUserInitial: otherUser.firstName.charAt(0).toUpperCase(),
           lastMessage: msg.message,
-          timeAgo: timeAgo(msg.createdAt),
+          timeAgo: messageTimeAgo(msg.createdAt, Date.now(), messageTimeZone),
+          sentAt: new Date(msg.createdAt).toISOString(),
           unreadCount,
           isActive: selectedUserId === otherUserId
         });
@@ -128,10 +158,8 @@ export const messagesPage = async (req, res) => {
           audioDuration: msg.audioDuration,
           waveformData: msg.waveformData,
           isSender: msg.senderId === currentUserId,
-          timestamp: new Date(msg.createdAt).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit'
-          })
+          timestamp: formatMessageTime(msg.createdAt, messageTimeZone),
+          sentAt: new Date(msg.createdAt).toISOString()
         }));
 
         // Mark messages as read
@@ -216,7 +244,7 @@ export const contactAdmin = async (req, res) => {
 
   try {
     const admin = await User.findOne({
-      where: { role: "admin", isActive: true },
+      where: { role: "admin", isActive: true, emailVerified: true, archivedAt: null },
       order: [["createdAt", "ASC"]]
     });
 

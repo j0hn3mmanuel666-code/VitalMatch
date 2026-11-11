@@ -6,9 +6,9 @@
     <!-- Header -->
     <div class="vm-page-heading vm-heading-actions mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <p class="vm-eyebrow">Chapter coordination</p>
-        <h1>Coordination reports</h1>
-        <p>Review request demand, donor readiness, and recorded outcomes.</p>
+        <p class="vm-eyebrow">Admin</p>
+        <h1>Reports</h1>
+        <p>Requests, donors, and outcomes.</p>
       </div>
       {{#unless error}}<a href="/admin/reports/export" class="vm-button inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

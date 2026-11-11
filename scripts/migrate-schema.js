@@ -22,7 +22,10 @@ import '../models/requestAccessModel.js';
 import '../models/emailOutboxModel.js';
 import '../models/coordinationJobModel.js';
 import '../models/referenceCounterModel.js';
+import '../models/pushSubscriptionModel.js';
+import '../models/pushOutboxModel.js';
 import '../services/auditService.js';
+import { setPushSchemaReady } from '../services/pushSchemaStatus.js';
 
 const SchemaMigration = sequelize.define('SchemaMigration', {
   version: { type: DataTypes.STRING(80), primaryKey: true },
@@ -30,7 +33,7 @@ const SchemaMigration = sequelize.define('SchemaMigration', {
 }, { tableName: 'schema_migrations', timestamps: false });
 if (!sequelize.models.Session) sequelize.define('Session', { sid: { type: DataTypes.STRING(36), primaryKey: true }, expires: DataTypes.DATE, data: DataTypes.TEXT }, { tableName: 'Sessions' });
 
-export const migrationVersions = ['20261003_01_coordination_integrity', '20261017_01_patient_reference', '20261024_01_system_feedback'];
+export const migrationVersions = ['20261003_01_coordination_integrity', '20261017_01_patient_reference', '20261024_01_system_feedback', '20261027_01_mobile_push', '20261101_01_donor_map_consent', '20261104_01_blood_bank_supply'];
 const startupRequiredMigrationVersions = ['20261003_01_coordination_integrity', '20261017_01_patient_reference'];
 const indexDefinitions = [
   ['BloodRequests', 'idx_request_state_blood', ['status', 'bloodType', 'createdAt']],
@@ -58,15 +61,17 @@ function columnDefinition(attribute, existingTable = false) {
 export async function inspectSchema() {
   const qi = sequelize.getQueryInterface();
   const tables = (await qi.showAllTables()).map(table => typeof table === 'string' ? table : table.tableName);
-  return { database: sequelize.getDatabaseName(), tables, migrations: tables.includes('schema_migrations') ? (await SchemaMigration.findAll({ raw: true })).map(r => r.version) : [], requiredVersions: migrationVersions };
+  return { database: sequelize.getDatabaseName(), tables, migrations: tables.includes('schema_migrations') ? (await SchemaMigration.findAll({ raw: true })).map(r => r.version) : [], requiredVersions: startupRequiredMigrationVersions, optionalFeatures: ['20261024_01_system_feedback', '20261027_01_mobile_push'] };
 }
 export async function assertCurrentSchema() {
   const state = await inspectSchema();
+  setPushSchemaReady(state.migrations.includes('20261027_01_mobile_push'));
   if (!startupRequiredMigrationVersions.every(version => state.migrations.includes(version))) throw new Error('Database upgrade required. Review MIGRATION_GUIDE.md and apply the backed-up schema migration before starting VitalMatch.');
   const tables = new Map(state.tables.map(table => [String(table).toLowerCase(), table]));
   const qi = sequelize.getQueryInterface();
   const missing = [];
   await Promise.all(Object.values(sequelize.models).map(async model => {
+    if (!isPushModelRequired(state, model.name)) return;
     const name = String(model.getTableName()), actual = tables.get(name.toLowerCase());
     if (!actual) { missing.push(name); return; }
     const columns = await qi.describeTable(actual);
@@ -80,6 +85,9 @@ export async function assertCurrentSchema() {
     error.missingSchemaObjects = missing.sort();
     throw error;
   }
+}
+function isPushModelRequired(state, modelName) {
+  return state.migrations.includes('20261027_01_mobile_push') || !['PushSubscription', 'PushOutbox'].includes(modelName);
 }
 export async function runMigrations(options = {}) {
   const connection = await sequelize.connectionManager.getConnection({ type: 'WRITE' });
@@ -95,8 +103,8 @@ export async function runMigrations(options = {}) {
   }
 }
 async function applyMigrations({ backupConfirmed = false } = {}) {
-  // Feedback is an optional additive feature. Register its model only while
-  // applying migrations so an older database can keep serving the core app.
+  // Feedback remains optional during startup. Register its model before an
+  // additive migration so a database can be safely upgraded in place.
   await import('../models/userFeedbackModel.js');
   if (!process.env.DB_NAME) throw new Error('Set DB_NAME explicitly before migrating');
   const database = sequelize.getDatabaseName();
@@ -186,6 +194,9 @@ async function applyMigrations({ backupConfirmed = false } = {}) {
     await SchemaMigration.create({ version: migrationVersions[1], appliedAt: new Date() });
   }
   if (!await SchemaMigration.findByPk(migrationVersions[2])) await SchemaMigration.create({ version: migrationVersions[2], appliedAt: new Date() });
+  if (!await SchemaMigration.findByPk(migrationVersions[3])) await SchemaMigration.create({ version: migrationVersions[3], appliedAt: new Date() });
+  if (!await SchemaMigration.findByPk(migrationVersions[4])) await SchemaMigration.create({ version: migrationVersions[4], appliedAt: new Date() });
+  if (!await SchemaMigration.findByPk(migrationVersions[5])) await SchemaMigration.create({ version: migrationVersions[5], appliedAt: new Date() });
   await assertCurrentSchema();
   return inspectSchema();
 }

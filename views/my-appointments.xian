@@ -12,8 +12,8 @@
     <div class="max-w-4xl mx-auto">
 
       <div class="vm-page-heading mb-8">
-        <h1 class="text-3xl font-bold mb-2">My Appointments</h1>
-        <p class="text-white/90">Upcoming blood donations scheduled for you</p>
+        <h1 class="text-3xl font-bold mb-2">Appointments</h1>
+        <p class="text-white/90">Scheduled donations.</p>
       </div>
       {{> record-search label="Search appointments" placeholder="Facility, blood type, location or request ID"}}
 

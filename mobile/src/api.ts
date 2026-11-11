@@ -147,7 +147,7 @@ export interface MobileWorkspace {
   appointments: MobileAppointment[];
   notifications: NotificationItem[];
   coordinationDonors: { id: number; fullName: string; bloodType: string }[];
-  preferences: { notifyMatches: boolean; notifyAppointments: boolean; emailUpdates: boolean };
+  preferences: { notifyMatches: boolean; notifyAppointments: boolean; emailUpdates: boolean; pushEnabled: boolean; pushAvailable: boolean };
 }
 
 export interface MobileDonorProfile {
@@ -167,6 +167,7 @@ export interface MobileDonorProfile {
   lastDonationDate: string | null;
   medicalConditions: string | null;
   isAvailable: boolean;
+  shareOnMap: boolean;
   emergencyContactName: string;
   emergencyContactNumber: string;
   emergencyContactRelationship: string;
@@ -198,7 +199,10 @@ export const fulfillMobileRequest = (id: number, body: Record<string, unknown>) 
 export const markNotificationRead = (id: number) => postMobile(`/api/notifications/${id}/read`);
 export const markAllNotificationsRead = () => postMobile('/api/notifications/read-all');
 export const saveMobileDonorProfile = (body: Record<string, unknown>) => postMobile<{ success: boolean; message: string }>('/api/mobile/donor-profile', body);
-export const saveNotificationPreferences = (preferences: { notifyMatches: boolean; notifyAppointments: boolean; emailUpdates: boolean }) => postMobile<{ success: boolean; preferences: MobileWorkspace['preferences']; message: string }>('/api/mobile/notification-settings', Object.fromEntries(Object.entries(preferences).map(([key, value]) => [key, value ? 'on' : 'off'])));
+export const saveNotificationPreferences = (preferences: { notifyMatches: boolean; notifyAppointments: boolean; emailUpdates: boolean }) => postMobile<{ success: boolean; preferences: { notifyMatches: boolean; notifyAppointments: boolean; emailUpdates: boolean }; message: string }>('/api/mobile/notification-settings', Object.fromEntries(Object.entries(preferences).map(([key, value]) => [key, value ? 'on' : 'off'])));
+export const getMobilePushStatus = () => request<{ success: boolean; enabled: boolean; available: boolean }>('/api/mobile/push/status');
+export const registerMobilePushDevice = (expoPushToken: string, platform: 'android' | 'ios') => postMobile<{ success: boolean; enabled: boolean; message: string }>('/api/mobile/push/register', { expoPushToken, platform });
+export const disableMobilePush = () => postMobile<{ success: boolean; enabled: boolean; message: string }>('/api/mobile/push/disable');
 export const registerDonor = (body: Record<string, unknown>) => postMobile<{ success: boolean; message: string; email?: string }>('/api/mobile/register', body);
 export const requestMobilePasswordReset = (email: string) => postMobile<{ success: boolean; message: string }>('/api/mobile/password-reset', { email });
 export const submitMobileFeedback = (body: { rating: number; category: string; comment: string }) => postMobile<{ success: boolean; message: string }>('/api/mobile/feedback', body);
@@ -208,7 +212,7 @@ export async function login(email: string, password: string): Promise<MobileAcco
   const response = await fetch(`${API_BASE_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ _csrf: token, email, password }).toString(),
+    body: new URLSearchParams({ _csrf: token, email, password, rememberMe: 'true' }).toString(),
     credentials: 'include',
   });
   if (response.status === 401) throw new ApiError('Invalid email or password', 401);

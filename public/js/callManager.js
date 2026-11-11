@@ -30,7 +30,10 @@ class CallManager {
   setupSignalingCallbacks() {
     this.pendingLocalCandidates = [];
     this.signalingClient.onCallCreated = (data) => {
-      if (this.callState !== 'calling') return;
+      if (this.callState !== 'calling') {
+        if (this.callState === 'idle') this.signalingClient.sendCallEnd(data.callId);
+        return;
+      }
       this.currentCallId = data.callId;
       this.pendingLocalCandidates.splice(0).forEach(candidate => this.signalingClient.sendIceCandidate(this.currentCallId, candidate));
     };

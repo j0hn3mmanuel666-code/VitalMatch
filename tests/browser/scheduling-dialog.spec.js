@@ -1,0 +1,61 @@
+import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import hbs from 'hbs';
+
+const h = hbs.handlebars;
+h.registerHelper('eq', (a, b) => a === b);
+h.registerHelper('formatDate', () => '6 Nov 2026');
+for (const name of ['record-search', 'pagination', 'status-badge']) h.registerPartial(name, '');
+h.registerPartial('request-pagination', readFileSync(new URL('../../views/partials/request-pagination.xian', import.meta.url), 'utf8'));
+const html = h.compile(readFileSync(new URL('../../views/admin-requests.xian', import.meta.url), 'utf8'))({ requests: [{ id: 52, status: 'active', bloodType: 'B+', unitsRemaining: 1, matchingDonors: [{ id: 7, fullName: 'Synthetic donor', bloodType: 'B+', isAssignable: true }] }] });
+
+for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) test(`scheduling fields survive Escape and outside clicks at ${viewport.width}px`, async ({ page }) => {
+  await page.setViewportSize(viewport);
+  let submitted = 0;
+  let lastPayload;
+  await page.route('http://localhost:3335/**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname.startsWith('/js/') || url.pathname.startsWith('/css/')) return route.fulfill({ body: readFileSync(new URL('../../public' + url.pathname, import.meta.url)), contentType: url.pathname.endsWith('.js') ? 'application/javascript' : 'text/css' });
+    if (url.pathname === '/api/admin/critical-alerts') return route.fulfill({ json: { success: true, count: 0, criticals: [] } });
+    if (route.request().method() === 'POST') { submitted++; lastPayload = route.request().postDataJSON(); return route.fulfill({ status: 503, json: { success: false, message: 'Synthetic save failure' } }); }
+    return route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/css/internal-utilities.css"><link rel="stylesheet" href="/css/internal.css"><script>window.getCsrfToken=()=>"synthetic";</script><script src="/js/internal-ui.js" defer></script></head><body class="vm-internal"><div id="confirmModal" class="hidden"></div>' + html + '</body></html>' });
+  });
+  await page.goto('http://localhost:3335/admin/requests?schedule=52');
+  const dialog = page.locator('#schedule-modal-52');
+  await expect(dialog).toBeVisible();
+  await dialog.locator('[name="notes"]').fill('Keep these unsaved instructions');
+  await dialog.locator('[name="scheduledDate"]').fill('2026-11-06T10:00');
+  await dialog.locator('[name="donorId"]').selectOption('7');
+  await dialog.locator('[name="donorId"]').press('Escape');
+  await expect(dialog).toBeVisible();
+  await dialog.locator('[name="scheduledDate"]').press('Escape');
+  await expect(dialog).toBeVisible();
+  await dialog.locator('[name="notes"]').press('Escape');
+  await expect(dialog).toBeVisible();
+  await dialog.locator('.close-schedule-modal-backdrop').click({ position: { x: 1, y: 1 } });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('[name="notes"]')).toHaveValue('Keep these unsaved instructions');
+  await expect(dialog.locator('[name="donorId"]')).toHaveValue('7');
+  await expect(dialog.locator('[name="scheduledDate"]')).toHaveValue('2026-11-06T10:00');
+  expect(submitted).toBe(0);
+  const button = dialog.locator('button[type="submit"]');
+  const bounds = await button.boundingBox();
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height);
+  await button.click();
+  await expect(dialog.locator('.schedule-error')).toContainText('Your entered details are retained');
+  await expect(dialog.locator('[name="notes"]')).toHaveValue('Keep these unsaved instructions');
+  await dialog.locator('[name="supplySource"]').selectOption('blood_bank');
+  await expect(dialog.locator('[name="donorId"]')).toBeDisabled();
+  await expect(dialog.locator('[name="donorId"]')).not.toHaveAttribute('required');
+  await dialog.locator('[name="notes"]').fill('Synthetic Blood Bank — TEST stock reference');
+  await button.click();
+  await expect(dialog.locator('.schedule-error')).toContainText('Your entered details are retained');
+  expect(lastPayload.supplySource).toBe('blood_bank'); expect(lastPayload.donorId).toBeNull(); expect(lastPayload.scheduledDate).toBeTruthy();
+  await dialog.locator('[name="coordinationMode"]').selectOption('complete');
+  await expect(dialog.locator('[name="scheduledDate"]')).toBeDisabled();
+  await button.click();
+  await expect(dialog.locator('.schedule-error')).toContainText('Your entered details are retained');
+  expect(lastPayload.supplySource).toBe('blood_bank'); expect(lastPayload.donorId).toBeNull(); expect(lastPayload.scheduledDate).toBeNull(); expect(lastPayload.unitsProvided).toBe('1');
+  await dialog.getByRole('button', { name: 'Close scheduling dialog', exact: true }).last().click();
+  await expect(dialog).toBeHidden();
+});

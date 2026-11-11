@@ -39,6 +39,19 @@ test('sessions reject legacy, revoked, inactive, unverified, expired and future 
   assert.equal(sessionIsCurrent(session(), account({ archivedAt: new Date() })), false);
 });
 
+test('remembered sessions last 30 days while short sessions and account revocation still expire', () => {
+  const now = Date.now(), weekAgo = now - 7 * 86400000;
+  const remembered = session({ rememberMe: true, authenticatedAt: weekAgo, lastActivityAt: weekAgo });
+  assert.equal(sessionLifetimeMs(remembered), 30 * 86400000);
+  assert.equal(sessionIsCurrent(remembered, account(), now), true);
+  assert.equal(sessionIsCurrent({ ...remembered, rememberMe: false }, account(), now), false);
+  assert.equal(sessionIsCurrent({ ...remembered, rememberMe: 'true' }, account(), now), false);
+  assert.equal(sessionIsCurrent(remembered, account({ authVersion: 4 }), now), false);
+  assert.equal(sessionIsCurrent(remembered, account({ isActive: false }), now), false);
+  assert.equal(sessionIsCurrent(remembered, account({ archivedAt: new Date() }), now), false);
+  assert.equal(sessionIsCurrent(remembered, account(), weekAgo + 30 * 86400000 + 1), false);
+});
+
 test('admin authorization uses current database role instead of the session role', async t => {
   const original = User.findByPk;
   t.after(() => { User.findByPk = original; });

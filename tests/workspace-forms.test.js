@@ -116,7 +116,8 @@ test('request final submission checks typed constraints rather than trusting ste
 test('request form labels its fifth step honestly and cannot persist a patient draft', () => {
   const env = environment('request-blood');
   assert.match(env.document.querySelector('[data-step-pill="5"]').textContent, /Additional details/);
-  assert.equal(env.form.querySelector('[name="facilityId"]').hasAttribute('required'), true);
+  assert.equal(env.form.querySelector('[name="facilityId"]'), null);
+  assert.equal(env.form.querySelector('[name="hospitalName"]').hasAttribute('required'), true);
   assert.doesNotMatch(code, /localStorage|saveDraft|simulateSubmission/);
 });
 
@@ -130,6 +131,7 @@ test('compiled hospital row actions retain the root CSRF token for each record',
 });
 
 test('compiled scheduling dialogs have distinct labels and a discoverable safe close action', () => {
+  handlebars.registerPartial('request-pagination', readFileSync(new URL('../views/partials/request-pagination.xian', import.meta.url), 'utf8'));
   const template = readFileSync(new URL('../views/admin-requests.xian', import.meta.url), 'utf8');
   const html = handlebars.compile(template)({ requests: [{ id: 1, status: 'active', unitsRemaining: 1 }, { id: 2, status: 'active', unitsRemaining: 1 }] });
   const { document } = parseHTML('<html><body>' + html + '</body></html>');

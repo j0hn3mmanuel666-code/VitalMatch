@@ -68,7 +68,7 @@
 
       if (pins.self) {
         L.marker([pins.self.lat, pins.self.lng], { icon: dot("#2563eb", "You", "width:auto !important;padding:0 10px;") })
-          .bindPopup("<strong>Your location</strong><br>" + esc(pins.self.city || "") + "<br>Status: " + (pins.self.isAvailable ? "Available" : "Paused") + (pins.self.approximate ? "<br><em>Approximate location</em>" : ""))
+          .bindPopup("<strong>Your private location marker</strong><br>" + esc(pins.self.city || "") + "<br>Status: " + (pins.self.isAvailable ? "Available" : "Paused") + "<br>Map sharing: " + (pins.self.shareOnMap ? "Enabled" : "Disabled") + "<br><em>This marker is visible only to you.</em>" + (pins.self.approximate ? "<br><em>Approximate location</em>" : ""))
           .addTo(layers["Your location"]);
       }
 

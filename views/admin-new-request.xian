@@ -10,9 +10,9 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
         </a>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">Create New Blood Request</h1>
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">New blood request</h1>
       </div>
-      <p class="text-gray-600 dark:text-gray-400">Create a new blood request on behalf of a hospital or patient</p>
+      <p class="text-gray-600 dark:text-gray-400">For a hospital or patient.</p>
     </div>
 
     <!-- Flash Messages -->
@@ -95,7 +95,6 @@
             </svg>
             Hospital Information
           </h3>
-            {{> facility-selector}}
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -273,4 +272,4 @@
     }
   });
 </script>
-<script src="/js/request-form-context.js?v=1" defer></script>
+<script src="/js/request-form-context.js?v=2" defer></script>

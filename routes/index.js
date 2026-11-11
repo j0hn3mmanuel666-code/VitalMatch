@@ -29,7 +29,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js';
 import { canonicalRole } from '../services/accountPolicy.js';
 import { User } from '../models/userModel.js';
 import { homePage } from "../controllers/homeController.js";
-import { cancelMobileRequest, confirmMobileAppointment, createMobileRequest, declineMobileAppointment, fulfillMobileRequest, getMobileWorkspace, pledgeMobileRequest, reviewMobileRequest, scheduleMobileRequest, withdrawMobilePledge } from '../controllers/mobileController.js';
+import { cancelMobileRequest, confirmMobileAppointment, createMobileRequest, declineMobileAppointment, disableMobilePush, fulfillMobileRequest, getMobilePushStatus, getMobileWorkspace, pledgeMobileRequest, registerMobilePushDevice, reviewMobileRequest, scheduleMobileRequest, withdrawMobilePledge } from '../controllers/mobileController.js';
 import { adminFeedbackPage, feedbackPage, markFeedbackReviewed, submitFeedback } from '../controllers/feedbackController.js';
 import { isAuthenticated, isAdmin, isHospital } from "../middleware/adminAuth.js";
 
@@ -67,7 +67,7 @@ router.use([
   "/confirm-schedule/:id/:role", "/schedule-confirm/:token",
   "/appointments/:id/decline",
   "/api/notifications/:id/read", "/api/notifications/read-all", "/api/notifications/clear-all",
-  "/api/mobile/requests", "/api/mobile/requests/:id/pledge", "/api/mobile/requests/:id/pledge/withdraw", "/api/mobile/requests/:id/cancel", "/api/mobile/requests/:id/review", "/api/mobile/requests/:id/schedule", "/api/mobile/requests/:id/fulfill", "/api/mobile/appointments/:id/confirm", "/api/mobile/appointments/:id/decline", "/api/mobile/donor-profile", "/api/mobile/donor-settings", "/api/mobile/notification-settings",
+  "/api/mobile/requests", "/api/mobile/requests/:id/pledge", "/api/mobile/requests/:id/pledge/withdraw", "/api/mobile/requests/:id/cancel", "/api/mobile/requests/:id/review", "/api/mobile/requests/:id/schedule", "/api/mobile/requests/:id/fulfill", "/api/mobile/appointments/:id/confirm", "/api/mobile/appointments/:id/decline", "/api/mobile/donor-profile", "/api/mobile/donor-settings", "/api/mobile/notification-settings", "/api/mobile/push/register", "/api/mobile/push/disable",
   "/api/mobile/feedback", "/admin/feedback/:id/review",
   "/donor-profile", "/cancel-request/:id",
   "/settings/profile", "/settings/donor", "/settings/notifications", "/settings/password",
@@ -91,7 +91,7 @@ const infoPages = {
   },
   "/privacy": {
     heading: "Privacy Policy",
-    body: "VitalMatch collects only the information needed to operate the platform: your account details, donor profile, blood requests, and messages.\n\nYour data is used solely to match donors with requests and operate your account. It is never sold. Session cookies keep you logged in; you can log out at any time to invalidate them.\n\nTo request correction or deletion of your personal data, contact support@vitalmatch.ph."
+    body: "VitalMatch collects only the information needed to operate the platform: your account details, donor profile, blood requests, and messages.\n\nYour data is used to coordinate requests and operate your account. It is never sold. If you enable phone alerts, VitalMatch sends your device's Expo push token and a generic alert to Expo so it can deliver the alert through Google or Apple. The alert does not include patient details. You can turn phone alerts off in your mobile Profile.\n\nSession cookies keep you logged in; you can log out at any time to invalidate them. To request correction or deletion of your personal data, contact support@vitalmatch.ph."
   },
   "/terms": {
     heading: "Terms of Service",
@@ -142,6 +142,9 @@ router.get("/api/mobile/session", isAuthenticated, async (req, res) => {
   });
 });
 router.get('/api/mobile/workspace', isAuthenticated, getMobileWorkspace);
+router.get('/api/mobile/push/status', isAuthenticated, getMobilePushStatus);
+router.post('/api/mobile/push/register', isAuthenticated, registerMobilePushDevice);
+router.post('/api/mobile/push/disable', isAuthenticated, disableMobilePush);
 router.post('/api/mobile/requests', isAuthenticated, createMobileRequest);
 router.post('/api/mobile/requests/:id/pledge', isAuthenticated, pledgeMobileRequest);
 router.post('/api/mobile/requests/:id/pledge/withdraw', isAuthenticated, withdrawMobilePledge);
@@ -172,6 +175,7 @@ router.post("/resend-verification", authLimiter, resendVerification);
 
 // Blood Request Routes (Protected)
 import { requestBloodPage, newRequestBloodPage, simpleRequestBloodPage, viewBloodRequestPage, submitBloodRequest, pledgeToDonate, withdrawPledge, escalateRequest, clearEmergency, editBloodRequestPage, correctBloodRequest } from "../controllers/bloodRequestController.js";
+import { viewPrescription } from '../controllers/bloodRequestController.js';
 
 router.get("/simple-blood-request", isAuthenticated, simpleRequestBloodPage);
 router.get("/new-blood-request", isAuthenticated, newRequestBloodPage);
@@ -179,6 +183,7 @@ router.get("/blood-request", isAuthenticated, requestBloodPage);
 router.get("/request-blood", isAuthenticated, requestBloodPage);
 router.get("/view-blood-request/:id", isAuthenticated, viewBloodRequestPage);
 router.get("/requests/:id/edit", isAuthenticated, editBloodRequestPage);
+router.get('/requests/:id/prescription', isAuthenticated, viewPrescription);
 router.post("/requests/:id/correct", isAuthenticated, validateBloodRequest, correctBloodRequest);
 router.post("/requests/:id/pledge", isAuthenticated, pledgeToDonate);
 router.post("/requests/:id/pledge/withdraw", isAuthenticated, withdrawPledge);
@@ -221,6 +226,8 @@ router.post("/cancel-request/:id", isAuthenticated, cancelRequest);
 
 // User Settings Routes (Protected)
 import { settingsPage as userSettingsPage, updateProfile, updateDonorSettings, updateNotificationPrefs, changePassword } from "../controllers/userSettingsController.js";
+import { updateMapPrivacy } from '../controllers/userSettingsController.js';
+router.post('/settings/map-privacy', isAuthenticated, mutationLimiter, updateMapPrivacy);
 router.post('/api/mobile/donor-settings', isAuthenticated, updateDonorSettings);
 router.post('/api/mobile/notification-settings', isAuthenticated, updateNotificationPrefs);
 
@@ -288,10 +295,11 @@ router.post("/admin/settings/retry-coordination", isAdmin, retryCoordinationJobs
 router.get("/api/admin/settings", isAdmin, getSettings);
 
 // Message Routes (Protected)
-import { messagesPage, sendMessage, contactDonor, contactAdmin, uploadVoiceMessage, sendVoiceMessage, serveVoiceMessage } from "../controllers/messageController.js";
+import { messagesPage, messageContacts, sendMessage, contactDonor, contactAdmin, uploadVoiceMessage, sendVoiceMessage, serveVoiceMessage } from "../controllers/messageController.js";
 
 router.get("/messages", isAuthenticated, messagesPage);
-router.get("/messages/admin", isAuthenticated, isHospital, mutationLimiter, contactAdmin);
+router.get("/messages/contacts", isAuthenticated, messageContacts);
+router.get("/messages/admin", isAuthenticated, mutationLimiter, contactAdmin);
 router.post("/messages/send", isAuthenticated, validateApiParams(['recipientId', 'message']), sendMessage);
 router.post("/messages/send-voice", isAuthenticated, uploadLimiter, uploadVoiceMessage, validateFileUpload(['audio/wav', 'audio/webm', 'audio/ogg'], 5 * 1024 * 1024), sendVoiceMessage);
 router.get('/messages/voice/:id', isAuthenticated, serveVoiceMessage);
