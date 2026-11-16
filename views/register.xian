@@ -7,6 +7,7 @@
       <h1 id="register-heading">Be ready to help.</h1>
       <p class="journey-lead">Create an account, verify your email, then complete your donor profile.</p>
       {{#if error}}<div id="register-error" class="journey-alert" role="alert">{{error}}</div>{{/if}}
+      {{> google-sign-in}}
       <form method="POST" action="/register" class="journey-form"{{#if error}} aria-describedby="register-error"{{/if}}>
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <p class="journey-alert" role="alert" data-form-status hidden></p>

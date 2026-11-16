@@ -100,5 +100,7 @@
     </form>
   </div>
 </div>
+{{> install-card}}
+<script src="/js/install-card.js?v=1" defer></script>
 <script src="/js/public-landing.js?v=1" defer></script>
 {{> public-footer}}

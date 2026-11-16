@@ -8,6 +8,7 @@
     <p class="journey-lead">Sign in to see your requests and updates.</p>
       {{#if error}}<div id="login-error" class="journey-alert" role="alert">{{error}}</div>{{/if}}
       {{#if error_msg}}<div class="journey-alert" role="alert">{{error_msg}}</div>{{/if}}
+      {{> google-sign-in}}
       <form method="POST" action="/login" class="journey-form"{{#if error}} aria-describedby="login-error"{{/if}}>
         <input type="hidden" name="_csrf" value="{{csrfToken}}">
         <p class="journey-alert" role="alert" data-form-status hidden></p>

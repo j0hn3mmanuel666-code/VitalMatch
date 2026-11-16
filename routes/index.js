@@ -28,6 +28,7 @@ import express from "express";
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { canonicalRole } from '../services/accountPolicy.js';
 import { User } from '../models/userModel.js';
+import { googleAuth } from '../controllers/googleAuthController.js';
 import { homePage } from "../controllers/homeController.js";
 import { cancelMobileRequest, confirmMobileAppointment, createMobileRequest, declineMobileAppointment, disableMobilePush, fulfillMobileRequest, getMobilePushStatus, getMobileWorkspace, pledgeMobileRequest, registerMobilePushDevice, reviewMobileRequest, scheduleMobileRequest, withdrawMobilePledge } from '../controllers/mobileController.js';
 import { adminFeedbackPage, feedbackPage, markFeedbackReviewed, submitFeedback } from '../controllers/feedbackController.js';
@@ -110,6 +111,10 @@ for (const [path, page] of Object.entries(infoPages)) {
 import { loginPage, registerPage, forgotPasswordPage, dashboardPage, hospitalDashboardPage, loginUser, registerUser, logoutUser, verifyEmail, resendVerification, requestPasswordReset, resetPasswordPage, resetPassword, searchDashboard } from "../controllers/authController.js";
 
 router.get("/login", loginPage);
+router.get('/auth/google', authLimiter, googleAuth.start);
+router.get('/auth/google/callback', authLimiter, googleAuth.callback);
+router.get('/auth/google/complete', googleAuth.page);
+router.post('/auth/google/complete', authLimiter, googleAuth.complete);
 router.post("/login", authLimiter, validateLogin, loginUser);
 router.get("/register", registerPage);
 router.post("/register", authLimiter, validateRegistration, registerUser);

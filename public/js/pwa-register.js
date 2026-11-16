@@ -8,15 +8,20 @@ function setupInstallButton() {
   updateInstallButton();
 }
 
-function promptPWAInstall() {
-  if (!deferredPrompt) return;
-
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then((choiceResult) => {
-    console.log('User choice:', choiceResult.outcome);
+async function promptPWAInstall() {
+  if (!deferredPrompt) return null;
+  const prompt = deferredPrompt;
+  deferredPrompt = null;
+  try {
+    await prompt.prompt();
+    const choiceResult = await prompt.userChoice;
+    return choiceResult.outcome;
+  } catch {
+    return null;
+  } finally {
     deferredPrompt = null;
     updateInstallButton();
-  });
+  }
 }
 
 function updateInstallButton() {
@@ -56,6 +61,7 @@ window.addEventListener('load', () => {
 });
 
 window.promptPWAInstall = promptPWAInstall;
+window.canInstallPWA = () => Boolean(deferredPrompt);
 
 // Municipality dropdowns: when "Others" is picked, swap name="city"
 // onto a free-text field so typos are impossible for listed towns

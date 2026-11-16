@@ -14,7 +14,7 @@ const api = context.policyApi;
 const clientSource = readFileSync(new URL('../public/js/public-register.js', import.meta.url), 'utf8');
 const handlebars = hbs.handlebars;
 handlebars.registerHelper('eq', (a, b) => a === b);
-for (const name of ['head-public', 'public-nav', 'public-footer', 'head', 'user-sidebar', 'internal-header', 'footer']) handlebars.registerPartial(name, '');
+for (const name of ['head-public', 'public-nav', 'public-footer', 'head', 'user-sidebar', 'internal-header', 'footer', 'google-sign-in']) handlebars.registerPartial(name, '');
 
 test('public password policy and rejection text contain only the active safe rules', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(api.getPublicPasswordPolicy())), { minLength: 64, requireSpecialChars: true });

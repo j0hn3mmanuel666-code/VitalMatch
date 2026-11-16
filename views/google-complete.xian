@@ -1,0 +1,28 @@
+{{> head-public}}
+{{> public-nav hideRegister=true}}
+<main id="main-content" tabindex="-1" class="journey-auth journey-register">
+  <div class="journey-container journey-auth__grid">
+    <section class="journey-auth__form" aria-labelledby="complete-heading">
+      <p class="journey-eyebrow">One more step</p>
+      <h1 id="complete-heading">Complete your donor account.</h1>
+      <p class="journey-lead">Google verified {{email}}. Add your contact details to continue.</p>
+      {{#if error}}<div class="journey-alert" role="alert">{{error}}</div>{{/if}}
+      <form method="POST" action="/auth/google/complete" class="journey-form">
+        <input type="hidden" name="_csrf" value="{{csrfToken}}">
+        <div class="journey-form__grid">
+          <div><label for="firstName">First name *</label><input id="firstName" name="firstName" value="{{firstName}}" maxlength="100" autocomplete="given-name" required></div>
+          <div><label for="lastName">Last name *</label><input id="lastName" name="lastName" value="{{lastName}}" maxlength="100" autocomplete="family-name" required></div>
+          <div><label for="dateOfBirth">Date of birth *</label><input type="date" id="dateOfBirth" name="dateOfBirth" value="{{dateOfBirth}}" autocomplete="bday" required></div>
+          <div><label for="gender">Gender *</label><select id="gender" name="gender" required><option value="">Select gender</option><option{{#if (eq gender "Male")}} selected{{/if}}>Male</option><option{{#if (eq gender "Female")}} selected{{/if}}>Female</option><option{{#if (eq gender "Other")}} selected{{/if}}>Other</option></select></div>
+        </div>
+        <label for="phone">Mobile number *</label><input type="tel" id="phone" name="phone" value="{{phone}}" autocomplete="tel" placeholder="09171234567" pattern="09[0-9]{9}" required>
+        <label for="address">Complete address *</label><textarea id="address" name="address" rows="2" maxlength="2000" autocomplete="street-address" required>{{address}}</textarea>
+        <p class="field-help">Fields marked * are required. Read our <a href="/privacy">privacy policy</a> and <a href="/terms">terms of service</a>. Donation eligibility is determined by medical professionals.</p>
+        <button type="submit" class="journey-button journey-button--block">Create donor account</button>
+        <p class="journey-form__footer"><a href="/login">Back to sign in</a></p>
+      </form>
+    </section>
+    <aside class="journey-auth__rail"><h2>Your account, connected.</h2><p>Use Google to sign in next time. You can set a VitalMatch password later using Forgot password.</p><p>Hospital accounts are issued by an administrator.</p></aside>
+  </div>
+</main>
+{{> public-footer}}

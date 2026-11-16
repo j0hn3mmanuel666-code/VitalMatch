@@ -1,5 +1,17 @@
 # Deployment status and change history
 
+## 16 November 2026 — compact Users page deployed
+
+Deployed the Users template and user-register CSS v2. Names stay beside avatars, Edit/Archive actions share a row on desktop, the toolbar and pagination are more compact, and narrow layouts retain all account details. Included the project's existing compact success/error notification styling. No account, permission, database or schema changes.
+
+126 unit tests and 3 browser regression checks passed at 1660px, 1280px and 390px. Live authenticated verification confirmed CSS v2, compact rows, aligned actions and no horizontal overflow. Site/database health passed. Prior files and the standard production backup are retained; rollback files at `/srv/vitalmatch/backups/users-ui-20261116T151427Z`. An initial source guard stopped safely before mutation; review established that the live template differed only in legacy notification classes, and the final package required that exact reviewed source hash.
+
+## 16 November 2026 — Google sign-in and install suggestion deployed
+
+Deployed Google sign-in for existing account roles and new donor registration, plus the small floating install suggestion on the public landing page. Production Google callbacks require HTTPS and the configured BASE_URL origin; localhost remains supported separately. New Google users complete required personal/contact information, and public registration always creates donors. Existing account activation, verification, role and archival checks are retained.
+
+126 unit and 43 isolated integration tests passed before deployment. Live Google authorization returned successfully to donor account completion; no new production account was created. Public pages/assets, install card, auth redirect, forged-callback rejection, all 15 deployed hashes and database health passed. Existing admin session survived deployment. No database migration or operational-data change. Prior application/environment and the normal production backup are retained; rollback package at `/srv/vitalmatch/backups/google-install-20261116T060420Z`. Temporary credential-transfer key removed after verification. See `.local/deployment/REPORT.md` for execution evidence.
+
 The changes listed below were deployed to vitalmatch.site on 4 November 2026 after the user explicitly requested the online update. Native mobile releases and the separate unapproved installed-site Web Push design are outside this deployment. Historical local validation notes are retained below. See .local/deployment/REPORT.md for backup and verification details.
 
 ## 1 November 2026 — donor Blood Map consent

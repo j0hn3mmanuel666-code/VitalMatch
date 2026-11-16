@@ -140,6 +140,21 @@
 .emergency-hotlines__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 1.5rem; margin: 1.25rem 0 0; }
 .emergency-hotlines__list > div { padding-block: .75rem; border-top: 1px solid var(--vm-line); }
 .emergency-hotlines__list dt { font-size: .9rem; font-weight: 600; line-height: 1.4; }
+.install-card { position: fixed; z-index: 40; right: 24px; bottom: max(24px, env(safe-area-inset-bottom)); display: flex; gap: 14px; width: min(360px, calc(100vw - 32px)); padding: 24px 38px 22px 20px; border: 1px solid var(--vm-line); border-top: 3px solid var(--vm-red); border-radius: 12px; background: #fff; box-shadow: 0 12px 40px #18232224; }
+.install-card[hidden], .install-card [hidden] { display: none; }
+.install-card__icon { flex-shrink: 0; border-radius: 10px; }
+.install-card__content { min-width: 0; }
+.vitalmatch-public .install-card h2 { margin: 0 0 6px; font-size: 1rem; line-height: 1.4; letter-spacing: -.02em; }
+.vitalmatch-public .install-card p { margin: 0; font-size: .85rem; line-height: 1.55; color: var(--vm-muted); }
+.install-card__dismiss { position: absolute; top: 2px; right: 2px; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--vm-muted); cursor: pointer; }
+.install-card__dismiss svg { width: 18px; height: 18px; }
+.install-card__dismiss:hover { background: #f4f5f4; }
+.install-card__action { display: inline-flex; align-items: center; gap: 14px; min-height: 44px; padding: 8px 14px; margin-top: 12px; border: 0; border-radius: 6px; background: var(--vm-red); color: #fff; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.install-card__action:disabled { opacity: .6; cursor: wait; }
+.install-card button:focus-visible { outline: 3px solid #182322; outline-offset: 3px; }
+.vitalmatch-public .install-card .install-card__help { margin-top: 12px; color: var(--vm-ink, #26312e); }
+body.landing-modal-open .install-card { visibility: hidden; }
+@media (max-width: 600px) { .install-card { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); padding-top: 18px; padding-bottom: 16px; } }
 .emergency-hotlines__list dd { margin: .25rem 0 0; }
 .emergency-hotlines__service { display: block; color: var(--vm-muted); font-size: .82rem; margin-bottom: .25rem; }
 .vitalmatch-public .emergency-hotlines__list a { display: block; width: fit-content; padding-block: .45rem; min-height: 44px; color: var(--vm-red); font-size: 1rem; font-weight: 600; text-underline-offset: .2em; }

@@ -1,0 +1,10 @@
+<aside class="install-card" data-install-card aria-labelledby="install-card-title" hidden>
+  <button type="button" class="install-card__dismiss" data-install-dismiss aria-label="Dismiss app installation suggestion"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+  <img class="install-card__icon" src="/icons/icon-192.png" alt="" width="44" height="44">
+  <div class="install-card__content">
+    <h2 id="install-card-title">Keep VitalMatch close.</h2>
+    <p>Add the app to your home screen for easier access.</p>
+    <button type="button" class="install-card__action" data-install-action aria-controls="install-card-help">Install app <span aria-hidden="true">↗</span></button>
+    <p id="install-card-help" class="install-card__help" data-install-help role="status" hidden></p>
+  </div>
+</aside>

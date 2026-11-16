@@ -380,6 +380,10 @@ export const loginUser = async (req, res) => {
     return res.status(403).render("login", { error: "Your account has been deactivated. Please contact support." });
   }
 
+  return finishLogin(req, res, user, rememberMe);
+};
+
+export const finishLogin = (req, res, user, rememberMe) => {
   // Replace the old session so a previous account cannot leak into this login.
   req.session.regenerate((regenerateError) => {
     if (regenerateError) {

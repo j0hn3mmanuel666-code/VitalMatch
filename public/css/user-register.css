@@ -3,7 +3,7 @@
 .vm-internal .user-controls input { max-width: 100%; }
 .vm-internal .user-register { width: 100%; min-width: 0; }
 .vm-internal .user-register .vm-table { width: 100%; min-width: 0; table-layout: fixed; }
-.vm-internal .user-register :is(th,td) { padding: 14px 10px; white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+.vm-internal .user-register :is(th,td) { padding: 12px 10px; white-space: normal; overflow-wrap: anywhere; vertical-align: middle; }
 .vm-internal .user-register th:nth-child(1) { width: 4%; }
 .vm-internal .user-register th:nth-child(2) { width: 20%; }
 .vm-internal .user-register th:nth-child(3) { width: 23%; }
@@ -12,16 +12,35 @@
 .vm-internal .user-register th:nth-child(6) { width: 8%; }
 .vm-internal .user-register th:nth-child(7) { width: 10%; }
 .vm-internal .user-register th:nth-child(8) { width: 14%; }
-.vm-internal .user-register td:nth-child(2) > .flex { align-items: flex-start; gap: 10px; }
-.vm-internal .user-register td:nth-child(2) .ml-4 { margin-left: 0; min-width: 0; }
+.vm-internal .user-register .user-identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.vm-internal .user-register .user-identity > :first-child { flex: 0 0 36px; width: 36px; height: 36px; }
+.vm-internal .user-register .user-identity > :first-child > div { width: 36px; height: 36px; }
+.vm-internal .user-register .user-identity__name { min-width: 0; flex: 1; }
+.vm-internal .user-register .user-identity__name > div { font-size: .875rem; line-height: 1.45; }
 .vm-internal .user-register td:last-child { white-space: normal; }
-.vm-internal .user-register .vm-button { max-width: 100%; white-space: normal; margin: 0 6px 8px 0; }
+.vm-internal .user-register .user-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.vm-internal .user-register .user-row-actions .vm-button { min-height: 44px; padding: 8px 10px; font-size: .8125rem; line-height: 1.2; white-space: nowrap; margin: 0; }
+.vm-internal .user-register td:is(:nth-child(3),:nth-child(4),:nth-child(7)) { font-size: .875rem; line-height: 1.5; }
+.vm-internal .user-register td:nth-child(4) { font-variant-numeric: tabular-nums; }
+.vm-internal .user-register td:nth-child(7) { color: var(--vm-muted); font-variant-numeric: tabular-nums; }
 .vm-internal .user-register .vm-status { white-space: normal; max-width: 100%; }
 .vm-internal .user-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 0; }
 .user-pagination p { font-size: .875rem; }
 .user-pagination nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .user-pagination [aria-current='page'] { border-color: var(--vm-brand); color: var(--vm-brand); background: var(--vm-brand-wash); }
 .user-pagination button:disabled { opacity: .55; cursor: default; }
+.vm-internal .user-management .vm-page-heading { padding-bottom: 16px; margin-bottom: 20px; }
+.vm-internal .user-controls { padding: 16px; margin-bottom: 12px; }
+.vm-internal .user-controls__layout { gap: 12px; }
+.vm-internal .user-controls__filters { gap: 12px; align-items: center; }
+.vm-internal .user-controls__search { flex: 1 1 240px; max-width: 400px; }
+.vm-internal .user-controls__search input { width: 100%; min-height: 44px; }
+.vm-internal .user-controls #roleFilter { width: 190px; min-height: 44px; }
+.vm-internal .user-controls__actions { flex-shrink: 0; gap: 8px; }
+.vm-internal .user-controls__actions .vm-button { min-height: 44px; }
+.vm-internal .user-pagination { margin: 12px 0; gap: 8px 16px; }
+.user-pagination p { margin: 0; font-variant-numeric: tabular-nums; }
+.vm-internal .user-register input[type='checkbox'] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
 @media (max-width: 1200px) {
   .vm-internal .user-register :is(table,tbody) { display: block; }
   .vm-internal .user-register thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
@@ -31,4 +50,17 @@
   .vm-internal .user-register :is(td:first-child,td:last-child,td[colspan]) { grid-column: 1/-1; }
   .vm-internal .user-register td:first-child::before { display: inline; margin-right: 8px; }
   .vm-internal .user-register td:nth-child(2) { grid-column: 1/-1; }
+  .vm-internal .user-register .user-row-actions { justify-content: flex-start; }
+  .vm-internal .user-register td:last-child { text-align: left; }
+}
+@media (max-width: 767px) {
+  .vm-internal .user-controls__filters { width: 100%; flex-direction: row; align-items: stretch; }
+  .vm-internal .user-controls__search { flex-basis: 100%; max-width: none; }
+  .vm-internal .user-controls #roleFilter { width: 100%; }
+  .vm-internal .user-controls__actions { width: 100%; }
+  .vm-internal .user-controls__actions .vm-button { flex: 1; justify-content: center; }
+  .vm-internal .user-register tbody tr { padding: 16px; gap: 12px 16px; }
+  .vm-internal .user-register td:nth-child(3) { grid-column: 1/-1; }
+  .vm-internal .user-pagination nav { gap: 4px; }
+  .vm-internal .user-pagination .vm-button { padding-inline: 10px; }
 }
